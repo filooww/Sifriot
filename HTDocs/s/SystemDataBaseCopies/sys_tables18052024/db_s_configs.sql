@@ -1,0 +1,27 @@
+
+INSERT INTO `db_s_configs` (`config_name`, `config_value`, `config_type`, `config_description`) VALUES
+	('', 'lllll', 0, ''),
+('apostrophe_replace', '`', 0, 'Apostrophe replacement symbol'),
+('char_group', '19', 1, 'Code to separate of special symbol groups'),
+('close_delay', '30', 1, 'Session close delay time (sec)'),
+	('date_delimiter', '.', 0, 'Date part separator'),
+('image_dir', '/images', 0, 'Directory of images'),
+	('kjhgf', '', -5, ''),
+('max_table_columns', '13', 1, 'Maximal count of columns in table'),
+('number_warning', '15', 1, 'Number of values in warning rows'),
+('pending_limit', '100', 1, 'Time limit for pending sessions (days)'),
+('reminder_interval', '9', 1, 'Time interval for a reminder to close the session (sec)'),
+('start_year', '1970', 1, 'System initial year'),
+	('start_yesr', '1970', 0, 'System initial year'),
+	('time_zone', 'Israel', 0, 'Name of time zone'),
+('try_limit', '3', 1, 'Maximum number of login attempts'),
+('w_01', '200', 0, 'Size of fields SOURCE FILES and DESTINATION'),
+	('w_02', '3%', 0, 'Width of placeholder for button USE inside table for upload settings'),
+('w_03', '9%', 0, 'Width of placeholder for parameter name inside table for upload settings'),
+('w_04', '1%', 0, 'Widht of placeholder for button CALL CATALOG inside table for upload settings'),
+('w_05', '5%', 0, 'Width of placeholder for catalog code'),
+('w_06', '50px', 0, 'Width of catalog code'),
+('w_07', '47', 1, 'Size of filter and search criteria'),
+('w_08', '25', 1, 'Width of catalog value'),
+('w_09', '64%', 0, 'Width of list settings pad');
+

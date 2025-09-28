@@ -1,0 +1,589 @@
+ID			1
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		1	delete from source: N
+--------------------------------
+Begin delimiter		'Serii'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		'   -- '	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			2
+--------------------------------
+Reference		Authors
+--------------------------------
+Offset in path		0	delete from source: Y
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		', '
+--------------------------------
+End delimiter		'. | - | .|-|.| -| — '	number in source: 0	include into reference: N	delete from source: Y
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			3
+--------------------------------
+Reference		Title
+--------------------------------
+Offset in path		0	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			4
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		4	delete from source: N
+--------------------------------
+Begin delimiter		'Serii'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		'   -- '	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			5
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		2	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		' ['	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			6
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		2	delete from source: N
+--------------------------------
+Begin delimiter		'['	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		']'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			7
+--------------------------------
+Reference		Title
+--------------------------------
+Offset in path		1	delete from source: N
+--------------------------------
+Begin delimiter		'. '	number in source: 2	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			8
+--------------------------------
+Reference		Authors
+--------------------------------
+Offset in path		1	delete from source: Y
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		'. '
+--------------------------------
+End delimiter		'. '	number in source: 2	include into reference: N	delete from source: Y
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			9
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		3	delete from source: N
+--------------------------------
+Begin delimiter		'Serii'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		'   -- '	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			10
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		1	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		' [|['	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			11
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		1	delete from source: N
+--------------------------------
+Begin delimiter		'[|«'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		']|»'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			12
+--------------------------------
+Reference		Authors
+--------------------------------
+Offset in path		0	delete from source: Y
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		'.'	number in source: 0	include into reference: N	delete from source: Y
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			13
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		4	delete from source: N
+--------------------------------
+Begin delimiter		'Serii'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		'   -- '	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			14
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		2	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		' ['	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			15
+--------------------------------
+Reference		Title
+--------------------------------
+Offset in path		1	delete from source: Y
+--------------------------------
+Begin delimiter		'. '	number in source: 2	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: Y
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			16
+--------------------------------
+Reference		Volume
+--------------------------------
+Offset in path		0	delete from source: N
+--------------------------------
+Begin delimiter		'. Книга '	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			16
+--------------------------------
+Reference		Volume
+--------------------------------
+Offset in path		0	delete from source: N
+--------------------------------
+Begin delimiter		'. Книга '	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			19
+--------------------------------
+Reference		Title
+--------------------------------
+Offset in path		0	delete from source: N
+--------------------------------
+Begin delimiter		' '	number in source: 0	include into reference: N	delete from source: Y
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			20
+--------------------------------
+Reference		Series
+--------------------------------
+Offset in path		2	delete from source: N
+--------------------------------
+Begin delimiter		'«'	number in source: 0	include into reference: N	delete from source: Y
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		'»'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			21
+--------------------------------
+Reference		Themes
+--------------------------------
+Offset in path		1	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			22
+--------------------------------
+Reference		Publishing
+--------------------------------
+Offset in path		1	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			23
+--------------------------------
+Reference		Title
+--------------------------------
+Offset in path		0	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'_|- |text' >> ' ||'	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			24
+--------------------------------
+Reference		IssueYear
+--------------------------------
+Offset in path		0	delete from source: Y
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	'/\d{4}/'	delete from source: Y
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			25
+--------------------------------
+Reference		Authors
+--------------------------------
+Offset in path		0	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		' - |_'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			26
+--------------------------------
+Reference		Volume
+--------------------------------
+Offset in path		0	delete from source: Y
+--------------------------------
+Begin delimiter		'tom'	number in source: 0	include into reference: N	delete from source: Y
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		'_'	number in source: 0	include into reference: N	delete from source: Y
+--------------------------------
+Symbol replacement	'_' >> ''	for reference only: Y
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			''
+--------------------------------
+ 
+ID			5
+--------------------------------
+Reference		IssueYear
+--------------------------------
+Offset in path		0	delete from source: Y
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	'/\d{4}/'	delete from source: Y
+--------------------------------
+Remarks			'*********'
+--------------------------------
+ 
+ID			5
+--------------------------------
+Reference		IssueYear
+--------------------------------
+Offset in path		0	delete from source: Y
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	'/\d{4}/'	delete from source: Y
+--------------------------------
+Remarks			'*********'
+--------------------------------
+ 
+ID			4
+--------------------------------
+Reference		Themes
+--------------------------------
+Offset in path		1	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			'***********'
+--------------------------------
+ 
+ID			4
+--------------------------------
+Reference		Themes
+--------------------------------
+Offset in path		1	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: N
+--------------------------------
+Remarks			'***********'
+--------------------------------
+ 
+ID			5
+--------------------------------
+Reference		Magazine
+--------------------------------
+Offset in path		0	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		'_'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: Y
+--------------------------------
+Remarks			'apollon'
+--------------------------------
+ 
+ID			5
+--------------------------------
+Reference		Magazine
+--------------------------------
+Offset in path		0	delete from source: N
+--------------------------------
+Begin delimiter		''	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Inner delimiter		''
+--------------------------------
+End delimiter		'_'	number in source: 0	include into reference: N	delete from source: N
+--------------------------------
+Symbol replacement	'' >> ''	for reference only: N
+--------------------------------
+Regular expression	''	delete from source: Y
+--------------------------------
+Remarks			'apollon'
+--------------------------------
+ 

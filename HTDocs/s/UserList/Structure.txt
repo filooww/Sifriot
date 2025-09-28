@@ -1,0 +1,57 @@
+flags                                       set     view
+ 0   id                                     *
+ 1   name       (err, apostr_warn, double)  **
+ 2   pass       (err, apostr_warn, double)  **
+ 3   priority   err                         *
+ 4   lang       err                         *
+ 5   portion    err                         *
+ 6   db         err                         *
+ 7   date       (err, apostr_warn)          **
+ 8   hide       err                         *
+ 9   match      err                         *
+10   disables   warn
+
+now
+ 0   id
+ 1   name       err
+ 2   pass       err
+ 3   priority   err
+ 4   lang       err
+ 5   portion    err
+ 6   db         err
+ 7   date       err
+ 8   hide       err
+ 9   match      err
+10   name       double
+11   pass       double
+13   disables   warn
+
+change
+ 0      0       *
+ 1      1[0]    *
+ 2      2[0]    *
+ 3      3       *
+ 4      4       *
+ 5      5       *
+ 6      6       *
+ 7      7[0] ...*...
+ 8      8       *
+ 9      9       *
+10      1[2]    *
+11      2[2]    *
+13      10
+*/
+
+
+ 0      name
+ 1      pass
+ 2      user_priority
+ 3      use_lang_id
+ 4      user_list_portion
+ 5      preffered_db     -
+ 6      date_format
+ 7      hide_list
+ 8      match_case
+
+
+
