@@ -17,19 +17,19 @@ function ExportToFile()
         $coll = GetDBParams($dbh, "SELECT @@collation_database");
         if ($coll == "") $mes_arr[] = "no collation database";
         $f_name = ($_POST['table'] == "") ? $_POST['db'] : $_POST['table'];
-	    $fh = fopen($f_name.".sql", "w");
+	    $fh = fopen($_SERVER['DOCUMENT_ROOT']."/s/".$f_name.".sql", "w");
 	    fwrite($fh, "CREATE DATABASE IF NOT EXISTS ".$_POST['db']." DEFAULT CHARACTER SET ".$chat_set." COLLATE ".$coll.";\r\n");
 	    fwrite($fh, "USE ".$_POST['db'].";\r\n");
 	    fclose($fh);
         if ($_POST['table'] != "") ExportTable($dbh, $f_name, $_POST['table'], $chat_set);
         else foreach ($_SESSION['table_list'] as $tb) if ($tb != "") ExportTable($dbh, $f_name, $tb, $chat_set);
     }
-    if (count($mes_arr) == 0) return "";
+    if (count($mes_arr) == 0) return "The result is in the file <b>".$_SERVER['DOCUMENT_ROOT']."/s/".$f_name.".sql</b>";
     else return implode("; ", $mes_arr);
 }
 function ExportTable($dbh, $f_name, $table, $chat_set)
 {
-	$fh = fopen($f_name.".sql", "a");
+	$fh = fopen($_SERVER['DOCUMENT_ROOT']."/s/".$f_name.".sql", "a");
 	fwrite($fh, "\r\n");
     fclose($fh);
     $arr_fields = InsertFieldStructure($dbh, $f_name, $table, $chat_set);

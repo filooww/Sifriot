@@ -7,6 +7,8 @@
 	<style>.edit_field {background-color:#33CC99;}</style>
 	<style>.emp {background-color:#FFFFFF; color:#FFFFFF;}</style>
 	<style>.hidden_button {visibility:hidden;}</style>
+	<style>.field_auto {background-color:#FFCCFF;}</style>
+	<style>.field_no {background-color:#99FF99;}</style>
 </head>
 <SCRIPT language=JavaScript>function user_lang_on() {document.field_form.user_lang_s.value = '*'; field_form.submit();}</SCRIPT>
 
@@ -15,6 +17,7 @@ require_once($_SERVER['DOCUMENT_ROOT']."/s/Utilities/DataBases.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Utilities/Common.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Utilities/HTML.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Titles/TitleSelect.php");
+require_once($_SERVER['DOCUMENT_ROOT']."/s/Titles/SpecialTextsUtils.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Languages/LanguageUtilities.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Visits/VisitUtilities.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Administrator/Utilities.php");
@@ -22,8 +25,9 @@ require_once($_SERVER['DOCUMENT_ROOT']."/s/Tables/TableUtilities.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Tables/TableUpdate.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Tables/TableTest.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/DataBases/DataBaseUtilities.php");
+require_once($_SERVER['DOCUMENT_ROOT']."/s/DataBases/DataBaseUpdate.php");
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Configuration/ConfigUtilities.php");
-require_once($_SERVER['DOCUMENT_ROOT']."/s/Titles/SpecialTextsUtils.php");
+
 require_once("FieldUtilities.php");
 
 require_once($_SERVER['DOCUMENT_ROOT']."/s/Utilities/TestScripts.php");
@@ -95,16 +99,17 @@ $dis = ($_SESSION['user_working_mode'] == 0) ? " disabled": "";
             $arr_k = explode("|", $z);
             $v = $_SESSION['field_definitions'][$arr_k[0]][$arr_k[1]];
 			$bgcl = ($cl) ? " class='odd_row'" : "";
-			echo "<tr> valign='top'";
-				echo "<td><button name='field_edit|".$arr_k[0]."|".$arr_k[1]."' type='submit' title='".Title(336)."' class='edit_field' value='*'>".ImgV((($_SESSION['user_working_mode'] == 0) ? "Test" : "Edit"), 16, 16)."</button></td>";
+			$str_auto = GetAutoClass($v['auto']);
+			echo "<tr valign='top'>";
+				echo "<td><button name='field_edit|".$z."' type='submit' title='".Title(336)."' class='edit_field' value='*'>".ImgV((($_SESSION['user_working_mode'] == 0) ? "Test" : "Edit"), 16, 16)."</button></td>";
 				echo "<td class='emp'>X</td>";
-				echo "<td".$bgcl.">".$_SESSION['mandatory_db_tables'][$arr_k[0]][0]."</td>";
-				echo "<td".$bgcl.">".$arr_k[1]."</td>";
-				echo "<td".$bgcl.">".(($v[0]) ? "<b>".$v[4]."</b>" : $v[4])."</td>"; //color
-				echo "<td align='center'".$bgcl.">".(string)$v[1]."</td>";
-				echo "<td align='center'".$bgcl.">".(($v[2] == 0) ? "" : (string)$v[2])."</td>"; //color
-				echo "<td".$bgcl.">".ViewFieldUsing($v[3])."</td>";
-				echo "<td>".implode("; ", $v[19])."</td>";
+				echo "<td".$bgcl.">".$_SESSION['mandatory_db_tables'][$arr_k[0]]."</td>";
+				echo "<td".$str_auto[0]." title='".$str_auto[1]."'>".$arr_k[1]."</td>";
+				echo "<td".$bgcl.">".(($v['f_key']) ? "<b>".$v['f_name']."</b>" : $v['f_name'])."</td>"; //color
+				echo "<td align='center'".$bgcl.">".(string)$v['ind_in_t']."</td>";
+				echo "<td align='center'".$bgcl.">".(($v['screen_order'] == 0) ? "" : (string)$v['screen_order'])."</td>"; //color
+				echo "<td".$bgcl.">".ViewFieldUsing($v['f_using'])."</td>";
+				echo "<td>".implode("; ", $v['errors'])."</td>";
 			echo "</tr>";
 			$cl = !$cl;
 		}

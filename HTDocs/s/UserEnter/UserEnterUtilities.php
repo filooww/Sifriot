@@ -174,7 +174,6 @@ function SessionPreparation($dbh_sys, $db)
         return "../Administrator/MainForm.php";
     }
     if ($db == "") return "../Administrator/MainForm.php";
-$lf = fopen("D:\\Test.txt", "a"); fwrite($lf, "\r\ntest SessionPreparation 00 ***".$$db."==="); fclose($lf);
     return GoToDB($dbh_sys, $db);
 }
 function SessionSettings($dbh_sys)

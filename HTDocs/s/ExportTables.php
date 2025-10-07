@@ -44,6 +44,6 @@ foreach ($_POST as $str_key => $str_v)
     </table>
     <button name='file_export' type='submit' value='*'>Export</button>
     <button name='file_exit' type='submit' value='*'>Exit</button>
-    <?php if ($Mes != "") echo "<br><br><font color='#FF0000'><b>".$Mes."</b></font>"; ?>
+    <?php if ($Mes != "") echo "<br><br><font color='#FF0000'>".$Mes."</font>"; ?>
 </form>
 

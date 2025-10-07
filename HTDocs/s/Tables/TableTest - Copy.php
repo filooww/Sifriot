@@ -1,4 +1,40 @@
 <?php
+function PostToSessionParameters($table_name, $table_params)
+{
+    foreach ($_SESSION['table_definitions'] as $t_name => $v)
+    {
+        if ($v['table_title'] != $_POST["table_title-".$t_name]) $_SESSION['table_definitions'][$t_name]['table_title'] = $_POST["table_title-".$t_name];
+	    if ($v['use_type'] == 3)
+	    {
+		    if ($v['second_catalog'] == "" && isset($_POST["illegals-".$t_name]) && $_SESSION['table_definitions'][$t_name]['illegals'] != $_POST["illegals-".$t_name]) $_SESSION['table_definitions'][$t_name]['illegals'] = $_POST["illegals-".$t_name];
+//				TestTableIllegals($table_name);
+		    elseif (isset($_POST["separators-".$t_name]) && $_SESSION['table_definitions'][$t_name]['separators'] != $_POST["separators-".$t_name]) $_SESSION['table_definitions'][$t_name]['separators'] = $_POST["separators-".$t_name];
+	    }
+
+    }
+/*
+	if ($_SESSION['table_definitions'][$table_name]['table_title'] != $_POST["table_title-".$table_name]) $_SESSION['table_definitions'][$table_name]['table_title'] = $_POST["table_title-".$table_name];
+	if ($table_params['use_type'] == 3)
+	{
+		if ($table_params['second_catalog'] == "")
+		{
+			if (isset($_POST["illegals-".$table_name]) && $_SESSION['table_definitions'][$table_name]['illegals'] != $_POST["illegals-".$table_name])
+			{
+				$_SESSION['table_definitions'][$table_name]['illegals'] = $_POST["illegals-".$table_name];
+				TestTableIllegals($table_name);
+			}
+		}
+		elseif (isset($_POST["separators-".$table_name]) && $_SESSION['table_definitions'][$table_name]['separators'] != $_POST["separators-".$table_name]) $_SESSION['table_definitions'][$table_name]['separators'] = $_POST["separators-".$table_name];
+	}
+*/
+}
+function TestTableIllegals($table_name)
+{
+    $arr_illegals = explode($_SESSION['char_group'], $_SESSION['table_definitions'][$table_name]['illegals']);
+    $new_illegals = array();
+    foreach ($arr_illegals as $ill) if ($ill != "") $new_illegals[] = $ill;
+    $_SESSION['table_definitions'][$table_name]['illegals'] = implode($_SESSION['char_group'], $new_illegals);
+}
 function ChangeApostrophe($table_name, $par_name, $title_number, &$fl)
 {
 	if (strpos($_SESSION['table_definitions'][$table_name][$par_name], chr(39)) !== false)
@@ -18,8 +54,9 @@ function IsMandatoryTableCorrect($mnd_tables)
     foreach ($mnd_tables as $v) if (count($v) != 1) return false;
     return true;
 }
-function TestTables($init)
+function TestTables($init, $debg = false)
 {
+
     $flags = array("mandatory" => TestTableTypes(), "d_second_catalogs" => TestSecondCatalogs(), "empty" => false, "errors" => false);
     $fl = true;
     if (count($_SESSION['table_definitions']) == 0) $flags['empty'] = true;
@@ -30,6 +67,7 @@ function TestTables($init)
             $_SESSION['table_definitions'][$t_name]['tab_err'] = array();
 		    if (!$init)
             {
+//                PostToSessionParameters($t_name, $v);
 		        ChangeApostrophe($t_name, "table_title", 311, $flags['errors']);
           	    ChangeApostrophe($t_name, "illegals", 313, $flags['errors']);
 		        ChangeApostrophe($t_name, "separators", 315, $flags['errors']);
@@ -45,15 +83,16 @@ function TestTables($init)
             }
         }
 	}
+//if ($debg) {echo "<br>test TestTables 12 ***flags "; print_r($flags);}
+//if ($debg) exit();
 	return $flags;
 }
-function SetPreliminaryTableErrors($flags, &$Mes)
+function SetPreliminaryTableErrors($flags)
 {
     $flag_errors = false;
-    if (count($flags['mandatory'][1]) != 1 || count($flags['mandatory'][2]) != 1 || count($flags['mandatory'][5]) != 1) $flag_errors = true;
+    if ($flags['mandatory'][1] != 1 || $flags['mandatory'][2] != 1 || $flags['mandatory'][5] != 1) $flag_errors = true;
     if (count($flags['d_second_catalogs']) > 0) $flag_errors = true;
     if ($flags['empty'] || $flags['errors']) $flag_errors = true;
-    if ($flag_errors) $Mes[] = "<font color='#0000FF'><b>".Title(329)."</b></font>";
     return $flag_errors;
 }
 function TestThisType($table_name, $n_type, &$Mes)

@@ -143,6 +143,7 @@ function GoToFields()
 	$_SESSION['field_change'] = false;
 	$_SESSION['field_sort'] = SortFieldDefinitions("table_field");
     $_SESSION['f_k'] = array(0, "");
+    $t_flags = TestTables($_SESSION['user_working_mode'] == 0);
     $_SESSION['mandatory_db_tables'] = SetMandatoryDBTables($t_flags['mandatory']);
     $_SESSION['reference_catalogs'] = GetRefCatalogs();
 	return "../Fields/FieldForm.php";

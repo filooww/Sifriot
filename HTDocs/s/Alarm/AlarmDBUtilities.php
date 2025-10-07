@@ -37,16 +37,16 @@ function UserDataBaseStructureDefinition()
     $arr['field_config']['screen_order'] = array("tinyint unsigned", null, "NO", "", "0", "");
     $arr['field_config']['load_order'] = array("tinyint unsigned", null, "NO", "", "0", "");
     $arr['table_definitions']['table_name'] = array("varchar(31)", "utf8mb3_bin", "NO", "PRI", null, "");
-    $arr['table_definitions']['use_type'] = array("tinyint unsigned", null, "NO", "", "0", "");
+    $arr['table_definitions']['use_type'] = array("tinyint unsigned", null, "NO", "", null, "");
     $arr['table_definitions']['illegal_symbols'] = array("varchar(255)", "utf8mb3_bin", "NO", "", null, "");
-    $arr['table_definitions']['group_catalog_type'] = array("tinyint unsigned", null, "NO", "", "0", "");
+    $arr['table_definitions']['group_catalog_type'] = array("tinyint unsigned", null, "NO", "", null, "");
     $arr['table_definitions']['separators'] = array("varchar(255)", "utf8mb3_bin", "NO", "", null, "");
     $arr['table_definitions']['max_level'] = array("tinyint unsigned", null, "NO", "", "0", "");
     $arr['table_definitions']['second_catalog_name'] = array("varchar(255)", "utf8mb3_bin", "NO", "", null, "");
     $arr['table_definitions']['table_title'] = array("varchar(255)", "utf8mb3_bin", "NO", "", null, "");
     return $arr;
 }
-function GetUserDBTableStructure($db, &$db_err)
+function GetUserDBTableStructure($db)
 {
     foreach (array_keys($_SESSION['all_field_list']) as $table)
     {
@@ -54,64 +54,89 @@ function GetUserDBTableStructure($db, &$db_err)
         {
             $arr_struct = array();
             $row_count = 0;
+            $del_flag = "";
+            $f_low = "";
             foreach ($_SESSION['all_field_list'][$table] as $k_field => $f_params)
             {
                 $row_count++;
                 switch ($_SESSION['table_definitions'][$table]['use_type'])
                 {
-                    case 1: TestMainTableStructure($row_count, $f_params, $k_field, $table, $db_err); break;
-                    case 2: TestAttachFileStructure($row_count, $f_params, $table, $db_err); break;
-                    case 3: TestCatalogStructure($row_count, $_SESSION['table_definitions'][$table]['second_catalog'], $f_params, $table, $db_err); break;
-                    case 4: TestServiceTables($row_count, $f_params, $k_field, $table, $db_err); break;
-                    case 5: TestPrimaryFileStructure($row_count, $f_params, $db_err); break;
+                    case 1: TestMainTableStructure($row_count, $f_params, $k_field, $table, $f_low, $del_flag); break;
+                    case 2: TestAttachFileStructure($row_count, $k_field, $f_params, $table, $f_low); break;
+                    case 3: TestCatalogStructure($row_count, $_SESSION['table_definitions'][$table]['second_catalog'], $f_params, $table, $k_field); break;
+                    case 5: TestPrimaryFileStructure($row_count, $f_params, $table, $k_field); break;
                 }
             }
-
+            if ($_SESSION['table_definitions'][$table]['use_type'] == 1)
+            {
+                DelFlagTest($del_flag, $table, $_SESSION['all_field_list'][$table][$del_flag]);
+                FieldLowTest($f_low, $table, $_SESSION['all_field_list'][$table][$f_low]);
+            }
+            if ($_SESSION['table_definitions'][$table]['use_type'] == 2) FieldLowTest($f_low, $table, $_SESSION['all_field_list'][$table][$f_low]);
         }
     }
 }
-function TestMainTableStructure($row_count, $f_params, $k_field, $table, &$db_err)
+function FieldLowTest($f_low, $table, $f_params)
 {
-    if ($row_count == 1 && ($f_params[0] != "int unsigned" || $f_params[1] != "NO" || $f_params[2] != "PRI" || !is_null($f_params[3]) || $f_params[4] != "auto_increment")) $db_err[] = Title(646);
-    if ($k_field == "_del_mark" && ($f_params[0] != "tinyint unsigned" || $f_params[1] != "NO" || !is_null($f_params[2]) || !is_null($f_params[3]) || !is_null($f_params[4]))) $db_err[] = Title(647);
-    if ($row_count == count($_SESSION['all_field_list'][$table]) - 1 && $k_field != "_del_mark") $db_err[] = Title(648);
+    if ($f_low == "") $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".Title(433);
+    elseif (f_Err($f_params, array("varchar(255)", "utf8mb3_bin", "NO", "", "*", ""))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".Title(648);
 }
-function TestAttachFileStructure($row_count, $f_params, $table, &$db_err)
+function DelFlagTest($del_flag, $table, $f_params)
+{
+    if ($del_flag == "") $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".Title(377);
+    elseif (f_Err($f_params, array("tinyint unsigned", "*", "NO", "", "0", ""))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".Title(647);
+}
+function f_Err($params, $v_arr)
+{
+    for ($i = 0; $i < count($params); $i++)
+    {
+        if (is_null($params[$i]))
+        {
+            if ( $v_arr[$i] != "*") return true;
+        }
+        else
+        {
+            if ($params[$i] != $v_arr[$i]) return true;
+        }
+    }
+    return false;
+}
+function TestMainTableStructure($row_count, $params, $k_field, $table, &$f_low, &$del_flag)
+{
+    if ($row_count == 1 && f_Err($params, array("int unsigned", "*", "NO", "PRI", "*", "auto_increment"))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".FTM(Title(403))." <b>".$k_field."</b> : ".Title(646);
+    if ($k_field == "_del_mark") $del_flag = $k_field;
+    if (substr($k_field, -4) == "_low") $f_low = $k_field;
+}
+function TestAttachFileStructure($row_count, $k_field, $params, $table, &$f_low)
+{
+    if ($row_count == 1)
+    {
+        if (f_Err($params, array("int unsigned", "*", "NO", "PRI", "*", ""))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".FTM(Title(403))." <b>".$k_field."</b> : ".Title(649);
+    }
+    elseif ($row_count == 2)
+    {
+        if (f_Err($params, array("varchar(255)", "utf8mb3_bin", "NO", "PRI", "*", ""))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".FTM(Title(403))." <b>".$k_field."</b> : ".Title(650);
+    }
+    if (substr($k_field, -4) == "_low") $f_low = $k_field;
+}
+function TestCatalogStructure($row_count, $second_catalog, $params, $table, $k_field)
 {
     switch ($row_count)
     {
-        case 1: if ($f_params[0] != "int unsigned" || $f_params[1] != "NO" || $f_params[2] != "PRI" || !is_null($f_params[3]) || !is_null($f_params[4])) $db_err[] = Title(649); break;
-        case 2: if ($f_params[0] != "varchar(255)" || $f_params[1] != "NO" || !is_null($f_params[2]) || !is_null($f_params[3]) || !is_null($f_params[4])) $db_err[] = Title(650); break;
+        case 1: if (f_Err($params, array("int unsigned", "*", "NO", "PRI", "*", "auto_increment"))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".FTM(Title(403))." <b>".$k_field."</b> : ".Title(637); break;
+        case 2: if (f_Err($params, array("varchar(255)", "utf8mb3_bin", "NO", "UNI", "*", ""))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".FTM(Title(403))." <b>".$k_field."</b> : ".Title(638); break;
+        case 3: if ($second_catalog == "" && (f_Err($params, array("varchar(255)", "utf8mb3_bin", "NO", "", "*", "")))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".FTM(Title(403))." <b>".$k_field."</b> : ".Title(638)." (".Title(645).")"; break;
     }
 }
-function TestCatalogStructure($row_count, $second_catalog, $f_params, $table, &$db_err)
+function TestPrimaryFileStructure($row_count, $params, $table, $k_field)
 {
     switch ($row_count)
     {
-        case 1: if ($f_params[0] != "int unsigned" || $f_params[1] != "NO" || $f_params[2] != "PRI" || !is_null($f_params[3]) || $f_params[4] != "auto_increment") $db_err[] = Title(637); break;
-        case 2: if ($f_params[0] != "varchar(255)" || $f_params[1] != "NO" || $f_params[2] != "UNI" || !is_null($f_params[3]) || !is_null($f_params[4])) $db_err[] = Title(638); break;
-    }
-    if ($second_catalog == "" && $row_count == 3 && ($f_params[0] != "varchar(255)" || $f_params[1] != "NO" || !is_null($f_params[2]) || !is_null($f_params[3]) || !is_null($f_params[4]) || substr($row_field[0], -4) != "_low")) $db_err[] = Title(638)." (".Title(645).")";
-}
-function TestPrimaryFileStructure($row_count, $f_params, &$db_err)
-{
-    switch ($row_count)
-    {
-        case 1: if ($f_params[0] != "int unsigned" || $f_params[1] != "NO" || $f_params[2] != "PRI" || !is_null($f_params[3]) || !is_null($f_params[4])) $db_err[] = Title(651); break;
-        case 2: if ($f_params[0] != "varchar(8191)" || $f_params[1] != "NO" || !is_null($f_params[2]) || !is_null($f_params[3]) || !is_null($f_params[4])) $db_err[] = Title(652); break;
-        case 3: if ($f_params[0] != "varchar(8191)" || $f_params[1] != "NO" || !is_null($f_params[2]) || !is_null($f_params[3]) || !is_null($f_params[4])) $db_err[] = Title(652)." (".Title(645).")"; break;
+        case 1: if (f_Err($params, array("int unsigned", "*", "NO", "", "*", ""))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".FTM(Title(403))." <b>".$k_field."</b> : ".Title(651); break;
+        case 2: if (f_Err($params, array("varchar(8191)", "utf8mb3_bin", "NO", "", "*", ""))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".FTM(Title(403))." <b>".$k_field."</b> : ".Title(652); break;
+        case 3: if (f_Err($params, array("varchar(8191)", "utf8mb3_bin", "NO", "", "*", ""))) $_SESSION['db_errors'][] = FTM(Title(365))." <b>".$table."</b> : ".FTM(Title(403))." <b>".$k_field."</b> : ".Title(652)." (".Title(645).")"; break;
     }
 }
-function TestServiceTables($row_count, $f_params, $k_field, $table, $db_err)
-{
-    switch ($table)
-    {
-        case "db_configs"        : break;
-        
-        case "field_config"      : break;
-        
-        case "table_definitions" : break;
-    }
 /*
     $ins = array();
 	if (!$serv_tables['db_configs'])
@@ -137,7 +162,7 @@ function TestServiceTables($row_count, $f_params, $k_field, $table, $db_err)
 	    $db_err[] = ((count($ins) == 1) ? FTM(Title(365)) : FTM(Title(115)))." <b>".implode(", ", array_keys($serv_tables))."</b> ".((count($ins) == 1) ? Title(536) : Title(712));
 	}
 */
-}
+//}
 /*
 function TestServiceConfigs()
 {

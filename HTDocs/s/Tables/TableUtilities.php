@@ -22,34 +22,8 @@ function GetTableValue($dbh, $table_name, $value_name, $arrt = true)
 	}
 	return $gv;
 }
-function ReduceMaxLevel($dbh, $table)
-{
-	$res = mysqli_query($dbh, "SELECT * FROM ".$table);
-	if ($res)
-	{
-		$max_level = 0;
-		while ($row = mysqli_fetch_row($res))
-		{
-			$n = substr_count($row[1], ",");
-			if ($n > $max_level) $max_level = $n;
-		}
-		if (mysqli_num_rows($res) == 0) $max_level = 0;
-		else $max_level++;
-		$res_def = mysqli_query($dbh, "SELECT max_level FROM table_definitions WHERE table_name = '".$table."'");
-		if ($res_def)
-		{
-			if ($row_def = mysqli_fetch_row($res_def))
-			{
-				if ($row_def[0] != $max_level) mysqli_query($dbh, "UPDATE table_definitions SET max_level = ".(string)$max_level." WHERE table_name = '".$table."'");
-			}
-			mysqli_free_result($res_def);
-		}
-		mysqli_free_result($res);
-	}
-}
 function ActionTableExit(&$Mes)
 {
-	$Mes = array();
 	if ($_SESSION['user_working_mode'] == 0) return true;
 	$t_flags = TestTables($_SESSION['user_working_mode'] == 0);
 	if (!IsMandatoryTableCorrect($t_flags['mandatory']) || count($t_flags['d_second_catalogs']) > 0 || $t_flags['empty'] || $t_flags['errors'])
@@ -64,7 +38,6 @@ function ActionTableExit(&$Mes)
 function GetTableDefinitions($dbh, $db)
 {
     $DB_all_tables = array_keys($_SESSION['all_field_list']);
-	$_SESSION['single_catalogs'] = array();
 	$t_def = array();
 	$no_definition = array();
     $no_DB = array();
@@ -136,14 +109,23 @@ function AfterSecondCatalogChoice(&$sw_break)
 	if ($_POST['second_catalog_s'] == "") $sw_break = false;
 	else
 	{
-		foreach ($_SESSION['table_definitions'] as $table_name => $table_params)
-		{
-			if ($_POST["second_catalog-".$table_name] != $table_params['second_catalog'])
-			{
-				$_SESSION['table_definitions'][$table_name]['second_catalog'] = $_POST["second_catalog-".$table_name];
-				return true;
-			}
-		}
+	    $t = explode("-", $_POST['second_catalog_s']);
+        if ($_POST[$_POST['second_catalog_s']] == "")
+        {
+            $_SESSION['table_definitions'][$t[1]]['second_catalog'] = "";
+            $_SESSION['table_definitions'][$t[1]]['separators'] = "";
+            $_SESSION['table_definitions'][$t[1]]['max_level'] = 0;
+        }
+        else
+        {
+            $_SESSION['table_definitions'][$t[1]]['second_catalog'] = $_POST[$_POST['second_catalog_s']];
+            $_SESSION['table_definitions'][$t[1]]['separators'] = ", ";
+            $_SESSION['table_definitions'][$t[1]]['max_level'] = 0;
+            $_SESSION['table_definitions'][$_POST[$_POST['second_catalog_s']]]['illegals'] = ", ";
+        }
+        $_SESSION['table_definitions'][$t[1]]['illegals'] = "";
+        $_SESSION['table_definitions'][$t[1]]['group_type'] = 0;
+		return true;
 	}
 	return false;
 }
@@ -211,5 +193,10 @@ function GetCatalogDefinition($dbh, $catalog_name)
 	}
 	return $C;
 }
-
+function SetSecondCatalogList($else_catalog)
+{
+    $second_catalogs = array("");
+	foreach ($_SESSION['table_definitions'] as $k => $v) if ($v['use_type'] == 3 && $k != $else_catalog && $v['second_catalog'] == "") $second_catalogs[] = $k;
+    return $second_catalogs;
+}
 ?>

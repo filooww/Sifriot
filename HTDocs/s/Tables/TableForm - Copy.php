@@ -11,8 +11,8 @@
 </head>
 <SCRIPT language=JavaScript>
 function user_lang_on() {document.table_form.user_lang_s.value = '*'; table_form.submit();}
-function use_type_on(obj) {document.table_form.use_type_s.value = obj.name; table_form.submit();}
-function second_catalog_on(obj) {document.table_form.second_catalog_s.value = obj.name; table_form.submit();}
+function sel_use_type_on(obj) {document.table_form.use_type_s.value = obj.name; table_form.submit();}
+function sel_second_catalog_on() {document.table_form.second_catalog_s.value = '*'; table_form.submit();}
 </SCRIPT>
 
 <?php
@@ -34,8 +34,6 @@ require_once("TableUtilities.php");
 require_once("TableUpdate.php");
 require_once("TableTest.php");
 
-require_once($_SERVER['DOCUMENT_ROOT']."/s/Utilities/TestScripts.php");
-
 session_start();
 $Mes = array();
 $dbh_sys = GetOnlyDB("db_manager");
@@ -43,7 +41,6 @@ if (!$dbh_sys) ExitSession(Title(252)."|FF0000");
 $dbh = GetDB($_SESSION['db_info']['name'], $Mes, $_SESSION['db_info']['coding']);
 if (!$dbh) ExitSession(Title(1)." <b>".$_SESSION['db_info']['name']."</b>`".implode("`", $Mes)."|FF0000", $_SESSION['db_info']['id']);
 if (count($_POST) == 0) $t_flags = TestTables(true);
-else PostToSessionParameters();
 foreach ($_POST as $str_key => $str_v)
 {
 	$k = explode("-", $str_key);
@@ -55,10 +52,10 @@ foreach ($_POST as $str_key => $str_v)
 		case "user_lang_s"		: if (SetUserLangTable($dbh_sys, $sw_break)) $t_flags = TestTables($_SESSION['user_working_mode'] == 0); break;
 		case "use_type_s"		: if (AfterUseTypeChoice($sw_break, $Mes)) $t_flags = TestTables(false); break;
 		case "second_catalog_s"	: if (AfterSecondCatalogChoice($sw_break)) $t_flags = TestTables(false); break;
-		case "group_symbol"		: if ($_SESSION['table_definitions'][$k[1]]['illegals'] != "" && substr($_SESSION['table_definitions'][$k[1]]['illegals'], -1) != chr($_SESSION['char_group'])) $_SESSION['table_definitions'][$k[1]]['illegals'] .= chr($_SESSION['char_group']); break;
+		case "group_symbol"		: $_SESSION['table_definitions'][$k[1]]['illegals'] .= $_SESSION['char_group']; break;
 		case "table_exit"		: if (ActionTableExit($Mes)) header("Location: ../Administrator/DataBaseActions.php"); break;
-		case "table_OK"			: $t_flags = TestTables(false); if (!SetPreliminaryTableErrors($t_flags, $Mes)) RewriteDefinition($dbh, $Mes); break;
-		case "max_level"		: if (ReduceMaxLevelAll($dbh)) $Mes[] = "<font color='#0000FF'>".Title(407)."</font>";  break;
+		case "table_OK"			: $t_flags = TestTables(false); if (SetPreliminaryTableErrors($t_flags)) RewriteDefinition($dbh, $Mes); break;
+		case "max_level"		: ReduceMaxLevel($dbh, $k[1]); $_SESSION['table_definitions'][$k[1]]['tab_err'][] = "<font color='#0000FF'>".Title(407)."</font>"; break; // change
 		case "auto_increment"	: AutoIncrementAll($dbh); $Mes[] = "<font color='#0000FF'><b>".Title(406)."</b></font>"; break;
 		default					: $sw_break = false;
 	}
@@ -69,9 +66,8 @@ $dis = ($_SESSION['user_working_mode'] == 1) ? "" : " disabled";
 ?>
 <form method="post" id="table_form" name="table_form">
     <button name="idle_button" type="submit" value="*" class="hidden_button"></button>
-	<?php SelectTag("user_lang",  $_SESSION['user_langs'], $_SESSION['user_lang'][1], "user_lang_s", false, "", "user_lang_on"); ?>
+	<?php SelectTag("user_lang",  $_SESSION['user_langs'], $_SESSION['user_lang'][1], "user_lang_s", false, "", "user_lang_on"); foreach ($Mes as $z) echo "<br>".$z; ?>
 	<div align="center"><font size="+2"><b><?php echo Title(307);?></b></font></div>
-	<?php foreach ($Mes as $z) echo "<br><font color='#FF0000'>".$z."</font>"; ?>
 	<hr align="left" size="1" noshade="noshade" color="#000000" >
 	<table>
 		<tr>
@@ -79,9 +75,7 @@ $dis = ($_SESSION['user_working_mode'] == 1) ? "" : " disabled";
 			<td><button name="ib_table" class="cell_invisible">X</button></td>
 			<td><button name="table_OK" title="<?php echo Title(310);?>" type="submit" value="*" class="button_save"<?php echo $dis;?>><?php echo Title(30);?></button></td>
 			<td><button name="ib_table" class="cell_invisible">X</button></td>
-			<td><button name="max_level" title="<?php echo Title(325);?>" type="submit" value="*" class="auto_increment_button"<?php echo $dis;?>><?php echo Title(698);?></button></td>
-			<td><button name="ib_table" class="cell_invisible">X</button></td>
-			<td><button name="auto_increment" title="<?php echo Title(326);?>" type="submit" value="*" class="auto_increment_button"<?php echo $dis;?>><?php echo Title(702);?></button></td>
+			<td><button name="auto_increment" title="<?php echo Title(326);?>" type="submit" value="*" class="auto_increment_button"<?php echo $dis;?>>++</button></td>
 		</tr>
 	</table>
 	<hr align="left" size="1" noshade="noshade" color="#000000" >
@@ -95,6 +89,7 @@ $dis = ($_SESSION['user_working_mode'] == 1) ? "" : " disabled";
 			<td width="8%"><b><?php echo Title(315);?></td>
 			<td width="7%"><b><?php echo Title(314);?></b></td>
 			<td width="13%"><b><?php echo Title(370);?></b></td>
+			<td width="1%"></td>
 			<td></td>
 		</tr>
 		<?php
@@ -103,17 +98,38 @@ $dis = ($_SESSION['user_working_mode'] == 1) ? "" : " disabled";
 		{
 			echo "<tr valign='top'".(($odd_row) ? " class='odd_row'" : "").">";
 				echo "<td><input size='12' type='text' name='table-".$k."' value='".$k."' readonly></td>";
-				echo "<td>"; SelectTag("use_type-".$k, $_SESSION['table_types'], $v['use_type'],       "", true,  "", "use_type_on(this)",       $_SESSION['user_working_mode'] == 0); echo "</td>";
+				echo "<td>";
+                    echo SelectTag("use_type-".$k, $_SESSION['table_types'], $v['use_type'], "", true, "", "sel_use_type_on(this)", $_SESSION['user_working_mode'] == 0);
+				echo "</td>";
 				echo "<td><input size='12' type='text' name='table_title-".$k."'".$dis." title='".$v['table_title']."' value='".$v['table_title']."'></td>";
 				if ($v['use_type'] == 3)
 				{
-					echo "<td><button name='group_symbol-".$k."' type='submit' title='".Title(303)."' class='i_h' value='*'".$dis.">".ImgV("GoToK", 10, 16)."</button></td>";
-					echo "<td><input size='20' type='text' name='illegals-".$k."' value='".$v['illegals']."'".$dis."></td>";
-                    echo "<td>"; SelectTag("second_catalog-".$k, SetSecondCatalogList($k), $v['second_catalog'], "", false, "", "second_catalog_on(this)", $dis); echo "</td>";
-                    echo "<td><input size='12' type='text' name='separators-".$k."' value='".$v['separators']."'".$dis."></td>";
-					echo "<td>"; SelectTag("group_type-".$k, $_SESSION['group_types'], $v['group_type'], "", true, "", "", "", $dis); echo "</td>";
+					if ($v['second_catalog'] == "")
+					{
+						echo "<td><button name='group_symbol-".$k."' type='submit' title='".Title(303)."' class='i_h' value='*'".$dis.">".ImgV("GoToK", 10, 16)."</button></td>";
+						echo "<td><input size='20' type='text' name='illegals-".$k."' value='".$v['illegals']."'".$dis."></td>";
+						echo "<td></td><td></td><td></td>";
+					}
+					else
+					{
+						echo "<td></td><td></td>";
+						echo "<td>";
+                            echo SelectTag("second_catalog-".$k, $_SESSION['single_catalogs'], $v['second_catalog'], "second_catalog_s", false, "", "sel_second_catalog_on", $dis);
+//							echo "<select name='second_catalog-".$k."'".$dis." onchange='sel_second_catalog_on();'>"; // SelectTag
+//								foreach ($_SESSION['single_catalogs'] as $second_catalog) echo OptionTag($v['second_catalog'], $second_catalog);
+//							echo "</select>";
+						echo "</td>";
+						echo "<td><input size='12' type='text' name='separators-".$k."' value='".$v['separators']."'".$dis."></td>";
+						echo "<td>";
+                            echo SelectTag("group_type-".$k, $_SESSION['group_types'], $_SESSION['group_types'][$v['group_type']], "", false, "", "", "", $dis);
+//							echo "<select name='group_type-".$k."'".$dis.">"; // SelectTag
+//								foreach ($_SESSION['group_types'] as $group_type) echo OptionTag($_SESSION['group_types'][$v['group_type']], $group_type);
+//							echo "</select>";
+						echo "</td>";
+					}
 				}
 				else echo "<td></td><td></td><td></td><td></td><td></td>";
+				echo "<td>"; if ($v['second_catalog'] != "") echo "<button name='max_level-".$k."' type='submit' title='".Title(325)."' class='i_h' value='*'".$dis.">".ImgV("LineUp", 10, 16)."</button>"; echo "</td>";
 				echo "<td>".implode("; ", $v['tab_err'])."</td>";
 				$odd_row = !$odd_row;
 			echo "</tr>";
@@ -121,5 +137,4 @@ $dis = ($_SESSION['user_working_mode'] == 1) ? "" : " disabled";
 		?>
 	</table>
 	<input type="hidden" name="use_type_s" id="use_type_s" value="">
-	<input type="hidden" name="second_catalog_s" id="second_catalog_s" value="">
 </form>

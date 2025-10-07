@@ -62,7 +62,7 @@ function TestUserDB($db_name, $db_coding, $db)
             TestDBServiceTableCheck($dbh, "table_definitions", "table_name NOT REGEXP '^[a-z][a-z0-9_]*$' AND table_name <> '' OR table_name = '' OR use_type < 1 OR use_type > ".(string)count($_SESSION['table_types'])." OR group_catalog_type > ".(string)count($_SESSION['group_types'])." OR second_catalog_name NOT REGEXP '^[a-z][a-z0-9_]*$' AND second_catalog_name <> ''", $db_pre_flags);
             if (count($db_pre_flags) > 0) $_SESSION['db_errors'][] = FTM(Title(592))." ".((count($db_pre_flags) == 1) ? Title(184) : Title(186))." <b>".implode(", ", $db_pre_flags)."</b>";
             $_SESSION['table_definitions'] = GetTableDefinitions($dbh, $db);
-            GetUserDBTableStructure($db, $_SESSION['db_errors']);
+            GetUserDBTableStructure($db);
             $t_flags = TestTables(true);
             $_SESSION['field_definitions'] = GetFieldParameters($dbh, $t_flags['mandatory']);
             if ($t_flags['empty'] || IsFieldsErrors() || $t_flags['errors'])
