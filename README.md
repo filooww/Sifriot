@@ -1,137 +1,61 @@
-# Literature Database Manager
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-A PHP-based web application for managing literature collections with hierarchical categorization, file attachments, and flexible field configurations.
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-## Overview
+## About Laravel
 
-This project is a custom content management system designed for organizing academic and literary publications with support for:
-- Multi-author publications with author grouping
-- Hierarchical theme and series categorization
-- File attachments (PDFs, documents)
-- User session management
-- Dynamic field configuration system
-- Multiple database schemas for different content types
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-## Project Structure
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-```
-HTDocs/                     # Web application root
-├── index.php              # Entry point
-├── phpMyAdmin/            # Database administration interface
-├── Images/                # Image assets
-├── Rosenbrock/            # Application module
-├── s/                     # Application module
-├── *.sql                  # Database schemas
-│
-MySQL_DB/                  # MySQL database files (excluded from git)
-├── Data/                  # Database data directory (gitignored)
-│
-Apache/                    # Apache server (excluded from git)
-MySQL/                     # MySQL binaries (excluded from git)
-PHP/                       # PHP installation (excluded from git)
-SessionPath/               # PHP session files (excluded from git)
-```
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## Database Schemas
+## Learning Laravel
 
-### 1. Literature Database (`literature.sql`)
-Main publication management system featuring:
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
 
-**Core Tables:**
-- `publication` - Publications (books, articles, magazines)
-- `files` - File attachments per publication
-- `authors` / `author_groups` - Author management with grouping support
-- `themes` / `theme_sets` - Theme categorization
-- `parts` / `part_sets` - Series and hierarchical organization
-- `publishings` - Publisher information
-- `magazines` - Magazine titles
-- `issue_types` - Publication type taxonomy
+You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
 
-**User Management:**
-- `userlist` - User accounts and preferences
-- `user_settings` - Per-user configuration
-- `collapse_ids` - UI state persistence
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-**Metadata & Configuration:**
-- `field_config` / `field_config_2` - Dynamic form field definitions
-- `table_definitions` - Table metadata and behavior
-- `db_configs` - Database-level configuration
+## Laravel Sponsors
 
-### 2. Physics/Math Contents (`phys_math_contents.sql`)
-Specialized system for hierarchical content navigation:
-- `contents` - Tree-structured content with references and Russian names
-- Supports expandable/collapsible tree views
-- File references and abbreviations
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-### 3. Trees Database (`trees.sql`)
-Generic hierarchical data management:
-- `parts` / `part_tree` - Parent-child tree relationships
-- `userlist` - Simple authentication (username/password)
-- Configurable table definitions
+### Premium Partners
 
-## Features
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
 
-### Dynamic Field Configuration
-The system includes a sophisticated field configuration engine (`field_config`, `field_config_2`) that allows:
-- Custom field types (string, integer, date, select, URL, reference)
-- Field validation and constraints
-- Search and filter modes
-- Sorting and display ordering
-- UI layout control (alignment, width percentages)
-- Case-sensitive/insensitive matching
+## Contributing
 
-### Hierarchical Organization
-Multiple levels of categorization:
-- **Series/Parts**: Nested hierarchies (e.g., Literature → 19th Century → Tolstoy)
-- **Themes**: Multi-theme tagging with theme sets
-- **Author Groups**: Support for multi-author works
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-### File Management
-- Multiple files per publication
-- File metadata (description, issue year, volume, number, page)
-- File size tracking
-- Source attribution
+## Code of Conduct
 
-## Technology Stack
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-- **Backend**: PHP 5.5.14 (legacy version)
-- **Database**: MySQL 5.6.19
-- **Web Server**: Apache
-- **Admin Tool**: phpMyAdmin 4.7.1
-- **Character Encoding**: UTF-8 with utf8_bin collation (supports Cyrillic)
+## Security Vulnerabilities
 
-## Development Notes
-
-### Repository Cleanup
-This repository previously included the entire WAMP/LAMP stack (~780MB). The `.gitignore` has been updated to exclude:
-- Server binaries (Apache, MySQL, PHP)
-- Runtime session files
-- Database data directories
-- OS and IDE-specific files
-
-Only application code and schemas are now tracked.
-
-### Database Setup
-1. Import the SQL schemas from `HTDocs/*.sql`
-2. Configure database connection settings
-3. Ensure MySQL data directory is created at `MySQL_DB/Data/`
-
-### Character Support
-- Full Unicode support (UTF-8)
-- Extensive Cyrillic (Russian) text support
-- Case-insensitive search with `*_low` fields (lowercased copies)
-
-## Legacy Considerations
-
-This is a legacy application running on:
-- PHP 5.5 (EOL 2016)
-- MySQL 5.6 (EOL 2021)
-
-For production use, consider upgrading to:
-- PHP 8.x
-- MySQL 8.x or MariaDB
-- Modern framework (Laravel, Symfony)
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
 ## License
 
-License information not specified in the repository.
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
