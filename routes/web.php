@@ -20,7 +20,7 @@ Route::get('/language/{locale}', function ($locale) {
 })->name('language.switch');
 
 // Authenticated routes
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::view('dashboard', 'dashboard')
         ->name('dashboard');
 

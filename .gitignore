@@ -24,7 +24,6 @@ Homestead.yaml
 Thumbs.db
 
 # Legacy directories
-/HTDocs_legacy/
 /SessionPath_legacy/
 /Apache/
 /MySQL/

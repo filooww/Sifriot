@@ -43,13 +43,29 @@ new class extends Component
 
             <!-- Settings Dropdown & Language Switcher -->
             <div class="hidden sm:flex sm:items-center sm:ms-6 space-x-4">
+                <!-- Dark Mode Toggle -->
+                <button
+                    @click="$store.darkMode.toggle()"
+                    class="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                    aria-label="Toggle dark mode"
+                >
+                    <!-- Sun Icon (shown in dark mode) -->
+                    <svg x-show="$store.darkMode.on" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <!-- Moon Icon (shown in light mode) -->
+                    <svg x-show="!$store.darkMode.on" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+
                 <!-- Language Switcher -->
                 <div class="flex items-center space-x-2">
-                    <a href="{{ route('language.switch', 'en') }}" 
+                    <a href="{{ route('language.switch', 'en') }}"
                        class="px-2 py-1 text-sm rounded {{ app()->getLocale() == 'en' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition">
                         EN
                     </a>
-                    <a href="{{ route('language.switch', 'ru') }}" 
+                    <a href="{{ route('language.switch', 'ru') }}"
                        class="px-2 py-1 text-sm rounded {{ app()->getLocale() == 'ru' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition">
                         RU
                     </a>
@@ -119,16 +135,39 @@ new class extends Component
             @endauth
         </div>
 
-        <!-- Language Switcher (Mobile) -->
+        <!-- Dark Mode & Language Switcher (Mobile) -->
         <div class="pt-4 pb-3 border-t border-gray-200 dark:border-gray-600">
             <div class="px-4">
+                <!-- Dark Mode Toggle -->
+                <div class="mb-4">
+                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Theme / Тема</div>
+                    <button
+                        @click="$store.darkMode.toggle()"
+                        class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                        aria-label="Toggle dark mode"
+                    >
+                        <span x-text="$store.darkMode.on ? 'Dark Mode' : 'Light Mode'"></span>
+                        <div class="flex items-center">
+                            <!-- Sun Icon -->
+                            <svg x-show="$store.darkMode.on" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            <!-- Moon Icon -->
+                            <svg x-show="!$store.darkMode.on" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                            </svg>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Language Switcher -->
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Language / Язык</div>
                 <div class="flex space-x-2">
-                    <a href="{{ route('language.switch', 'en') }}" 
+                    <a href="{{ route('language.switch', 'en') }}"
                        class="flex-1 text-center px-3 py-2 text-sm rounded {{ app()->getLocale() == 'en' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }} transition">
                         English
                     </a>
-                    <a href="{{ route('language.switch', 'ru') }}" 
+                    <a href="{{ route('language.switch', 'ru') }}"
                        class="flex-1 text-center px-3 py-2 text-sm rounded {{ app()->getLocale() == 'ru' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }} transition">
                         Русский
                     </a>

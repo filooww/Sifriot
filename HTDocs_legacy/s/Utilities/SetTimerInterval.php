@@ -1,0 +1,1 @@
+var form_timer = setInterval(curr_timer, 10000)

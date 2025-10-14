@@ -1,3 +1,100 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    /* Cozy Light Mode Palette */
+    :root {
+        /* Backgrounds */
+        --color-bg-primary: 252 248 243;        /* Warm cream */
+        --color-bg-secondary: 247 242 235;      /* Light latte */
+        --color-bg-tertiary: 255 253 250;       /* Soft white */
+        --color-bg-accent: 255 248 240;         /* Peachy cream */
+
+        /* Text colors */
+        --color-text-primary: 51 42 35;         /* Dark chocolate */
+        --color-text-secondary: 92 74 63;       /* Medium brown */
+        --color-text-tertiary: 138 118 103;     /* Light brown */
+        --color-text-accent: 191 97 56;         /* Terracotta */
+
+        /* Border colors */
+        --color-border-light: 230 218 206;      /* Soft tan */
+        --color-border-medium: 209 191 175;     /* Medium tan */
+        --color-border-dark: 179 158 140;       /* Dark tan */
+
+        /* Accent colors */
+        --color-accent-primary: 204 125 75;     /* Warm terracotta */
+        --color-accent-secondary: 226 149 99;   /* Soft amber */
+        --color-accent-hover: 179 103 57;       /* Deep terracotta */
+
+        /* Interactive elements */
+        --color-hover: 243 236 228;             /* Light hover */
+        --color-active: 237 227 215;            /* Pressed state */
+    }
+
+    /* Cozy Dark Mode Palette */
+    .dark {
+        /* Backgrounds */
+        --color-bg-primary: 28 25 23;           /* Deep espresso */
+        --color-bg-secondary: 38 34 31;         /* Dark cocoa */
+        --color-bg-tertiary: 48 43 39;          /* Warm charcoal */
+        --color-bg-accent: 58 51 45;            /* Rich brown */
+
+        /* Text colors */
+        --color-text-primary: 245 237 227;      /* Warm ivory */
+        --color-text-secondary: 217 204 188;    /* Soft beige */
+        --color-text-tertiary: 179 165 150;     /* Muted tan */
+        --color-text-accent: 242 181 133;       /* Golden amber */
+
+        /* Border colors */
+        --color-border-light: 68 61 55;         /* Subtle brown */
+        --color-border-medium: 88 78 70;        /* Medium brown */
+        --color-border-dark: 108 96 86;         /* Light brown */
+
+        /* Accent colors */
+        --color-accent-primary: 223 150 95;     /* Warm amber */
+        --color-accent-secondary: 194 125 73;   /* Deep amber */
+        --color-accent-hover: 242 168 108;      /* Bright amber */
+
+        /* Interactive elements */
+        --color-hover: 48 43 39;                /* Subtle hover */
+        --color-active: 58 51 45;               /* Pressed state */
+    }
+
+    /* Apply base colors to body */
+    body {
+        background-color: rgb(var(--color-bg-primary));
+        color: rgb(var(--color-text-primary));
+    }
+}
+
+@layer components {
+    /* Card component with cozy styling */
+    .card-cozy {
+        @apply bg-cozy-bg-secondary border border-cozy-border-light rounded-lg shadow-sm;
+    }
+
+    /* Button variations */
+    .btn-cozy-primary {
+        @apply bg-cozy-accent-primary hover:bg-cozy-accent-hover text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+    }
+
+    .btn-cozy-secondary {
+        @apply bg-cozy-bg-secondary hover:bg-cozy-hover text-cozy-text-primary border border-cozy-border-medium font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+    }
+
+    /* Link styling */
+    .link-cozy {
+        @apply text-cozy-text-accent hover:text-cozy-accent-hover underline decoration-cozy-border-medium hover:decoration-cozy-accent-hover transition-colors duration-200;
+    }
+
+    /* Input fields */
+    .input-cozy {
+        @apply bg-cozy-bg-tertiary border border-cozy-border-medium text-cozy-text-primary rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cozy-accent-primary focus:border-transparent transition-all duration-200;
+    }
+
+    /* Section dividers */
+    .divider-cozy {
+        @apply border-t border-cozy-border-light;
+    }
+}
