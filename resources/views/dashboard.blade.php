@@ -2,7 +2,7 @@
 use App\Models\Publication;
 use Illuminate\Support\Facades\DB;
 
-\$stats = [
+$stats = [
     'total' => Publication::where('_del_mark', 0)->count(),
     'deleted' => Publication::where('_del_mark', 1)->count(),
     'this_year' => Publication::where('_del_mark', 0)
@@ -52,7 +52,7 @@ use Illuminate\Support\Facades\DB;
                                         Total Publications
                                     </dt>
                                     <dd class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                                        {{ \$stats['total'] }}
+                                        {{ $stats['total'] }}
                                     </dd>
                                 </dl>
                             </div>
@@ -75,7 +75,7 @@ use Illuminate\Support\Facades\DB;
                                         Added This Year
                                     </dt>
                                     <dd class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                                        {{ \$stats['this_year'] }}
+                                        {{ $stats['this_year'] }}
                                     </dd>
                                 </dl>
                             </div>
@@ -98,7 +98,7 @@ use Illuminate\Support\Facades\DB;
                                         Deleted Items
                                     </dt>
                                     <dd class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                                        {{ \$stats['deleted'] }}
+                                        {{ $stats['deleted'] }}
                                     </dd>
                                 </dl>
                             </div>
@@ -112,20 +112,20 @@ use Illuminate\Support\Facades\DB;
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Publications by Type</h3>
                     <div class="space-y-4">
-                        @forelse(\$stats['by_type'] as \$type)
+                        @forelse($stats['by_type'] as $type)
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center flex-1">
                                     <span class="text-sm font-medium text-gray-900 dark:text-gray-100 min-w-[120px]">
-                                        {{ \$type->issue_type ?? 'Unknown' }}
+                                        {{ $type->issue_type ?? 'Unknown' }}
                                     </span>
                                     <div class="flex-1 mx-4">
                                         <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ (\$type->count / \$stats['total']) * 100 }}%"></div>
+                                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ ($type->count / $stats['total']) * 100 }}%"></div>
                                         </div>
                                     </div>
                                 </div>
                                 <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                    {{ \$type->count }}
+                                    {{ $type->count }}
                                 </span>
                             </div>
                         @empty
