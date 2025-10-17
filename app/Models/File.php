@@ -1,12 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class File extends Model
 {
+    use HasFactory, SoftDeletes;
     protected $table = 'files';
 
     // Composite primary key
@@ -25,6 +30,12 @@ class File extends Model
         'ord_num',
         'file_size',
         'file_source',
+        'mime_type',
+        'file_size_bytes',
+    ];
+
+    protected $casts = [
+        'file_size_bytes' => 'integer',
     ];
 
     // Relationship

@@ -12,9 +12,7 @@ class ThemeSetFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->words(3, true),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'theme_set' => $this->faker->words(3, true),
         ];
     }
 }

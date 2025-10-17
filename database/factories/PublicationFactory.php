@@ -30,8 +30,9 @@ class PublicationFactory extends Factory
             'id_theme_set' => null,
             'id_author_set' => null,
             '_del_mark' => 0,
-            'add_int' => $this->faker->optional()->numberBetween(1, 100),
-            'add_char' => $this->faker->optional()->word(),
+            'add_int' => $this->faker->numberBetween(1, 100),
+            'add_char' => $this->faker->word(),
+            'word_count' => $this->faker->optional()->numberBetween(100, 50000),
         ];
     }
 
