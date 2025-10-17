@@ -69,6 +69,10 @@ new class extends Component
                        class="px-2 py-1 text-sm rounded {{ app()->getLocale() == 'ru' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition">
                         RU
                     </a>
+                    <a href="{{ route('language.switch', 'he') }}"
+                       class="px-2 py-1 text-sm rounded {{ app()->getLocale() == 'he' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition">
+                        HE
+                    </a>
                 </div>
 
                 @auth
@@ -161,15 +165,19 @@ new class extends Component
                 </div>
 
                 <!-- Language Switcher -->
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Language / Язык</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Language / Язык / שפה</div>
                 <div class="flex space-x-2">
                     <a href="{{ route('language.switch', 'en') }}"
                        class="flex-1 text-center px-3 py-2 text-sm rounded {{ app()->getLocale() == 'en' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }} transition">
-                        English
+                        EN
                     </a>
                     <a href="{{ route('language.switch', 'ru') }}"
                        class="flex-1 text-center px-3 py-2 text-sm rounded {{ app()->getLocale() == 'ru' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }} transition">
-                        Русский
+                        RU
+                    </a>
+                    <a href="{{ route('language.switch', 'he') }}"
+                       class="flex-1 text-center px-3 py-2 text-sm rounded {{ app()->getLocale() == 'he' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }} transition">
+                        HE
                     </a>
                 </div>
             </div>

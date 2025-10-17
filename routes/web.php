@@ -13,8 +13,13 @@ Route::get('/publications', PublicationList::class)
 
 // Language switcher
 Route::get('/language/{locale}', function ($locale) {
-    if (in_array($locale, ['en', 'ru'])) {
+    if (in_array($locale, ['en', 'ru', 'he'])) {
         session(['locale' => $locale]);
+
+        // Update authenticated user's preference
+        if (auth()->check()) {
+            auth()->user()->update(['preferred_language' => $locale]);
+        }
     }
     return redirect()->back();
 })->name('language.switch');
