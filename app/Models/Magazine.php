@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Magazine extends Model
 {
     use HasFactory;
+
     protected $table = 'magazines';
+
     protected $primaryKey = 'id_magazine';
 
     protected $fillable = [

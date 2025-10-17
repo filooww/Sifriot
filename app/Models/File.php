@@ -12,10 +12,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class File extends Model
 {
     use HasFactory, SoftDeletes;
+
     protected $table = 'files';
 
     // Composite primary key
     protected $primaryKey = ['id_publication', 'file_name'];
+
     public $incrementing = false;
 
     protected $fillable = [

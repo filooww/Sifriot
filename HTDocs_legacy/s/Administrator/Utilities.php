@@ -1,97 +1,113 @@
 <?php
 function SwitchWorkingMode($dbh_sys, $db_id, $work_mode_setted, &$sw_break)
 {
-	if ($_POST['w_mode_s'] == "") $sw_break = false;
-	else
-	{
-		$_SESSION['admin_mes'] = SetWorkingMode($dbh_sys, $db_id, $work_mode_setted, true);
-		if ($_SESSION['admin_mes'][0] == 0) $_SESSION['user_working_mode'] = (integer)$_POST['user_working_mode'];
-		elseif ($_SESSION['admin_mes'][0] != 1 && ($_SESSION['admin_mes'][0] <= 1 || $_SESSION['priority'] < 99)) ExitSession($_SESSION['admin_mes'][1]."|FF0000");
-	}
+    if ($_POST['w_mode_s'] == '') {
+        $sw_break = false;
+    } else {
+        $_SESSION['admin_mes'] = SetWorkingMode($dbh_sys, $db_id, $work_mode_setted, true);
+        if ($_SESSION['admin_mes'][0] == 0) {
+            $_SESSION['user_working_mode'] = (int) $_POST['user_working_mode'];
+        } elseif ($_SESSION['admin_mes'][0] != 1 && ($_SESSION['admin_mes'][0] <= 1 || $_SESSION['priority'] < 99)) {
+            ExitSession($_SESSION['admin_mes'][1].'|FF0000');
+        }
+    }
 }
 function ListCopy($source_list)
 {
-	$arr = array();
-	foreach ($source_list as $k => $v) $arr[$k] = $v;
-	return $arr;
+    $arr = [];
+    foreach ($source_list as $k => $v) {
+        $arr[$k] = $v;
+    }
+
+    return $arr;
 }
 function GoToTitles($dbh_sys)
 {
     $_SESSION['title_langs_all'] = SetLanguageList(0);
     $_SESSION['title_langs'] = array_slice($_SESSION['title_langs_all'], 1, null, true);
-	$_SESSION['selected_title_lang'] = array(0, "--".Title(441)."--");
-	$_SESSION['start'] = 0;
-	$_SESSION['title_filter_id'] = "";
-	$_SESSION['title_filter_text'] = "";
-	$_SESSION['title_filter'] = "";
-	$_SESSION['title_count'] = TitleCounts($dbh_sys);
-	$_SESSION['title_insert'] = 0;
-	$_SESSION['title_modes_all'] = array(Title(435), Title(437), Title(438), Title(442), FTM(Title(592)));
-	$_SESSION['view_title_mode'] = array(0, Title(435));
-	$_SESSION['title_param'] = GetTitlePortion($dbh_sys);
-	TestTitles($dbh_sys);
+    $_SESSION['selected_title_lang'] = [0, '--'.Title(441).'--'];
+    $_SESSION['start'] = 0;
+    $_SESSION['title_filter_id'] = '';
+    $_SESSION['title_filter_text'] = '';
+    $_SESSION['title_filter'] = '';
+    $_SESSION['title_count'] = TitleCounts($dbh_sys);
+    $_SESSION['title_insert'] = 0;
+    $_SESSION['title_modes_all'] = [Title(435), Title(437), Title(438), Title(442), FTM(Title(592))];
+    $_SESSION['view_title_mode'] = [0, Title(435)];
+    $_SESSION['title_param'] = GetTitlePortion($dbh_sys);
+    TestTitles($dbh_sys);
 }
 function SysImage($img_name, $w, $h, $block = false)
 {
-	$after_img = ($block) ? "Block" : "";
-	return "<img src='".$_SESSION['image_dir']."/".$img_name.$after_img.".bmp' width='".(string)$w."' height='".(string)$h."'>";
+    $after_img = ($block) ? 'Block' : '';
+
+    return "<img src='".$_SESSION['image_dir'].'/'.$img_name.$after_img.".bmp' width='".(string) $w."' height='".(string) $h."'>";
 }
-function DBMDelQuestion($m_class, $buttons_arr, $arr_del, $q_num, $u_num = 0, $v_num = 0, $add_txt = "")
+function DBMDelQuestion($m_class, $buttons_arr, $arr_del, $q_num, $u_num = 0, $v_num = 0, $add_txt = '')
 {
-	$tn = (count($arr_del) < 2) ? $u_num : $v_num;
-	$arr_quest[] = Title($q_num).(($u_num == 0) ? "" : " ".FTM(Title($tn)))."?";
-    if (count($arr_del) > 0) $arr_quest[] = "<font size='+2'>".implode(", ", $arr_del)."</font>";
-    if ($add_txt != "") $arr_quest[] = $add_txt;
-	QuestionForm($m_class, $arr_quest, $buttons_arr, array(Title(209), Title(210)));
+    $tn = (count($arr_del) < 2) ? $u_num : $v_num;
+    $arr_quest[] = Title($q_num).(($u_num == 0) ? '' : ' '.FTM(Title($tn))).'?';
+    if (count($arr_del) > 0) {
+        $arr_quest[] = "<font size='+2'>".implode(', ', $arr_del).'</font>';
+    }
+    if ($add_txt != '') {
+        $arr_quest[] = $add_txt;
+    }
+    QuestionForm($m_class, $arr_quest, $buttons_arr, [Title(209), Title(210)]);
 }
 function SetUserCategories(&$arr_options, $title_ns)
 {
-	$arr = array_keys($arr_options);
-	for ($i = 0; $i < count($arr); $i++) $arr_options[$arr[$i]][0] = ($title_ns[$i] < 0) ? FTM(Title(-$title_ns[$i])) : Title($title_ns[$i]);
+    $arr = array_keys($arr_options);
+    for ($i = 0; $i < count($arr); $i++) {
+        $arr_options[$arr[$i]][0] = ($title_ns[$i] < 0) ? FTM(Title(-$title_ns[$i])) : Title($title_ns[$i]);
+    }
 }
 function SavePostSelect(&$arr_options, $post_select, $title_nums)
 {
-	$k = GetIDArraySelect($arr_options, $post_select, 0);
-	SetUserCategories($arr_options, $title_nums);
-	return array($k, $arr_options[$k][0]);
+    $k = GetIDArraySelect($arr_options, $post_select, 0);
+    SetUserCategories($arr_options, $title_nums);
+
+    return [$k, $arr_options[$k][0]];
 }
 function DoubledMessages($tn, $arr_double, $arr_double_out, $tn_out, &$Mes)
 {
-	$Mes[] = "<font color='#FF0000'><b>".Title($tn)."</b></font>:";
-	foreach ($arr_double as $k => $v)
-	{
-		$Mes[] = " -- <b>".$k."</b> (".((count($v) == 1) ? Title(419) : Title(222))." <b>".implode(", ", $v)."</b>)";
-		if (isset($arr_double_out[$k]) && count($arr_double_out[$k]) > 0) $Mes[count($Mes) - 1] .= " -- ".((count($arr_double_out[$k]) == 1) ? Title(419) : Title(222))." <b>".implode(", ", $arr_double_out[$k])."</b> ".Title($tn_out);
-	}
+    $Mes[] = "<font color='#FF0000'><b>".Title($tn).'</b></font>:';
+    foreach ($arr_double as $k => $v) {
+        $Mes[] = ' -- <b>'.$k.'</b> ('.((count($v) == 1) ? Title(419) : Title(222)).' <b>'.implode(', ', $v).'</b>)';
+        if (isset($arr_double_out[$k]) && count($arr_double_out[$k]) > 0) {
+            $Mes[count($Mes) - 1] .= ' -- '.((count($arr_double_out[$k]) == 1) ? Title(419) : Title(222)).' <b>'.implode(', ', $arr_double_out[$k]).'</b> '.Title($tn_out);
+        }
+    }
 }
 function ListNewStartPosition($act, $list_size)
 {
-	switch ($act)
-	{
-		case "beg" : return 0;
-		case "pgup": return max($_SESSION['start'] - $_SESSION['portion'] + 1, 0);
-		case "lnup": return max($_SESSION['start'] - 1, 0);
-		case "lndn": return min($_SESSION['start'] + 1, $list_size - 1);
-		case "pgdn": return min($_SESSION['start'] + $_SESSION['portion'] - 1, $list_size - 1);
-		case "end" : return $list_size - 1;
-		default    : return $_SESSION['start'];
-	}
+    switch ($act) {
+        case 'beg': return 0;
+        case 'pgup': return max($_SESSION['start'] - $_SESSION['portion'] + 1, 0);
+        case 'lnup': return max($_SESSION['start'] - 1, 0);
+        case 'lndn': return min($_SESSION['start'] + 1, $list_size - 1);
+        case 'pgdn': return min($_SESSION['start'] + $_SESSION['portion'] - 1, $list_size - 1);
+        case 'end': return $list_size - 1;
+        default: return $_SESSION['start'];
+    }
 }
 function DBConfiguration($dbh_sys)
 {
-	$Mes = array();
-	$_SESSION['site'] = array("return"=>"../Administrator/DataBaseActions.php", "db"=>"db_configs", "title"=>207, "common_mode"=>false);
+    $Mes = [];
+    $_SESSION['site'] = ['return' => '../Administrator/DataBaseActions.php', 'db' => 'db_configs', 'title' => 207, 'common_mode' => false];
     $dbh = GetDB($_SESSION['db_info']['name'], $Mes, $_SESSION['db_info']['coding']);
-    if (!$dbh) ExitSession(Title(1)." <b>".$_SESSION['db_info']['name']."</b>`".implode("`", $Mes)."|FF0000", $_SESSION['db_info']['id']);
-	$_SESSION['config_list'] = GetAllConfigs($dbh, "db_configs");
+    if (! $dbh) {
+        ExitSession(Title(1).' <b>'.$_SESSION['db_info']['name'].'</b>`'.implode('`', $Mes).'|FF0000', $_SESSION['db_info']['id']);
+    }
+    $_SESSION['config_list'] = GetAllConfigs($dbh, 'db_configs');
 }
 function DataBaseActionExit($dbh)
 {
-	VisitParameters($dbh, $_SESSION['db_info']['id'], -1, $_SESSION['priority']);
-	VisitParameters($dbh, 0, $_SESSION['user_working_mode'], $_SESSION['priority']);
+    VisitParameters($dbh, $_SESSION['db_info']['id'], -1, $_SESSION['priority']);
+    VisitParameters($dbh, 0, $_SESSION['user_working_mode'], $_SESSION['priority']);
 }
-//function GoToAdminDB($dbh, &$Mes)
-//{
+// function GoToAdminDB($dbh, &$Mes)
+// {
 //    $_SESSION['table_definitions'] = GetTableDefinitions($dbh, $Mes);
 //    $t_flags = DBTesting($dbh);
 //    if ($t_flags['empty'] || IsTablesErrors() || count($t_flags['errors']) + count($_SESSION['field_definitions']) + count($_SESSION['db_pre_flags']['table_errors']) + count($_SESSION['no_table']['no_definition']) + count($_SESSION['no_table']['no_DB']) + count($_SESSION['db_pre_flags']['table_errors']) > 0)
@@ -100,104 +116,147 @@ function DataBaseActionExit($dbh)
 //        MessageOnMandatoryDBTables($t_flags['mandatory'], $Mes); //!!!!!!!!!!!!
 //    }
 //    $_SESSION['db_info'] = DBInfoSelect($work_db);
-//}
+// }
 
 function GoToDB($dbh_sys, $db)
 {
     TestUserDB($_SESSION['arr_db'][$db]['db_name'], $_SESSION['arr_db'][$db]['db_coding'], $db);
-    if (count($_SESSION['structure_errors']) > 0)
-    {
-        if ($_SESSION['priority'] < 99) ExitSession(Title(632)."|FF0000`[".$_SESSION['arr_db'][$db]['db_name']."]|0000FF`".Title(613), $db);
-        return "../Alarm/ErrorsOfStructure";
+    if (count($_SESSION['structure_errors']) > 0) {
+        if ($_SESSION['priority'] < 99) {
+            ExitSession(Title(632).'|FF0000`['.$_SESSION['arr_db'][$db]['db_name'].']|0000FF`'.Title(613), $db);
+        }
+
+        return '../Alarm/ErrorsOfStructure';
     }
-    if (count($_SESSION['db_errors']) > 0)
-    {
-        if ($_SESSION['priority'] < 11) ExitSession(Title(632)."|FF0000`[".$_SESSION['arr_db'][$db]['db_name']."]|0000FF`".Title(613), $db);
-        return ReturnDBScript($dbh_sys, $db, "../Administrator/DataBaseActions");
+    if (count($_SESSION['db_errors']) > 0) {
+        if ($_SESSION['priority'] < 11) {
+            ExitSession(Title(632).'|FF0000`['.$_SESSION['arr_db'][$db]['db_name'].']|0000FF`'.Title(613), $db);
+        }
+
+        return ReturnDBScript($dbh_sys, $db, '../Administrator/DataBaseActions');
     }
-    if ($_SESSION['priority'] < 11) return ReturnDBScript($dbh_sys, $db, "../MainTable/List");
-    return ReturnDBScript($dbh_sys, $db, "../Administrator/DataBaseActions");
+    if ($_SESSION['priority'] < 11) {
+        return ReturnDBScript($dbh_sys, $db, '../MainTable/List');
+    }
+
+    return ReturnDBScript($dbh_sys, $db, '../Administrator/DataBaseActions');
 }
 function ReturnDBScript($dbh_sys, $db, $ret_adr)
 {
-//    $_SESSION['db_errors'] = DBErrors();
+    //    $_SESSION['db_errors'] = DBErrors();
     $_SESSION['db_info'] = DBInfoSelect($db);
     VisitParameters($dbh_sys, $db, $_SESSION['user_working_mode'], $_SESSION['priority']);
+
     return $ret_adr;
 }
 
 function GoToPrefferedDB($dbh_sys, $db_id, &$Mes)
 {
-    $goto = GoToDB($dbh_sys, (integer)$db_id, $Mes);
-    if ($count($Mes) == 0) SetPrefferedDB($dbh_sys, $db_id);
+    $goto = GoToDB($dbh_sys, (int) $db_id, $Mes);
+    if ($count($Mes) == 0) {
+        SetPrefferedDB($dbh_sys, $db_id);
+    }
+
     return $goto;
 }
 function DBSelectExit()
 {
-	if (isset($_SESSION['db_info'])) ExitSession("", $_SESSION['db_info']['id']);
-	else ExitSession();
+    if (isset($_SESSION['db_info'])) {
+        ExitSession('', $_SESSION['db_info']['id']);
+    } else {
+        ExitSession();
+    }
 }
 function GoToFields()
 {
-    if (isset($_SESSION['return_mes']) && count($_SESSION['return_mes']) > 0) return "../Administrator/DataBaseActions.php";
-	$_SESSION['field_change'] = false;
-	$_SESSION['field_sort'] = SortFieldDefinitions("table_field");
-    $_SESSION['f_k'] = array(0, "");
+    if (isset($_SESSION['return_mes']) && count($_SESSION['return_mes']) > 0) {
+        return '../Administrator/DataBaseActions.php';
+    }
+    $_SESSION['field_change'] = false;
+    $_SESSION['field_sort'] = SortFieldDefinitions('table_field');
+    $_SESSION['f_k'] = [0, ''];
     $t_flags = TestTables($_SESSION['user_working_mode'] == 0);
     $_SESSION['mandatory_db_tables'] = SetMandatoryDBTables($t_flags['mandatory']);
     $_SESSION['reference_catalogs'] = GetRefCatalogs();
-	return "../Fields/FieldForm.php";
+
+    return '../Fields/FieldForm.php';
 }
 function SetPrefferedDB($dbh_sys, $db_id)
 {
-    mysqli_query($dbh_sys, "UPDATE user_ident SET preffered_db = ".(string)$db_id." WHERE id_user = ".$_SESSION['user_id']);
+    mysqli_query($dbh_sys, 'UPDATE user_ident SET preffered_db = '.(string) $db_id.' WHERE id_user = '.$_SESSION['user_id']);
     $_SESSION['db_info'] = DBInfoSelect($db_id);
 }
 function ChangeCategory($k, $old_priority, $new_priority, $old_err, $new_err)
 {
-	$old_category = GetUserCategoryByPriority($old_priority);
-	if (isset($_POST["user_priority|".$k])) $new_category = GetUserCategoryByPriority($_POST["user_priority|".$k]);
-	else $new_category = $old_category;
-	if ($old_category != $new_category)
-	{
-		$_SESSION['categories'][$old_category][3]--;
-		$_SESSION['categories'][$new_category][3]++;
-	    if ($old_err) $_SESSION['categories'][$old_category][4]--;
-	    if ($new_err) $_SESSION['categories'][$new_category][4]++;
-	}
-	else
-	{
-	    if ($old_err && !$new_err) $_SESSION['categories'][$old_category][4]--;
-	    elseif (!$old_err && $new_err) $_SESSION['categories'][$old_category][4]++;
-	}
-	$_SESSION['categories']['all'][4] = SumErrors();
+    $old_category = GetUserCategoryByPriority($old_priority);
+    if (isset($_POST['user_priority|'.$k])) {
+        $new_category = GetUserCategoryByPriority($_POST['user_priority|'.$k]);
+    } else {
+        $new_category = $old_category;
+    }
+    if ($old_category != $new_category) {
+        $_SESSION['categories'][$old_category][3]--;
+        $_SESSION['categories'][$new_category][3]++;
+        if ($old_err) {
+            $_SESSION['categories'][$old_category][4]--;
+        }
+        if ($new_err) {
+            $_SESSION['categories'][$new_category][4]++;
+        }
+    } else {
+        if ($old_err && ! $new_err) {
+            $_SESSION['categories'][$old_category][4]--;
+        } elseif (! $old_err && $new_err) {
+            $_SESSION['categories'][$old_category][4]++;
+        }
+    }
+    $_SESSION['categories']['all'][4] = SumErrors();
 }
 function SumErrors()
 {
     $s = 0;
-    foreach ($_SESSION['categories'] as $k => $v) if ($k != "all") $s += $_SESSION['categories'][$k][4];
+    foreach ($_SESSION['categories'] as $k => $v) {
+        if ($k != 'all') {
+            $s += $_SESSION['categories'][$k][4];
+        }
+    }
+
     return $s;
 }
 function GetUserCategoryByName($category_name)
 {
-	foreach ($_SESSION['categories'] as $k => $v) if ($v[0] == $category_name) return $k;
-	return "invalid";
+    foreach ($_SESSION['categories'] as $k => $v) {
+        if ($v[0] == $category_name) {
+            return $k;
+        }
+    }
+
+    return 'invalid';
 }
 function GetUserCategoryByPriority($user_priority)
 {
-	if (!is_numeric($user_priority)) return "invalid";
-	if ($user_priority < 0 || $user_priority > 99) return "invalid";
-	foreach ($_SESSION['categories'] as $k => $v) if ($k != "all" && $user_priority >= $v[1] && $user_priority <= $v[2]) return $k;
-	return "invalid";
+    if (! is_numeric($user_priority)) {
+        return 'invalid';
+    }
+    if ($user_priority < 0 || $user_priority > 99) {
+        return 'invalid';
+    }
+    foreach ($_SESSION['categories'] as $k => $v) {
+        if ($k != 'all' && $user_priority >= $v[1] && $user_priority <= $v[2]) {
+            return $k;
+        }
+    }
+
+    return 'invalid';
 }
 /*
 function TestUserDB($db_name, $db_coding, $db, &$db_err)
 {
     $db_mes = array();
-	$dbh = GetDB($db_name, $db_mes, $db_coding);
-	if (!$dbh) ExitSession(Title(1)." <b>".$db_name."</b>`".implode("`", $db_mes)."|FF0000", $db);
+    $dbh = GetDB($db_name, $db_mes, $db_coding);
+    if (!$dbh) ExitSession(Title(1)." <b>".$db_name."</b>`".implode("`", $db_mes)."|FF0000", $db);
     $_SESSION['preliminary_flags'] = array("table_errors"=>array(), "no_existed_tables"=>array());
-	$dbh = TestDataBaseTablesExist($dbh, $db);
+    $dbh = TestDataBaseTablesExist($dbh, $db);
     $_SESSION['all_field_list'] = GetAllFieldList($dbh, $db_err, $db);
     $_SESSION['structure_errors'] = TestUserTableStructure($dbh, UserDataBaseStructureDefinition());
     if (count($_SESSION['structure_errors']) > 0)

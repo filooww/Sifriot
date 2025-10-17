@@ -3,10 +3,11 @@
 namespace App\Livewire\Publications;
 
 use App\Models\Publication;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Url;
-use Livewire\Attributes\Layout;
 
 #[Layout('layouts.app')]
 class PublicationList extends Component
@@ -21,6 +22,8 @@ class PublicationList extends Component
 
     public $perPage = 15;
 
+    public $isGuest = true;
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -28,7 +31,7 @@ class PublicationList extends Component
 
     public function toggleDeleted()
     {
-        $this->showDeleted = !$this->showDeleted;
+        $this->showDeleted = ! $this->showDeleted;
         $this->resetPage();
     }
 
@@ -36,36 +39,55 @@ class PublicationList extends Component
     {
         $publication = Publication::find($id);
         if ($publication) {
-            $publication->_del_mark = 1;
-            $publication->save();
+            $publication->delete(); // Soft delete
         }
     }
 
     public function restorePublication($id)
     {
-        $publication = Publication::find($id);
+        $publication = Publication::withTrashed()->find($id);
         if ($publication) {
-            $publication->_del_mark = 0;
-            $publication->save();
+            $publication->restore(); // Restore soft-deleted
         }
+    }
+
+    public function mount(): void
+    {
+        $this->isGuest = ! Auth::check();
     }
 
     public function render()
     {
-        $publications = Publication::query()
+        // For guests, only show active publications
+        $query = Publication::query()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
-                    $q->where('title', 'like', '%' . $this->search . '%')
-                      ->orWhere('title_low', 'like', '%' . mb_strtolower($this->search) . '%');
+                    $q->where('title', 'like', '%'.$this->search.'%')
+                        ->orWhere('title_low', 'like', '%'.mb_strtolower($this->search).'%');
                 });
-            })
-            ->when($this->showDeleted, function ($query) {
-                $query->where('_del_mark', 1);
-            }, function ($query) {
-                $query->where('_del_mark', 0);
-            })
-            ->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part'])
-            ->orderBy('upload_date', 'desc')
+            });
+
+        // Only authenticated users can see deleted items
+        if ($this->isGuest) {
+            // Guests only see non-deleted publications
+            $query->whereNull('deleted_at');
+        } else {
+            // Authenticated users can toggle deleted view
+            if ($this->showDeleted) {
+                $query->onlyTrashed(); // Only show soft-deleted
+            }
+            // If not showing deleted, default query shows only non-deleted
+        }
+
+        // For guests, eager load only basic relationships
+        // For authenticated users, load all relationships including files
+        if ($this->isGuest) {
+            $query->with(['publishing', 'authorGroup', 'issueType']);
+        } else {
+            $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files']);
+        }
+
+        $publications = $query->orderBy('upload_date', 'desc')
             ->paginate($this->perPage);
 
         return view('livewire.publications.publication-list', [

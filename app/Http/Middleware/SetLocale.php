@@ -25,7 +25,7 @@ class SetLocale
         }
 
         // Validate locale
-        if (!in_array($locale, ['en', 'ru', 'he'])) {
+        if (! in_array($locale, ['en', 'ru', 'he'])) {
             $locale = config('app.locale');
         }
 

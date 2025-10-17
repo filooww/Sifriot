@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class PartSet extends Model
 {
     protected $table = 'part_sets';
+
     protected $primaryKey = 'id_part_set';
 
     protected $fillable = [

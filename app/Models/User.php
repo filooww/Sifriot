@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'preferred_language',
+        'role',
     ];
 
     /**
@@ -44,6 +45,31 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => 'string',
         ];
+    }
+
+    /**
+     * Check if the user has admin role.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if the user has user role.
+     */
+    public function isUser(): bool
+    {
+        return $this->role === 'user';
+    }
+
+    /**
+     * Check if the user has guest role.
+     */
+    public function isGuest(): bool
+    {
+        return $this->role === 'guest';
     }
 }

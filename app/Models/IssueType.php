@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class IssueType extends Model
 {
     use HasFactory;
+
     protected $table = 'issue_types';
+
     protected $primaryKey = 'id_issue_type';
 
     protected $fillable = [

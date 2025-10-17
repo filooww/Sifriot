@@ -35,8 +35,13 @@ new class extends Component
                     </x-nav-link>
                     @auth
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
+                        {{ __('My Profile') }}
                     </x-nav-link>
+                    @if(auth()->user()->isAdmin())
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('admin.*')" wire:navigate>
+                        {{ __('Admin Dashboard') }}
+                    </x-nav-link>
+                    @endif
                     @endauth
                 </div>
             </div>
@@ -134,8 +139,13 @@ new class extends Component
             </x-responsive-nav-link>
             @auth
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                {{ __('Dashboard') }}
+                {{ __('My Profile') }}
             </x-responsive-nav-link>
+            @if(auth()->user()->isAdmin())
+            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('admin.*')" wire:navigate>
+                {{ __('Admin Dashboard') }}
+            </x-responsive-nav-link>
+            @endif
             @endauth
         </div>
 

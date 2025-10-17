@@ -47,7 +47,7 @@ class LanguageSwitchingTest extends TestCase
         $user = User::factory()->create(['preferred_language' => 'en']);
 
         $this->actingAs($user)
-             ->get('/language/ru');
+            ->get('/language/ru');
 
         $this->assertEquals('ru', $user->fresh()->preferred_language);
         $this->assertEquals('ru', session('locale'));
@@ -58,7 +58,7 @@ class LanguageSwitchingTest extends TestCase
         $user = User::factory()->create(['preferred_language' => 'he']);
 
         $this->actingAs($user)
-             ->get('/dashboard');
+            ->get('/dashboard');
 
         $this->assertEquals('he', app()->getLocale());
     }
@@ -71,7 +71,7 @@ class LanguageSwitchingTest extends TestCase
         session(['locale' => 'en']);
 
         $this->actingAs($user)
-             ->get('/dashboard');
+            ->get('/dashboard');
 
         // User preference should override session
         $this->assertEquals('ru', app()->getLocale());

@@ -15,7 +15,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Publication extends Model
 {
     use HasFactory, SoftDeletes;
+
     protected $table = 'publications';
+
     protected $primaryKey = 'id_publication';
 
     protected $fillable = [
@@ -121,5 +123,4 @@ class Publication extends Model
             get: fn () => $this->files()->sum('file_size_bytes') ?? 0
         );
     }
-
 }

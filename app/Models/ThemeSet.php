@@ -13,6 +13,7 @@ class ThemeSet extends Model
     use HasFactory;
 
     protected $table = 'theme_sets';
+
     protected $primaryKey = 'id_theme_set';
 
     protected $fillable = [

@@ -13,6 +13,7 @@ class Publishing extends Model
     use HasFactory;
 
     protected $table = 'publishings';
+
     protected $primaryKey = 'id_publishing';
 
     protected $fillable = [

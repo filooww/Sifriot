@@ -19,7 +19,7 @@ class PublicationFactory extends Factory
     {
         return [
             'title' => $this->faker->sentence(6),
-            'title_low' => fn(array $attributes) => mb_strtolower($attributes['title']),
+            'title_low' => fn (array $attributes) => mb_strtolower($attributes['title']),
             'id_publishing' => null, // Can be overridden
             'id_part' => null,
             'issue_year' => $this->faker->year(),
@@ -34,7 +34,6 @@ class PublicationFactory extends Factory
             'word_count' => $this->faker->optional()->numberBetween(100, 50000),
         ];
     }
-
 
     /**
      * Create publication with relationships.

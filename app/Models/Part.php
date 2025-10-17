@@ -13,6 +13,7 @@ class Part extends Model
     use HasFactory;
 
     protected $table = 'parts';
+
     protected $primaryKey = 'id_part';
 
     protected $fillable = [

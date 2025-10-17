@@ -16,7 +16,7 @@ class FileFactory extends Factory
      */
     public function definition(): array
     {
-        $fileName = $this->faker->word() . '.' . $this->faker->randomElement(['pdf', 'doc', 'docx', 'txt']);
+        $fileName = $this->faker->word().'.'.$this->faker->randomElement(['pdf', 'doc', 'docx', 'txt']);
         $mimeTypes = [
             'pdf' => 'application/pdf',
             'doc' => 'application/msword',

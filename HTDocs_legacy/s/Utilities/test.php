@@ -5,11 +5,13 @@
 </head>
 
 <?php
-require_once("DataBases.php");
-require_once("UserList.php");
+require_once 'DataBases.php';
+require_once 'UserList.php';
 
 session_start();
-if (isset($_POST['user_exit'])) header("Location: exit.php");
+if (isset($_POST['user_exit'])) {
+    header('Location: exit.php');
+}
 ?>
 <form action="test.php" method="post">
 	<table align="center">

@@ -13,6 +13,7 @@ class AuthorGroup extends Model
     use HasFactory;
 
     protected $table = 'author_groups';
+
     protected $primaryKey = 'id_author_group';
 
     protected $fillable = [

@@ -4,7 +4,6 @@ namespace Tests\Feature\Publications;
 
 use App\Livewire\Publications\PublicationList;
 use App\Models\Publication;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;

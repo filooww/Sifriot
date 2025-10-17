@@ -1,5 +1,5 @@
 <?php
-require_once($_SERVER['DOCUMENT_ROOT']."/s/Utilities/Common.php");
+require_once $_SERVER['DOCUMENT_ROOT'].'/s/Utilities/Common.php';
 session_start();
 ?>
 <html>
@@ -13,13 +13,13 @@ session_start();
 	</head>
 	<body>
 		<p class="row_invisible" align="center">S</p>
-		<form action="<?php echo $_SESSION['file_upload_return'];?>" method="post" enctype="multipart/form-data">
+		<form action="<?php echo $_SESSION['file_upload_return']; ?>" method="post" enctype="multipart/form-data">
 			<p align="center"><b>Loading the files to the server</b></p>
 			<hr noshade="noshade" color="#000000" >
 			<table>
 				<tr>
 					<td>Select files for uploading</td>
-					<td><input size="<?php echo $_SESSION['conf']['w_01'];?>" type="file" <?php echo InputFileDet($_SESSION['mult'], "filename");?> ></td>
+					<td><input size="<?php echo $_SESSION['conf']['w_01']; ?>" type="file" <?php echo InputFileDet($_SESSION['mult'], 'filename'); ?> ></td>
 				</tr>
 			</table>
 			<p class="row_invisible" align="center">S</p>

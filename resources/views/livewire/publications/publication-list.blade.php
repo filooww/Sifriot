@@ -13,22 +13,32 @@
                     <input
                         type="text"
                         wire:model.live.debounce.300ms="search"
-                        placeholder="Search by title..."
+                        placeholder="{{ __('Search by title...') }}"
                         class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                 </div>
-                <button
-                    wire:click="toggleDeleted"
-                    class="px-4 py-2 {{ $showDeleted ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700' }} text-white rounded-lg transition"
-                >
-                    {{ $showDeleted ? 'Show Active' : 'Show Deleted' }}
-                </button>
-                <a
-                    href="#"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-center"
-                >
-                    + Add New
-                </a>
+                @auth
+                    <button
+                        wire:click="toggleDeleted"
+                        class="px-4 py-2 {{ $showDeleted ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700' }} text-white rounded-lg transition"
+                    >
+                        {{ $showDeleted ? __('Show Active') : __('Show Deleted') }}
+                    </button>
+                    <a
+                        href="#"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-center"
+                    >
+                        {{ __('+ Add New') }}
+                    </a>
+                @endauth
+                @guest
+                    <a
+                        href="{{ route('register') }}"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-center"
+                    >
+                        {{ __('Register to access full content') }}
+                    </a>
+                @endguest
             </div>
 
             @if($search)
@@ -55,7 +65,7 @@
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             @forelse($publications as $publication)
-                                <tr class="{{ $publication->_del_mark ? 'bg-red-50 dark:bg-red-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700' }} transition-colors">
+                                <tr class="{{ $publication->trashed() ? 'bg-red-50 dark:bg-red-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700' }} transition-colors">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                                         {{ $publication->id_publication }}
                                     </td>
@@ -81,24 +91,26 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div class="flex gap-2">
-                                            <a href="#" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">View</a>
-                                            <a href="#" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">Edit</a>
-                                            @if($publication->_del_mark)
-                                                <button
-                                                    wire:click="restorePublication({{ $publication->id_publication }})"
-                                                    class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                                >
-                                                    Restore
-                                                </button>
-                                            @else
-                                                <button
-                                                    wire:click="deletePublication({{ $publication->id_publication }})"
-                                                    wire:confirm="Are you sure you want to delete this publication?"
-                                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                                >
-                                                    Delete
-                                                </button>
-                                            @endif
+                                            <a href="{{ route('publications.show', $publication->id_publication) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">{{ __('View') }}</a>
+                                            @auth
+                                                <a href="#" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">{{ __('Edit') }}</a>
+                                                @if($publication->trashed())
+                                                    <button
+                                                        wire:click="restorePublication({{ $publication->id_publication }})"
+                                                        class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                                    >
+                                                        {{ __('Restore') }}
+                                                    </button>
+                                                @else
+                                                    <button
+                                                        wire:click="deletePublication({{ $publication->id_publication }})"
+                                                        wire:confirm="{{ __('Are you sure you want to delete this publication?') }}"
+                                                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                    >
+                                                        {{ __('Delete') }}
+                                                    </button>
+                                                @endif
+                                            @endauth
                                         </div>
                                     </td>
                                 </tr>

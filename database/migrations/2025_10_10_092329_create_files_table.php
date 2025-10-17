@@ -34,9 +34,9 @@ return new class extends Migration
 
             // Foreign key to publications
             $table->foreign('id_publication')
-                  ->references('id_publication')
-                  ->on('publications')
-                  ->onDelete('cascade');
+                ->references('id_publication')
+                ->on('publications')
+                ->onDelete('cascade');
         });
     }
 

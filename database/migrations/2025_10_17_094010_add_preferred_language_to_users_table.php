@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->enum('preferred_language', ['en', 'ru', 'he'])
-                  ->default('en')
-                  ->after('email');
+                ->default('en')
+                ->after('email');
             $table->index('preferred_language');
         });
     }

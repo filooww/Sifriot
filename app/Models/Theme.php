@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Theme extends Model
 {
     use HasFactory;
+
     protected $table = 'themes';
+
     protected $primaryKey = 'id_theme';
 
     protected $fillable = [

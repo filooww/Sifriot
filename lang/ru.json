@@ -40,5 +40,21 @@
     "Add New Publication": "Добавить публикацию",
     "Create a new entry in your database": "Создать новую запись в базе данных",
     "You're logged in!": "Вы вошли в систему!",
-    "Literature Database": "База данных литературы"
+    "Literature Database": "База данных литературы",
+    "Register to access full content": "Зарегистрируйтесь для полного доступа",
+    "+ Add New": "+ Добавить",
+    "Create Account": "Создать аккаунт",
+    "Login to view details": "Войдите для просмотра деталей",
+    "Login to download": "Войдите для скачивания",
+    "This content is available to registered users only": "Этот контент доступен только зарегистрированным пользователям",
+    "Browse Publications": "Обзор публикаций",
+    "My Profile": "Мой профиль",
+    "Admin Dashboard": "Админ-панель",
+    "Download": "Скачать",
+    "Publication Details": "Детали публикации",
+    "Back to Publications": "Назад к публикациям",
+    "Description": "Описание",
+    "Available Files": "Доступные файлы",
+    "Themes": "Темы",
+    "Magazine": "Журнал"
 }
