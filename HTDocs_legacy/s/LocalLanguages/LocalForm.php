@@ -157,12 +157,12 @@ $dis_delete = ($_SESSION['local_delete'] ? ' disabled' : '');
 		<tr>
 			<td><button name="local_exit" type="submit" title="<?php echo Title(273); ?>" class="exit_button"<?php echo $dis_delete; ?>><?php echo Title(8); ?></button></td>
 			<?php
-            if ($_SESSION['user_working_mode'] == 1) {
-                echo "<td><button name='local_save' type='submit'".$dis_delete." title='".Title(274)."' class='save_button'>".Title(30).'</button></td>';
-                if (PermitInvRef('translate_table', ['cd', 'li'])) {
-                    echo "<td><button name='local_references' type='submit'".$dis_delete." value='*' class='i_r'>".Title(541).'</button></td>';
-                }
-            }
+	        if ($_SESSION['user_working_mode'] == 1) {
+	            echo "<td><button name='local_save' type='submit'".$dis_delete." title='".Title(274)."' class='save_button'>".Title(30).'</button></td>';
+	            if (PermitInvRef('translate_table', ['cd', 'li'])) {
+	                echo "<td><button name='local_references' type='submit'".$dis_delete." value='*' class='i_r'>".Title(541).'</button></td>';
+	            }
+	        }
 echo "<td><font class='cell_invisible'>X</font></td>";
 echo '<td>'.Title(275)."<font class='cell_invisible'>X</font>";
 SelectTag('sel_local_lang', $_SESSION['local_langs_for_page'], $_SESSION['sel_local_lang'][0], 'local_lang_s', true, '', 'local_lang_on', $_SESSION['local_delete']);

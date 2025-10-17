@@ -1,8 +1,8 @@
-# Library Management System - Brownfield Enhancement PRD
+# Seferium - Library Management System - Brownfield Enhancement PRD
 
 ## Table of Contents
 
-- [Library Management System - Brownfield Enhancement PRD](#table-of-contents)
+- [Seferium - Library Management System - Brownfield Enhancement PRD](#table-of-contents)
   - [Table of Contents](./table-of-contents.md)
   - [1. Intro Project Analysis and Context](./1-intro-project-analysis-and-context.md)
     - [1.1 Analysis Source](./1-intro-project-analysis-and-context.md#11-analysis-source)
@@ -23,7 +23,7 @@
     - [3.5 Risk Assessment and Mitigation](./3-technical-constraints-and-integration-requirements.md#35-risk-assessment-and-mitigation)
   - [4. Epic and Story Structure](./4-epic-and-story-structure.md)
     - [4.1 Epic Approach](./4-epic-and-story-structure.md#41-epic-approach)
-  - [5. Epic 1: Modern Library Management System](./5-epic-1-modern-library-management-system.md)
+  - [5. Epic 1: Modern Seferium Library Management System](./5-epic-1-modern-library-management-system.md)
     - [Story Sequencing Strategy](./5-epic-1-modern-library-management-system.md#story-sequencing-strategy)
     - [Story 1.1: Content Model Refinement and Relationships](./5-epic-1-modern-library-management-system.md#story-11-content-model-refinement-and-relationships)
     - [Story 1.2: Multi-Language Foundation with RTL Support](./5-epic-1-modern-library-management-system.md#story-12-multi-language-foundation-with-rtl-support)

@@ -56,5 +56,12 @@
     "Description": "Описание",
     "Available Files": "Доступные файлы",
     "Themes": "Темы",
-    "Magazine": "Журнал"
+    "Magazine": "Журнал",
+    "Search publications": "Поиск публикаций",
+    "No results found for": "Результаты не найдены для",
+    "Try different keywords or check your spelling": "Попробуйте другие ключевые слова или проверьте правописание",
+    "View all results": "Просмотреть все результаты",
+    "Author": "Автор",
+    "Showing results for": "Показаны результаты для",
+    "Clear search": "Очистить поиск"
 }

@@ -166,9 +166,9 @@ $f_block = $_SESSION['user_delete'][0] != '' || $_SESSION['edit_user'] != '';
 			</td>
 			<td><font color='#FFFFFF'>X</font></td>
 			<?php
-            if (PermitInvRef('user_ident', ['li', 'db'])) {
-                echo "<td><button name='user_references' type='submit' value='*' class='i_r'".(($f_block || $_SESSION['user_filter'] != '') ? ' disabled' : '').'>'.Title(541).'</button></td>';
-            }
+	        if (PermitInvRef('user_ident', ['li', 'db'])) {
+	            echo "<td><button name='user_references' type='submit' value='*' class='i_r'".(($f_block || $_SESSION['user_filter'] != '') ? ' disabled' : '').'>'.Title(541).'</button></td>';
+	        }
 if ($_SESSION['user_filter'] != '') {
     echo "<td><font color='#FFFFFF'>X</font></td>";
     echo "<td><font color='#0000FF'>".FTM(Title(527), true).' '.Title(300).': <b>'.(string) $_SESSION['user_size'].'</b></font></td>';

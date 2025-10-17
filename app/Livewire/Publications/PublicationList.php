@@ -4,6 +4,7 @@ namespace App\Livewire\Publications;
 
 use App\Models\Publication;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -58,13 +59,37 @@ class PublicationList extends Component
 
     public function render()
     {
+        // Check if MySQL (FULLTEXT) or SQLite (fallback to LIKE)
+        $isMysql = DB::getDriverName() === 'mysql';
+
         // For guests, only show active publications
         $query = Publication::query()
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('title', 'like', '%'.$this->search.'%')
-                        ->orWhere('title_low', 'like', '%'.mb_strtolower($this->search).'%');
-                });
+            ->when($this->search, function ($query) use ($isMysql) {
+                if ($isMysql && ! empty(trim($this->search))) {
+                    // Use FULLTEXT search on MySQL
+                    $query->where(function ($q) {
+                        $q->whereRaw(
+                            'MATCH(title, title_low) AGAINST(? IN NATURAL LANGUAGE MODE)',
+                            [trim($this->search)]
+                        )
+                            ->orWhereHas('authors', function ($q) {
+                                $q->whereRaw(
+                                    'MATCH(author, author_low) AGAINST(? IN NATURAL LANGUAGE MODE)',
+                                    [trim($this->search)]
+                                );
+                            });
+                    });
+                } else {
+                    // Fallback to LIKE search
+                    $query->where(function ($q) {
+                        $q->where('title', 'like', '%'.$this->search.'%')
+                            ->orWhere('title_low', 'like', '%'.mb_strtolower($this->search).'%')
+                            ->orWhereHas('authors', function ($q) {
+                                $q->where('author', 'like', '%'.$this->search.'%')
+                                    ->orWhere('author_low', 'like', '%'.mb_strtolower($this->search).'%');
+                            });
+                    });
+                }
             });
 
         // Only authenticated users can see deleted items
@@ -87,8 +112,15 @@ class PublicationList extends Component
             $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files']);
         }
 
-        $publications = $query->orderBy('upload_date', 'desc')
-            ->paginate($this->perPage);
+        // Order by relevance if searching with FULLTEXT, otherwise by date
+        if ($isMysql && ! empty(trim($this->search))) {
+            $publications = $query
+                ->orderByRaw('MATCH(title, title_low) AGAINST(? IN NATURAL LANGUAGE MODE) DESC', [trim($this->search)])
+                ->paginate($this->perPage);
+        } else {
+            $publications = $query->orderBy('upload_date', 'desc')
+                ->paginate($this->perPage);
+        }
 
         return view('livewire.publications.publication-list', [
             'publications' => $publications,

@@ -126,7 +126,7 @@ $dis = ($_SESSION['user_working_mode'] == 1) ? '' : ' disabled';
 			<td></td>
 		</tr>
 		<?php
-        $odd_row = true;
+	    $odd_row = true;
 foreach ($_SESSION['table_definitions'] as $k => $v) {
     echo "<tr valign='top'".(($odd_row) ? " class='odd_row'" : '').'>';
     echo "<td><input size='12' type='text' name='table-".$k."' value='".$k."' readonly></td>";

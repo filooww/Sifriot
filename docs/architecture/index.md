@@ -1,8 +1,8 @@
-# Library Management System - Brownfield Enhancement Architecture
+# Seferium - Library Management System - Brownfield Enhancement Architecture
 
 ## Table of Contents
 
-- [Library Management System - Brownfield Enhancement Architecture](#table-of-contents)
+- [Seferium - Library Management System - Brownfield Enhancement Architecture](#table-of-contents)
   - [Table of Contents](./table-of-contents.md)
   - [1. Introduction](./1-introduction.md)
     - [1.1 Existing Project Analysis](./1-introduction.md#11-existing-project-analysis)

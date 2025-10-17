@@ -1,7 +1,7 @@
-# 5. Epic 1: Modern Library Management System
+# 5. Epic 1: Modern Seferium Library Management System
 
 **Epic Goal**:
-Build a complete, modern library management system that enables administrators to efficiently manage and organize a large-scale content library (1.1TB, 100k+ items) while providing users with powerful search, filtering, and engagement features across books, magazines, articles, and custom content types, with full trilingual support (English, Russian, Hebrew).
+Build a complete, modern library management system for Seferium that enables administrators to efficiently manage and organize a large-scale content library (1.1TB, 100k+ items) while providing users with powerful search, filtering, and engagement features across books, magazines, articles, and custom content types, with full trilingual support (English, Russian, Hebrew).
 
 **Integration Requirements**:
 - Extend existing Laravel 12 foundation without breaking existing models or migrations

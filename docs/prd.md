@@ -1,4 +1,4 @@
-# Library Management System - Brownfield Enhancement PRD
+# Seferium - Library Management System - Brownfield Enhancement PRD
 
 **Version:** 1.1
 **Date:** 2025-10-15
@@ -25,7 +25,7 @@
 
 ### 1.2 Current Project State
 
-**Project:** Library Management System
+**Project:** Seferium (Library Management System)
 **Current Status:** Fresh Laravel 12 setup with foundational models and migrations
 
 **What exists:**

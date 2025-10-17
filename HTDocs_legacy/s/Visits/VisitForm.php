@@ -210,7 +210,7 @@ if (IsMarkedSessions(2)) {
             <td><font class="cell_inv">XX</font></td>
 			<td>
                 <?php
-                echo Title(425).': ';
+			    echo Title(425).': ';
 RadioTag('session_type_radio', $_SESSION['ses_type'], [Title(524), Title(518), Title(526)], 'hidden_button', false, 'session_type_radio_on', 'session_type_s', $_SESSION['cancel_started']);
 echo ExpiredView(($_SESSION['cancel_started'] || $_SESSION['ses_type'] != 2) ? ' disabled' : '');
 ?>

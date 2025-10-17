@@ -28,6 +28,11 @@ new class extends Component
                     </a>
                 </div>
 
+                <!-- Search Bar (Desktop) -->
+                <div class="hidden sm:flex sm:items-center sm:ms-6">
+                    @livewire('search.global-search')
+                </div>
+
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('publications.index')" :active="request()->routeIs('publications.*')" wire:navigate>
@@ -133,6 +138,11 @@ new class extends Component
 
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+        <!-- Search Bar (Mobile) -->
+        <div class="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-600">
+            @livewire('search.global-search')
+        </div>
+
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('publications.index')" :active="request()->routeIs('publications.*')" wire:navigate>
                 {{ __('Publications') }}

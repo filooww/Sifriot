@@ -56,5 +56,12 @@
     "Description": "תיאור",
     "Available Files": "קבצים זמינים",
     "Themes": "נושאים",
-    "Magazine": "מגזין"
+    "Magazine": "מגזין",
+    "Search publications": "חפש פרסומים",
+    "No results found for": "לא נמצאו תוצאות עבור",
+    "Try different keywords or check your spelling": "נסה מילות מפתח אחרות או בדוק את האיות",
+    "View all results": "צפה בכל התוצאות",
+    "Author": "מחבר",
+    "Showing results for": "מציג תוצאות עבור",
+    "Clear search": "נקה חיפוש"
 }
