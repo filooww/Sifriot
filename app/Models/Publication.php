@@ -30,7 +30,6 @@ class Publication extends Model
         'actuality',
         'id_theme_set',
         'id_author_set',
-        '_del_mark',
         'add_int',
         'add_char',
         'word_count',
@@ -39,7 +38,6 @@ class Publication extends Model
     protected $casts = [
         'upload_date' => 'date',
         'actuality' => 'integer',
-        '_del_mark' => 'integer',
         'add_int' => 'integer',
         'word_count' => 'integer',
     ];
@@ -124,17 +122,4 @@ class Publication extends Model
         );
     }
 
-    // Scopes for backward compatibility with legacy _del_mark
-    public function scopeNotDeleted($query)
-    {
-        return $query->where(function ($q) {
-            $q->whereNull('deleted_at')
-              ->where('_del_mark', 0);
-        });
-    }
-
-    public function scopeLegacyDeleted($query)
-    {
-        return $query->where('_del_mark', 1);
-    }
 }

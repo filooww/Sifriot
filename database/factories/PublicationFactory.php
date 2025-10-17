@@ -29,32 +29,12 @@ class PublicationFactory extends Factory
             'actuality' => $this->faker->randomElement([0, 1]),
             'id_theme_set' => null,
             'id_author_set' => null,
-            '_del_mark' => 0,
             'add_int' => $this->faker->numberBetween(1, 100),
             'add_char' => $this->faker->word(),
             'word_count' => $this->faker->optional()->numberBetween(100, 50000),
         ];
     }
 
-    /**
-     * Indicate that the publication is deleted.
-     */
-    public function deleted(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            '_del_mark' => 1,
-        ]);
-    }
-
-    /**
-     * Indicate that the publication is active.
-     */
-    public function active(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            '_del_mark' => 0,
-        ]);
-    }
 
     /**
      * Create publication with relationships.
