@@ -29,6 +29,7 @@ class Publication extends Model
         'id_issue_type',
         'id_magazine',
         'upload_date',
+        'status',
         'actuality',
         'id_theme_set',
         'id_author_set',
@@ -42,6 +43,7 @@ class Publication extends Model
         'actuality' => 'integer',
         'add_int' => 'integer',
         'word_count' => 'integer',
+        'status' => 'string',
     ];
 
     protected $appends = [
@@ -106,6 +108,18 @@ class Publication extends Model
             'id_theme',
             'id_publication',
             'id_theme'
+        )->withTimestamps();
+    }
+
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Category::class,
+            'category_publication',
+            'publication_id',
+            'category_id',
+            'id_publication',
+            'id'
         )->withTimestamps();
     }
 

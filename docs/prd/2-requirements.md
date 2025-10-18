@@ -140,9 +140,10 @@
 - The system shall allow role assignment during user creation or profile editing
 
 **FR18: Dashboard and Statistics**
-- The system shall provide authenticated users with a dashboard showing recent additions
-- The system shall display statistics: total items, items by category, recent uploads
-- Administrators shall see additional statistics: user count, storage usage, pending reviews
+- The system shall provide **administrators** with a dashboard (`/dashboard`) showing management tools, recent additions, and system statistics
+- The admin dashboard shall display statistics: total items, items by category, recent uploads, user count, storage usage, pending reviews
+- The system shall provide **authenticated users** with a profile page (`/profile`) showing personal activity: bookmarks, likes, comments, download history
+- Guest users shall access a clean public library catalog at the root page (`/`) with publication grid, search, and basic filters
 - The system shall display trending content based on recent engagement metrics
 - The system shall provide analytics dashboard for administrators (views over time, popular categories, user growth)
 

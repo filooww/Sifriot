@@ -89,6 +89,115 @@ Build a complete, modern library management system for Seferium that enables adm
 
 ---
 
+## Story 1.3A: Public Root Page & Admin Dashboard Separation
+
+**As a** system architect,
+**I want** to establish separate interfaces for public browsing and admin management,
+**so that** regular users have a welcoming library experience while admins have powerful management tools.
+
+**Acceptance Criteria:**
+1. Root page (`/`) displays clean public library catalog with publication grid layout
+2. Root page includes search component and basic filter sidebar (embedded on page, not in navigation)
+3. Guest users see "Register to access full content" CTAs on root page
+4. Admin dashboard (`/dashboard`) route requires authentication and admin role
+5. Admin dashboard includes same search/filter components plus admin-only features (publication status filter)
+6. Navigation bar "My Profile" button renamed to "Dashboard" for admin users
+7. Navigation bar does NOT include search bar (search lives on pages)
+8. User profile page (`/profile`) route created for future personal features (bookmarks, likes)
+9. All three languages (EN/RU/HE) supported on all new pages
+10. Routes properly protected with authentication and role middleware
+
+**Integration Verification:**
+- IV1: Root page accessible to all users (guests and authenticated) without errors
+- IV2: Admin dashboard redirects guests to login, blocks non-admin authenticated users with 403
+- IV3: Search and filter components work identically on both root and dashboard pages
+- IV4: Navigation correctly shows Dashboard (admins) vs Login/Register (guests)
+
+**Tasks / Subtasks:**
+- [ ] **Task 1: Create PublicCatalog Livewire component for root page** (AC: 1, 2, 3)
+  - [ ] Create `app/Livewire/PublicCatalog.php` component
+  - [ ] Create `resources/views/livewire/public-catalog.blade.php` view
+  - [ ] Implement publication grid layout using existing PublicationList query logic
+  - [ ] Embed GlobalSearch component (from Story 1.4) at top of page
+  - [ ] Embed PublicationFilters component (from Story 1.5) as sidebar
+  - [ ] Add guest CTAs: "Register to access full content" with login/register buttons
+  - [ ] Use GuestLayout for guests, AppLayout for authenticated users
+  - [ ] Apply pagination (15 items per page)
+  - [ ] Ensure responsive design (grid → list on mobile)
+
+- [ ] **Task 2: Create AdminDashboard Livewire component** (AC: 4, 5)
+  - [ ] Create `app/Livewire/Admin/AdminDashboard.php` component
+  - [ ] Create `resources/views/livewire/admin/admin-dashboard.blade.php` view
+  - [ ] Implement admin management interface with publication list
+  - [ ] Embed GlobalSearch component (same as root page)
+  - [ ] Embed PublicationFilters component with ALL filters (including Publication Status)
+  - [ ] Add admin-specific actions: Bulk actions, Add New, Show Deleted toggle
+  - [ ] Use AppLayout
+  - [ ] Add statistics cards: Total publications, Pending review count, Recent uploads
+  - [ ] Apply role-based middleware (`middleware(['auth', 'role:admin'])`)
+
+- [ ] **Task 3: CLEANUP - Update navigation to remove search, rename "My Profile" → "Dashboard"** (AC: 6, 7)
+  - [ ] Modify `resources/views/livewire/layout/navigation.blade.php`
+  - [ ] **CLEANUP STEP 1: Delete lines 31-34 (Desktop search bar)**
+    - Remove: `<!-- Search Bar (Desktop) -->`
+    - Remove: `<div class="hidden sm:flex sm:items-center sm:ms-6">`
+    - Remove: `    @livewire('search.global-search')`
+    - Remove: `</div>`
+  - [ ] **CLEANUP STEP 2: Delete lines 141-144 (Mobile search bar)**
+    - Remove: `<!-- Search Bar (Mobile) -->`
+    - Remove: `<div class="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-600">`
+    - Remove: `    @livewire('search.global-search')`
+    - Remove: `</div>`
+  - [ ] **CLEANUP STEP 3: Change "My Profile" to "Dashboard" (line 43)**
+    - FROM: `{{ __('My Profile') }}`
+    - TO: `{{ __('Dashboard') }}`
+  - [ ] **CLEANUP STEP 4: Change "My Profile" to "Dashboard" mobile (line 152)**
+    - FROM: `{{ __('My Profile') }}`
+    - TO: `{{ __('Dashboard') }}`
+  - [ ] **VERIFY:** Routes already correct (`route('dashboard')` exists from Laravel Breeze)
+  - [ ] Keep existing logic: guests see Login/Register, authenticated see Dashboard/Profile/Logout
+  - [ ] Translation files: "Dashboard" key already exists from Story 1.2, no changes needed
+
+- [ ] **Task 4: Create `/profile` route placeholder for future user features** (AC: 8)
+  - [ ] Create `app/Livewire/User/UserProfile.php` component
+  - [ ] Create `resources/views/livewire/user/user-profile.blade.php` view
+  - [ ] Add route: `Route::get('/profile', UserProfile::class)->name('profile')->middleware('auth')`
+  - [ ] Display placeholder content: "Your profile page. Future features: Bookmarks, Likes, Comments, Settings"
+  - [ ] Add to navigation: "Profile" link (authenticated users only)
+
+- [ ] **Task 5: Update route definitions** (AC: 4, 10)
+  - [ ] Modify `routes/web.php`:
+    - [ ] Change root route from `welcome` to `PublicCatalog::class`: `Route::get('/', PublicCatalog::class)->name('home')`
+    - [ ] Update dashboard route to use AdminDashboard component: `Route::get('/dashboard', AdminDashboard::class)->middleware(['auth', 'role:admin'])->name('dashboard')`
+    - [ ] Add profile route: `Route::get('/profile', UserProfile::class)->middleware('auth')->name('profile')`
+  - [ ] Verify middleware protection works (guests → login, non-admins → 403 on dashboard)
+
+- [ ] **Task 6: Add translation keys for new pages** (AC: 9)
+  - [ ] Update `lang/en.json`: "Dashboard", "Public Catalog", "Profile", "Welcome to Seferium Library", "Explore our collection", "Admin Management", "Statistics"
+  - [ ] Update `lang/ru.json`: Same keys translated to Russian
+  - [ ] Update `lang/he.json`: Same keys translated to Hebrew
+  - [ ] Verify RTL layout works correctly on all new pages
+
+- [ ] **Task 7: Write feature tests for route access control and page rendering** (IV: all)
+  - [ ] Create `tests/Feature/PublicCatalogTest.php`:
+    - [ ] Test guest can access root page
+    - [ ] Test authenticated user can access root page
+    - [ ] Test search component renders on root page
+    - [ ] Test filters render on root page
+    - [ ] Test guest sees "Register" CTAs
+  - [ ] Create `tests/Feature/AdminDashboardTest.php`:
+    - [ ] Test guest redirected to login when accessing `/dashboard`
+    - [ ] Test non-admin user blocked with 403 when accessing `/dashboard`
+    - [ ] Test admin user can access `/dashboard`
+    - [ ] Test admin sees Publication Status filter
+    - [ ] Test search and filters work on dashboard
+  - [ ] Create `tests/Feature/UserProfileTest.php`:
+    - [ ] Test guest redirected to login when accessing `/profile`
+    - [ ] Test authenticated user can access `/profile`
+  - [ ] Run full regression test suite to ensure existing stories unaffected
+
+---
+
 ## Story 1.4: Advanced Search with Full-Text Indexing
 
 **As a** user,
@@ -96,7 +205,7 @@ Build a complete, modern library management system for Seferium that enables adm
 **so that** I can quickly find relevant publications.
 
 **Acceptance Criteria:**
-1. Search bar prominent in main navigation and on content listing pages
+1. ~~Search bar prominent in main navigation and on content listing pages~~ **Search component embedded on root page (`/`) and admin dashboard (`/dashboard`) - NOT in navigation bar** *(Modified per Sprint Change Proposal 2025-10-18)*
 2. MySQL FULLTEXT indexes added to `publications.title`, `publications.description`, `authors.name`
 3. Search query returns results ranked by relevance
 4. Search supports partial word matching and handles special characters
@@ -119,8 +228,8 @@ Build a complete, modern library management system for Seferium that enables adm
 **so that** I can narrow down results to exactly what I need.
 
 **Acceptance Criteria:**
-1. Filter sidebar/panel with collapsible sections for each filter type
-2. Filters available: Category (hierarchical multiselect), Author (autocomplete), Date (range picker), Genre (multiselect), Text Size (slider with ranges), Alphabetical (A-Z/Z-A), Publication Status (Published/Hidden/Pending - admin only)
+1. Filter sidebar/panel with collapsible sections for each filter type **embedded on root page (`/`) and admin dashboard (`/dashboard`)** *(Modified per Sprint Change Proposal 2025-10-18)*
+2. Filters available: Category (hierarchical multiselect), Author (autocomplete), Date (range picker), Genre (multiselect), Text Size (slider with ranges), Alphabetical (A-Z/Z-A), **Publication Status (Published/Hidden/Pending - visible ONLY on `/dashboard`, not on `/`)** *(Modified per Sprint Change Proposal 2025-10-18)*
 3. Multiple filters combine with AND logic (all conditions must match)
 4. Applied filters display as removable tags/chips
 5. "Clear all filters" button resets to unfiltered view

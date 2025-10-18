@@ -1,17 +1,16 @@
 <?php
 
 use App\Http\Controllers\DownloadController;
+use App\Livewire\Admin\AdminDashboard;
 use App\Livewire\Publications\PublicationDetail;
 use App\Livewire\Publications\PublicationList;
+use App\Livewire\PublicCatalog;
+use App\Livewire\User\UserProfile;
 use Illuminate\Support\Facades\Route;
 
 // Public/Guest accessible routes
-Route::get('/', function () {
-    return redirect()->route('publications.index');
-});
-
-Route::get('/publications', PublicationList::class)
-    ->name('publications.index');
+Route::get('/', PublicCatalog::class)
+    ->name('home');
 
 Route::get('/publications/{id}', PublicationDetail::class)
     ->name('publications.show');
@@ -32,16 +31,19 @@ Route::get('/language/{locale}', function ($locale) {
 
 // Authenticated routes
 Route::middleware(['auth'])->group(function () {
-    Route::view('dashboard', 'dashboard')
-        ->name('dashboard');
-
-    Route::view('profile', 'profile')
+    Route::get('/profile', UserProfile::class)
         ->name('profile');
 
     // File download (requires authentication)
     Route::get('/downloads/{publication}/{filename}', [DownloadController::class, 'download'])
         ->name('files.download')
         ->middleware('role:user');
+});
+
+// Admin routes
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/dashboard', AdminDashboard::class)
+        ->name('dashboard');
 });
 
 require __DIR__.'/auth.php';

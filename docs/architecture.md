@@ -308,12 +308,19 @@ This document supplements the existing Laravel project architecture by defining 
 
 ### 5.1 New Components
 
+**Pages/** *(New section added per Sprint Change Proposal 2025-10-18)*
+- `PublicCatalog` - Root page `/` with publication grid, search, and filters **(Story 1.3A - All users)**
+- `AdminDashboard` - Admin dashboard `/dashboard` with management tools **(Story 1.3A - Admins only)**
+
 **Publications/**
 - `PublicationDetail` - Detail page with engagement metrics
-- `PublicationFilters` - Multi-criteria filtering sidebar
+- `PublicationFilters` - Multi-criteria filtering sidebar **(deployed to both `/` and `/dashboard` pages, not navigation)**
 
 **Search/**
-- `GlobalSearch` - Full-text search with autocomplete
+- `GlobalSearch` - Full-text search with autocomplete **(page-level component embedded on `/` and `/dashboard`, NOT in navigation bar)**
+
+**User/**
+- `UserProfile` - User profile page `/profile` for personal features **(Story 1.3A - Authenticated users)**
 
 **Admin/**
 - `FolderBrowser` - Filesystem browser with virtual scrolling (Story 1.6A)

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Publications;
 
-use App\Models\Author;
-use App\Models\AuthorGroup;
 use App\Models\Publication;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

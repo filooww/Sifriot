@@ -71,7 +71,7 @@
             <!-- View All Results Link -->
             <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-900">
                 <a
-                    href="{{ route('publications.index', ['search' => $searchQuery]) }}"
+                    href="{{ route('home', ['search' => $searchQuery]) }}"
                     wire:navigate
                     @click="open = false"
                     class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"

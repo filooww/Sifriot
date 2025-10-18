@@ -47,7 +47,20 @@
                 </p>
             @endif
 
-            <!-- Publications Table -->
+            <!-- Filter and Publications Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Filter Sidebar -->
+                <div class="lg:col-span-1">
+                    @livewire('publications.publication-filters')
+                </div>
+
+                <!-- Publications Table -->
+                <div class="lg:col-span-3">
+                    @if(isset($resultCount))
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            {{ __('Showing {count} results', ['count' => $resultCount]) }}
+                        </p>
+                    @endif
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -140,6 +153,8 @@
             <!-- Pagination -->
             <div class="mt-6">
                 {{ $publications->links() }}
+            </div>
+                </div>
             </div>
         </div>
     </div>
