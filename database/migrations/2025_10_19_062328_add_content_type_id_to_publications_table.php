@@ -12,12 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('publications', function (Blueprint $table) {
-            $table->enum('status', ['published', 'pending', 'hidden'])
-                ->default('published')
-                ->after('upload_date')
-                ->comment('Publication status: published (visible to all), pending (awaiting review), hidden (not visible)');
-
-            $table->index('status', 'idx_publications_status');
+            $table->unsignedBigInteger('content_type_id')->nullable()->after('status');
+            $table->foreign('content_type_id')->references('id')->on('content_types')->onDelete('set null');
+            $table->index('content_type_id');
         });
     }
 
@@ -27,8 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('publications', function (Blueprint $table) {
-            $table->dropIndex('idx_publications_status');
-            $table->dropColumn('status');
+            $table->dropForeign(['content_type_id']);
+            $table->dropIndex(['content_type_id']);
+            $table->dropColumn('content_type_id');
         });
     }
 };

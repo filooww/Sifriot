@@ -47,6 +47,13 @@ return [
             'report' => false,
         ],
 
+        'library' => [
+            'driver' => 'local',
+            'root' => env('LIBRARY_STORAGE_PATH', storage_path('app/content')),
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

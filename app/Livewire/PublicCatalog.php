@@ -78,7 +78,7 @@ class PublicCatalog extends Component
 
         // Public catalog only shows active, non-deleted publications
         $query = Publication::query()
-            ->when($this->search, function ($query) use ($isMysql) {
+            ->when($this->search, function ($query) {
                 $searchTerm = trim($this->search);
                 if (! empty($searchTerm)) {
                     // Use LIKE for partial matching (works for all databases)
@@ -135,15 +135,15 @@ class PublicCatalog extends Component
         elseif (! empty(trim($this->search))) {
             $searchTerm = trim($this->search);
             // Order by: exact title match first, then prefix match, then contains match, then by date
-            $query->orderByRaw("
+            $query->orderByRaw('
                 CASE
                     WHEN title = ? THEN 1
                     WHEN title LIKE ? THEN 2
                     WHEN title LIKE ? THEN 3
                     ELSE 4
                 END
-            ", [$searchTerm, $searchTerm.'%', '%'.$searchTerm.'%'])
-            ->orderBy('upload_date', 'desc');
+            ', [$searchTerm, $searchTerm.'%', '%'.$searchTerm.'%'])
+                ->orderBy('upload_date', 'desc');
         } else {
             $query->orderBy('upload_date', 'desc');
         }

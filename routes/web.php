@@ -2,8 +2,9 @@
 
 use App\Http\Controllers\DownloadController;
 use App\Livewire\Admin\AdminDashboard;
+use App\Livewire\Admin\FileRegistrationForm;
+use App\Livewire\Admin\FolderBrowser;
 use App\Livewire\Publications\PublicationDetail;
-use App\Livewire\Publications\PublicationList;
 use App\Livewire\PublicCatalog;
 use App\Livewire\User\UserProfile;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,12 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dashboard', AdminDashboard::class)
         ->name('dashboard');
+
+    Route::get('/admin/files/browse', FolderBrowser::class)
+        ->name('admin.files.browse');
+
+    Route::get('/admin/files/register', FileRegistrationForm::class)
+        ->name('admin.files.register');
 });
 
 require __DIR__.'/auth.php';

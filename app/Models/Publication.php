@@ -30,6 +30,7 @@ class Publication extends Model
         'id_magazine',
         'upload_date',
         'status',
+        'content_type_id',
         'actuality',
         'id_theme_set',
         'id_author_set',
@@ -121,6 +122,22 @@ class Publication extends Model
             'id_publication',
             'id'
         )->withTimestamps();
+    }
+
+    public function contentType(): BelongsTo
+    {
+        return $this->belongsTo(ContentType::class);
+    }
+
+    // Scopes
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published');
     }
 
     // Accessors
