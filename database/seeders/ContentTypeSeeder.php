@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\ContentType;
@@ -12,7 +14,24 @@ class ContentTypeSeeder extends Seeder
      */
     public function run(): void
     {
-        $contentTypes = [
+        $contentTypes = $this->getContentTypes();
+
+        foreach ($contentTypes as $type) {
+            ContentType::updateOrCreate(
+                ['slug' => $type['slug']],
+                $type
+            );
+        }
+    }
+
+    /**
+     * Get the list of content types with multilingual names.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function getContentTypes(): array
+    {
+        return [
             [
                 'name_en' => 'Books',
                 'name_ru' => 'Книги',
@@ -50,12 +69,5 @@ class ContentTypeSeeder extends Seeder
                 'is_system' => true,
             ],
         ];
-
-        foreach ($contentTypes as $type) {
-            ContentType::updateOrCreate(
-                ['slug' => $type['slug']],
-                $type
-            );
-        }
     }
 }
