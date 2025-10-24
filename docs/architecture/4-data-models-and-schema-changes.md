@@ -93,6 +93,10 @@
 - `publication_id`, `file_path`, `registration_source`, `folder_scan_job_id`, `metadata_auto_extracted`, `status`
 - Relationship: `belongsTo(Publication)`, `belongsTo(User)`, `belongsTo(FolderScanJob)`
 
+**LibraryPath** - Admin-configured external library paths
+- `path`, `label`, `is_active`, `last_verified_at`, `created_by`
+- Relationship: `belongsTo(User, 'created_by')`
+
 ---
 
 ## 4.2 Schema Integration Strategy

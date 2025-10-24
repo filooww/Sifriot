@@ -12,6 +12,8 @@
 **Admin/**
 - `FolderBrowser` - Filesystem browser with virtual scrolling (Story 1.6A)
 - `FileRegistrationForm` - Register/upload files
+- `AdminLibrarySettings` - Configure external library paths with folder picker (Story 1.6)
+- `FolderTreeNavigation` - Embedded folder tree navigation for scanning (Story 1.7)
 - `BulkFolderScanner` - Bulk scan interface with real-time progress (Story 1.7)
 - `FileSyncMonitor` - File integrity monitoring (Story 1.6B)
 - `FolderMetadataRuleManager` - Folder path rules (Story 1.6C)

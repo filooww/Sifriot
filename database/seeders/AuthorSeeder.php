@@ -23,7 +23,7 @@ class AuthorSeeder extends Seeder
             );
         }
 
-        $this->command->info("Created " . count($authors) . " authors");
+        $this->command->info('Created '.count($authors).' authors');
     }
 
     /**

@@ -127,6 +127,15 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'folder_scan' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/folder-scan.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 14,
+            'replace_placeholders' => true,
+            'tap' => [App\Logging\ColoredLineFormatter::class],
+        ],
+
     ],
 
 ];

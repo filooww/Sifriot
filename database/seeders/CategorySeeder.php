@@ -24,7 +24,7 @@ class CategorySeeder extends Seeder
     /**
      * Create a parent category and its children recursively.
      *
-     * @param array<string, mixed> $categoryData
+     * @param  array<string, mixed>  $categoryData
      */
     private function createCategoryWithChildren(array $categoryData): void
     {

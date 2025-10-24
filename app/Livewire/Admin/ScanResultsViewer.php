@@ -1,0 +1,66 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Livewire\Admin;
+
+use App\Models\FileRegistrationLog;
+use App\Models\FolderScanJob;
+use App\Models\Publication;
+use Livewire\Component;
+use Livewire\WithPagination;
+
+class ScanResultsViewer extends Component
+{
+    use WithPagination;
+
+    public int $scanJobId;
+
+    public ?string $filterStatus = null;
+
+    public ?FolderScanJob $scanJob = null;
+
+    public function mount(int $scanJobId): void
+    {
+        $this->scanJobId = $scanJobId;
+        $this->scanJob = FolderScanJob::findOrFail($scanJobId);
+    }
+
+    public function setFilter(?string $status): void
+    {
+        $this->filterStatus = $status;
+        $this->resetPage();
+    }
+
+    public function getResultsProperty()
+    {
+        $query = FileRegistrationLog::where('folder_scan_job_id', $this->scanJobId);
+
+        if ($this->filterStatus) {
+            $query->where('status', $this->filterStatus);
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate(50);
+    }
+
+    public function bulkApprove(): void
+    {
+        $publicationIds = FileRegistrationLog::where('folder_scan_job_id', $this->scanJobId)
+            ->where('status', 'processed')
+            ->whereNotNull('publication_id')
+            ->pluck('publication_id');
+
+        $count = Publication::whereIn('id_publication', $publicationIds)
+            ->where('status', 'pending')
+            ->update(['status' => 'published']);
+
+        session()->flash('message', __(':count publications approved and published', ['count' => $count]));
+    }
+
+    public function render()
+    {
+        return view('livewire.admin.scan-results-viewer', [
+            'results' => $this->results,
+        ]);
+    }
+}

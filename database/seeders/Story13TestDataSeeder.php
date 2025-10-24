@@ -11,6 +11,7 @@ use Illuminate\Database\Seeder;
 class Story13TestDataSeeder extends Seeder
 {
     private const ACTIVE_PUBLICATIONS_COUNT = 20;
+
     private const SOFT_DELETED_PUBLICATIONS_COUNT = 3;
 
     /**
@@ -27,7 +28,7 @@ class Story13TestDataSeeder extends Seeder
 
             $this->command->info('✓ Story 1.3 test data seeded successfully!');
         } catch (\Exception $e) {
-            $this->command->error('Error seeding Story 1.3 test data: ' . $e->getMessage());
+            $this->command->error('Error seeding Story 1.3 test data: '.$e->getMessage());
             throw $e;
         }
     }
@@ -86,7 +87,7 @@ class Story13TestDataSeeder extends Seeder
 
         $totalPublications = self::ACTIVE_PUBLICATIONS_COUNT + self::SOFT_DELETED_PUBLICATIONS_COUNT;
         $this->command->info("Created {$totalPublications} publications:");
-        $this->command->info('  ✓ ' . self::ACTIVE_PUBLICATIONS_COUNT . ' active publications');
-        $this->command->info('  ✓ ' . self::SOFT_DELETED_PUBLICATIONS_COUNT . ' soft-deleted publications');
+        $this->command->info('  ✓ '.self::ACTIVE_PUBLICATIONS_COUNT.' active publications');
+        $this->command->info('  ✓ '.self::SOFT_DELETED_PUBLICATIONS_COUNT.' soft-deleted publications');
     }
 }

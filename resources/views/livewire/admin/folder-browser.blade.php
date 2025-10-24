@@ -7,6 +7,12 @@
         </div>
     @endif
 
+    @if (session()->has('message'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {{ session('message') }}
+        </div>
+    @endif
+
     <!-- Breadcrumb Navigation -->
     <nav class="mb-6 text-sm">
         @foreach($breadcrumbs as $index => $crumb)
@@ -22,13 +28,16 @@
     </nav>
 
     <!-- Action Buttons -->
-    <div class="mb-6 flex gap-4">
-        <button wire:click="registerSelected" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-            {{ __('Register Selected') }}
+    <div class="mb-6 flex gap-4 items-center">
+        <button wire:click="registerSelected" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400" {{ empty($selectedFiles) ? 'disabled' : '' }}>
+            {{ __('Register Selected') }} ({{ count($selectedFiles) }})
         </button>
         <a href="{{ route('admin.files.register') }}" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
             {{ __('Upload New File') }}
         </a>
+        @if(count($selectedFiles) > 0)
+            <span class="text-sm text-gray-600">{{ count($selectedFiles) }} file(s) selected</span>
+        @endif
     </div>
 
     <!-- Folders List -->

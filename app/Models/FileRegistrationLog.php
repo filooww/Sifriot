@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,5 +38,15 @@ class FileRegistrationLog extends Model
     public function registeredBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'registered_by');
+    }
+
+    public function folderScanJob(): BelongsTo
+    {
+        return $this->belongsTo(FolderScanJob::class, 'folder_scan_job_id', 'id');
+    }
+
+    public function scopeFailed(Builder $query): Builder
+    {
+        return $query->where('status', 'failed');
     }
 }

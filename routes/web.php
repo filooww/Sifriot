@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\DownloadController;
 use App\Livewire\Admin\AdminDashboard;
+use App\Livewire\Admin\BulkFolderScanner;
 use App\Livewire\Admin\FileRegistrationForm;
 use App\Livewire\Admin\FolderBrowser;
+use App\Livewire\Admin\ScanResultsViewer;
 use App\Livewire\Publications\PublicationDetail;
 use App\Livewire\PublicCatalog;
 use App\Livewire\User\UserProfile;
@@ -51,6 +53,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::get('/admin/files/register', FileRegistrationForm::class)
         ->name('admin.files.register');
+
+    Route::get('/admin/bulk-scan', BulkFolderScanner::class)
+        ->name('admin.bulk-scan');
+
+    Route::get('/admin/scan-results/{scanJobId}', ScanResultsViewer::class)
+        ->name('admin.scan-results');
 });
 
 require __DIR__.'/auth.php';

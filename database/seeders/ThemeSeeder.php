@@ -26,7 +26,7 @@ class ThemeSeeder extends Seeder
             );
         }
 
-        $this->command->info("Created " . count($themes) . " themes");
+        $this->command->info('Created '.count($themes).' themes');
     }
 
     /**

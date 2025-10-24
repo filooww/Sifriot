@@ -26,13 +26,28 @@
 
 **File Path Validation:**
 ```php
-// FileStorageService validates all paths
+// FileStorageService validates all paths against configured library paths
 public function validatePath(string $filePath): string
 {
     $realPath = realpath($filePath);
 
-    if (!str_starts_with($realPath, $this->basePath)) {
-        throw new InvalidFilePathException("Path traversal attempt");
+    // Get all configured library paths from database
+    $configuredPaths = LibraryPath::active()->pluck('path')->toArray();
+
+    // Add internal storage path
+    $configuredPaths[] = storage_path('app/content');
+
+    // Check if path is within any configured location
+    $isValid = false;
+    foreach ($configuredPaths as $allowedPath) {
+        if (str_starts_with($realPath, realpath($allowedPath))) {
+            $isValid = true;
+            break;
+        }
+    }
+
+    if (!$isValid) {
+        throw new InvalidFilePathException("Path not within configured library paths");
     }
 
     return $realPath;

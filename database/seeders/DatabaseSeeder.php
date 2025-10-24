@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
 
             $this->command->info('✓ Database seeding completed successfully!');
         } catch (\Exception $e) {
-            $this->command->error('Error during seeding: ' . $e->getMessage());
+            $this->command->error('Error during seeding: '.$e->getMessage());
             throw $e;
         }
     }

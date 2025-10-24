@@ -48,9 +48,9 @@ class FolderBrowser extends Component
             \Log::error('FolderBrowser error', [
                 'path' => $relativePath,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            session()->flash('error', __('Unable to browse folder') . ': ' . $e->getMessage());
+            session()->flash('error', __('Unable to browse folder').': '.$e->getMessage());
         }
     }
 

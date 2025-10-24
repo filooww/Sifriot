@@ -30,6 +30,7 @@ class Publication extends Model
         'id_magazine',
         'upload_date',
         'status',
+        'original_folder_path',
         'content_type_id',
         'actuality',
         'id_theme_set',

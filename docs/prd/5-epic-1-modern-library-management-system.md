@@ -1,5 +1,7 @@
 # 5. Epic 1: Modern Seferium Library Management System
 
+> **Sprint Change Applied (2025-10-24)**: Stories 1.6, 1.7, and 1.8 updated to explicitly support external server path scanning (e.g., `/mnt/library/`) with admin UI configuration and embedded folder tree navigation. Story 1.8 clarified to work on both external server files (registered) and internal storage files (uploaded). See Story 1.6 AC16-20, Story 1.7 AC1a-1d, and Story 1.8 AC1/IV4 for details.
+
 **Epic Goal**:
 Build a complete, modern library management system for Seferium that enables administrators to efficiently manage and organize a large-scale content library (1.1TB, 100k+ items) while providing users with powerful search, filtering, and engagement features across books, magazines, articles, and custom content types, with full trilingual support (English, Russian, Hebrew).
 
@@ -309,11 +311,11 @@ Build a complete, modern library management system for Seferium that enables adm
 ## Story 1.8: Automatic Metadata Extraction with Admin Confirmation
 
 **As an** administrator,
-**I want** the system to automatically extract metadata from uploaded files,
+**I want** the system to automatically extract metadata from registered and uploaded files,
 **so that** I don't have to manually enter titles, authors, and publication dates.
 
 **Acceptance Criteria:**
-1. Metadata extraction runs as background queue job after file registration or upload
+1. Metadata extraction runs as background queue job after file registration (from external server paths) or upload (to internal storage)
 2. Extracts: Title, Author(s), Publication Year, Publisher, ISBN/DOI (if available)
 3. Extraction rules configurable per content type (Books use ISBN patterns, Articles use DOI patterns, etc.)
 4. Extracted metadata presented to admin for review and confirmation
@@ -327,7 +329,7 @@ Build a complete, modern library management system for Seferium that enables adm
 - IV1: Metadata extraction jobs process without blocking user requests
 - IV2: Failed extraction doesn't prevent publication creation (falls back to manual entry)
 - IV3: Extracted metadata populates correct fields in publication form
-- IV4: Extraction works identically for registered files and uploaded files
+- IV4: Extraction works identically for external server files (registered) and internal storage files (uploaded)
 
 ---
 
