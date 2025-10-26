@@ -15,7 +15,7 @@ class BulkFolderScanner extends Component
 {
     public string $folderPath = '';
 
-    public array $fileFormatFilters = ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2'];
+    public array $fileFormatFilters = ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2', 'djvu'];
 
     public ?FolderScanJob $currentScanJob = null;
 
@@ -120,7 +120,7 @@ class BulkFolderScanner extends Component
         // Clear current scan job to show the scan form again
         $this->currentScanJob = null;
         $this->folderPath = '';
-        $this->fileFormatFilters = ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2'];
+        $this->fileFormatFilters = ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2', 'djvu'];
         session()->flash('message', __('Ready for new scan'));
     }
 

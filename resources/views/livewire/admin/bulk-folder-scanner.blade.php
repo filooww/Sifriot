@@ -59,6 +59,10 @@
                         <input type="checkbox" wire:model="fileFormatFilters" value="fb2" class="me-1 rounded dark:bg-gray-700 dark:border-gray-600">
                         <span class="text-sm text-gray-900 dark:text-gray-100">FB2</span>
                     </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" wire:model="fileFormatFilters" value="djvu" class="me-1 rounded dark:bg-gray-700 dark:border-gray-600">
+                        <span class="text-sm text-gray-900 dark:text-gray-100">DJVU</span>
+                    </label>
                 </div>
             </div>
 
