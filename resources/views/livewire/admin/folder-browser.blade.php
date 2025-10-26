@@ -12,20 +12,6 @@
         </div>
     @endif
 
-    <!-- Quick Access to Library Paths -->
-    @if(!empty($libraryPaths))
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('Configured Library Paths') }}</h3>
-            <div class="flex flex-wrap gap-2">
-                @foreach($libraryPaths as $path)
-                    <button wire:click="loadFolder('{{ $path['path'] }}')"
-                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium transition">
-                        📁 {{ $path['label'] }}
-                    </button>
-                @endforeach
-            </div>
-        </div>
-    @endif
 
     <!-- Breadcrumb Navigation -->
     <nav class="mb-6 text-sm">

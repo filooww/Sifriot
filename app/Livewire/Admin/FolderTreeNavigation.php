@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
-use App\Models\LibraryPath;
 use App\Services\FileStorageService;
 use Livewire\Component;
 
@@ -22,17 +21,14 @@ class FolderTreeNavigation extends Component
 
     public function mount(): void
     {
-        // Load all active library paths as root nodes
-        $this->rootPaths = LibraryPath::active()
-            ->get()
-            ->map(function (LibraryPath $path) {
-                return [
-                    'path' => $path->path,
-                    'label' => $path->label,
-                    'id' => $path->id,
-                ];
-            })
-            ->toArray();
+        // Load the single library path as root node
+        $libraryPath = config('library.storage.library_path');
+        $this->rootPaths = [
+            [
+                'path' => $libraryPath,
+                'label' => __('Library'),
+            ],
+        ];
     }
 
     public function expandFolder(string $path): void

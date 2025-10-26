@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
-use App\Models\LibraryPath;
 use App\Services\FileStorageService;
 use Livewire\Component;
 
@@ -17,8 +16,6 @@ class FolderBrowser extends Component
     public array $files = [];
 
     public array $selectedFiles = [];
-
-    public array $libraryPaths = [];
 
     public int $displayLimit = 1000;
 
@@ -33,18 +30,6 @@ class FolderBrowser extends Component
 
     public function mount(): void
     {
-        // Load configured library paths for quick navigation
-        $this->libraryPaths = LibraryPath::active()
-            ->get()
-            ->map(function (LibraryPath $path) {
-                return [
-                    'id' => $path->id,
-                    'label' => $path->label,
-                    'path' => $path->path,
-                ];
-            })
-            ->toArray();
-
         $this->loadFolder('');
     }
 
@@ -130,7 +115,6 @@ class FolderBrowser extends Component
     {
         return view('livewire.admin.folder-browser', [
             'breadcrumbs' => $this->getBreadcrumbs(),
-            'libraryPaths' => $this->libraryPaths,
         ]);
     }
 }

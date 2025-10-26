@@ -158,11 +158,11 @@ class FileStorageService
     }
 
     /**
-     * Get all configured library paths from database
+     * Get configured library path
      */
-    public function getConfiguredPaths(): array
+    public function getConfiguredPath(): string
     {
-        return \App\Models\LibraryPath::active()->pluck('path')->toArray();
+        return config('library.storage.library_path');
     }
 
     /**

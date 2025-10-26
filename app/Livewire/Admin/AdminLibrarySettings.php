@@ -6,7 +6,6 @@ namespace App\Livewire\Admin;
 
 use App\Models\File;
 use App\Models\FileRegistrationLog;
-use App\Models\LibraryPath;
 use App\Models\Publication;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,108 +13,11 @@ use Livewire\Component;
 
 class AdminLibrarySettings extends Component
 {
-    public $libraryPaths = [];
-
-    public string $newPathInput = '';
-
-    public bool $showFolderPicker = false;
+    public string $libraryPath = '';
 
     public function mount(): void
     {
-        $this->loadPaths();
-    }
-
-    public function loadPaths(): void
-    {
-        $this->libraryPaths = LibraryPath::with('creator')->orderBy('created_at', 'desc')->get();
-    }
-
-    public function addPath(): void
-    {
-        $this->validate([
-            'newPathInput' => 'required|string|max:500',
-        ]);
-
-        $path = trim($this->newPathInput);
-
-        // Validate path exists
-        if (! is_dir($path)) {
-            session()->flash('error', __('Path not found or not accessible: ').$path.__('. Use paths within the Docker container (e.g., /library)'));
-
-            return;
-        }
-
-        // Validate path is readable
-        if (! is_readable($path)) {
-            session()->flash('error', __('Insufficient permissions to read path: ').$path);
-
-            return;
-        }
-
-        // Check for duplicates
-        if (LibraryPath::where('path', $path)->exists()) {
-            session()->flash('error', __('This path is already configured'));
-
-            return;
-        }
-
-        LibraryPath::create([
-            'path' => $path,
-            'is_active' => true,
-            'last_verified_at' => now(),
-            'created_by' => auth()->id(),
-        ]);
-
-        session()->flash('success', __('Path added successfully'));
-        $this->newPathInput = '';
-        $this->loadPaths();
-    }
-
-    public function removePath(int $pathId): void
-    {
-        $path = LibraryPath::findOrFail($pathId);
-        $path->delete();
-
-        session()->flash('success', __('Path removed'));
-        $this->loadPaths();
-    }
-
-    public function verifyPath(int $pathId): void
-    {
-        $path = LibraryPath::findOrFail($pathId);
-
-        // Check path still exists and readable
-        if (is_dir($path->path) && is_readable($path->path)) {
-            $path->update([
-                'is_active' => true,
-                'last_verified_at' => now(),
-            ]);
-            session()->flash('success', __('Path verified successfully'));
-        } else {
-            $path->update([
-                'is_active' => false,
-                'last_verified_at' => now(),
-            ]);
-            session()->flash('error', __('Path verification failed'));
-        }
-
-        $this->loadPaths();
-    }
-
-    public function openFolderPicker(): void
-    {
-        $this->showFolderPicker = true;
-    }
-
-    public function closeFolderPicker(): void
-    {
-        $this->showFolderPicker = false;
-    }
-
-    public function selectPath(string $path): void
-    {
-        $this->newPathInput = $path;
-        $this->closeFolderPicker();
+        $this->libraryPath = config('library.storage.library_path');
     }
 
     public function cleanupAllPublications(): void
@@ -158,7 +60,8 @@ class AdminLibrarySettings extends Component
 
     public function render()
     {
-        return view('livewire.admin.admin-library-settings')
-            ->layout('layouts.app');
+        return view('livewire.admin.admin-library-settings', [
+            'libraryPath' => $this->libraryPath,
+        ])->layout('layouts.app');
     }
 }

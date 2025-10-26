@@ -14,6 +14,7 @@ return [
 
     'storage' => [
         'base_path' => env('LIBRARY_STORAGE_PATH', 'content'),
+        'library_path' => env('LIBRARY_PATH', '/library'),
     ],
 
     /*
