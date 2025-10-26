@@ -6,6 +6,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\FolderScanJob;
 use App\Services\FolderScanService;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class BulkFolderScanner extends Component
@@ -83,6 +84,12 @@ class BulkFolderScanner extends Component
             $this->currentScanJob->refresh();
             session()->flash('message', __('Scan cancelled'));
         }
+    }
+
+    #[On('folder-selected')]
+    public function onFolderSelected(string $path): void
+    {
+        $this->folderPath = $path;
     }
 
     public function render()
