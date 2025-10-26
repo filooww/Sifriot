@@ -18,18 +18,21 @@
                          :class="{ 'bg-blue-100 dark:bg-blue-900': $wire.selectedPath === '{{ $root['path'] }}' }">
 
                         <!-- Expand/Collapse Button -->
-                        <button wire:click.stop="@if(in_array($root['path'], $expandedPaths))collapseFolder@else expandFolder@endif('{{ $root['path'] }}')"
-                                class="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-                            @if (in_array($root['path'], $expandedPaths))
+                        @if (in_array($root['path'], $expandedPaths))
+                            <button wire:click.stop="collapseFolder('{{ $root['path'] }}')"
+                                    class="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                 </svg>
-                            @else
+                            </button>
+                        @else
+                            <button wire:click.stop="expandFolder('{{ $root['path'] }}')"
+                                    class="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                                 </svg>
-                            @endif
-                        </button>
+                            </button>
+                        @endif
 
                         <!-- Folder Icon -->
                         <svg class="w-5 h-5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
