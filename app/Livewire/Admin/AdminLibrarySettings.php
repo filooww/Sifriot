@@ -31,22 +31,31 @@ class AdminLibrarySettings extends Component
             'newPathInput' => 'required|string|max:500',
         ]);
 
-        // Validate path exists and is readable
-        if (! is_dir($this->newPathInput) || ! is_readable($this->newPathInput)) {
-            session()->flash('error', __('Invalid path or insufficient permissions'));
+        $path = trim($this->newPathInput);
+
+        // Validate path exists
+        if (! is_dir($path)) {
+            session()->flash('error', __('Path not found or not accessible: ').$path.__('. Use paths within the Docker container (e.g., /library)'));
+
+            return;
+        }
+
+        // Validate path is readable
+        if (! is_readable($path)) {
+            session()->flash('error', __('Insufficient permissions to read path: ').$path);
 
             return;
         }
 
         // Check for duplicates
-        if (LibraryPath::where('path', $this->newPathInput)->exists()) {
+        if (LibraryPath::where('path', $path)->exists()) {
             session()->flash('error', __('This path is already configured'));
 
             return;
         }
 
         LibraryPath::create([
-            'path' => $this->newPathInput,
+            'path' => $path,
             'is_active' => true,
             'last_verified_at' => now(),
             'created_by' => auth()->id(),

@@ -6,9 +6,11 @@ namespace App\Livewire\Admin;
 
 use App\Models\FolderScanJob;
 use App\Services\FolderScanService;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+#[Layout('layouts.app')]
 class BulkFolderScanner extends Component
 {
     public string $folderPath = '';
@@ -16,8 +18,6 @@ class BulkFolderScanner extends Component
     public bool $recursive = true;
 
     public array $fileFormatFilters = ['pdf', 'epub', 'txt', 'docx'];
-
-    public ?int $maxDepth = null;
 
     public ?FolderScanJob $currentScanJob = null;
 
@@ -37,12 +37,15 @@ class BulkFolderScanner extends Component
         ]);
 
         try {
+            // Convert absolute path to relative path for storage operations
+            $libStoragePath = config('filesystems.disks.library.root');
+            $relativePath = $this->getRelativePath($this->folderPath, $libStoragePath);
+
             $this->currentScanJob = $folderScanService->initiateScan(
-                $this->folderPath,
+                $relativePath,
                 [
                     'recursive' => $this->recursive,
                     'file_format_filters' => $this->fileFormatFilters,
-                    'max_depth' => $this->maxDepth,
                 ],
                 auth()->id()
             );
@@ -51,6 +54,31 @@ class BulkFolderScanner extends Component
         } catch (\Exception $e) {
             session()->flash('error', __('Error: ').$e->getMessage());
         }
+    }
+
+    /**
+     * Convert absolute path to relative path for storage disk
+     */
+    private function getRelativePath(string $absolutePath, string $storagePath): string
+    {
+        // Remove trailing slashes for comparison
+        $storagePath = rtrim($storagePath, '/');
+        $absolutePath = rtrim($absolutePath, '/');
+
+        // If paths are equal, return empty string (root)
+        if ($absolutePath === $storagePath) {
+            return '';
+        }
+
+        // If path starts with storage path, extract relative part
+        if (strpos($absolutePath, $storagePath) === 0) {
+            $relative = substr($absolutePath, strlen($storagePath) + 1);
+
+            return $relative ?: '';
+        }
+
+        // Return as-is if not under storage path
+        return $absolutePath;
     }
 
     public function refreshProgress(): void
@@ -90,6 +118,12 @@ class BulkFolderScanner extends Component
     public function onFolderSelected(string $path): void
     {
         $this->folderPath = $path;
+    }
+
+    #[On('bulk-scan-requested')]
+    public function onBulkScanRequested(string $folderPath): void
+    {
+        $this->folderPath = $folderPath;
     }
 
     public function render()

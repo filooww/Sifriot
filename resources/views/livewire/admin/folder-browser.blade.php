@@ -1,5 +1,4 @@
 <div class="max-w-7xl mx-auto py-8 px-4">
-    <h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-gray-100">{{ __('Browse Server Files') }}</h1>
 
     @if (session()->has('error'))
         <div class="bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-200 px-4 py-3 rounded mb-4">
@@ -10,6 +9,21 @@
     @if (session()->has('message'))
         <div class="bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-200 px-4 py-3 rounded mb-4">
             {{ session('message') }}
+        </div>
+    @endif
+
+    <!-- Quick Access to Library Paths -->
+    @if(!empty($libraryPaths))
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('Configured Library Paths') }}</h3>
+            <div class="flex flex-wrap gap-2">
+                @foreach($libraryPaths as $path)
+                    <button wire:click="loadFolder('{{ $path['path'] }}')"
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium transition">
+                        📁 {{ $path['label'] }}
+                    </button>
+                @endforeach
+            </div>
         </div>
     @endif
 
@@ -28,13 +42,13 @@
     </nav>
 
     <!-- Action Buttons -->
-    <div class="mb-6 flex gap-4 items-center">
+    <div class="mb-6 flex gap-4 items-center flex-wrap">
         <button wire:click="registerSelected" class="bg-blue-600 dark:bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800 disabled:bg-gray-400 dark:disabled:bg-gray-600" {{ empty($selectedFiles) ? 'disabled' : '' }}>
             {{ __('Register Selected') }} ({{ count($selectedFiles) }})
         </button>
-        <a href="{{ route('admin.files.register') }}" class="bg-green-600 dark:bg-green-700 text-white px-6 py-2 rounded hover:bg-green-700 dark:hover:bg-green-800">
-            {{ __('Upload New File') }}
-        </a>
+        <button wire:click="startBulkScan" class="bg-green-600 dark:bg-green-700 text-white px-6 py-2 rounded hover:bg-green-700 dark:hover:bg-green-800 disabled:bg-gray-400 dark:disabled:bg-gray-600" {{ empty($currentPath) ? 'disabled' : '' }}>
+            🔄 {{ __('Start Bulk Scan') }}
+        </button>
         @if(count($selectedFiles) > 0)
             <span class="text-sm text-gray-600 dark:text-gray-400">{{ count($selectedFiles) }} file(s) selected</span>
         @endif
@@ -99,7 +113,14 @@
                                 </td>
                                 <td class="px-4 py-2">
                                     @if($file['is_registered'])
-                                        <span class="text-green-600 dark:text-green-400 text-sm">{{ __('Registered') }}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-green-600 dark:text-green-400 text-sm font-medium">✓ {{ __('Registered') }}</span>
+                                            @if($file['registration_source'] === 'bulk_scan')
+                                                <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">{{ __('Bulk Scan') }}</span>
+                                            @elseif($file['registration_source'] === 'manual')
+                                                <span class="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">{{ __('Manual') }}</span>
+                                            @endif
+                                        </div>
                                     @else
                                         <span class="text-orange-600 dark:text-orange-400 text-sm font-semibold">{{ __('Unregistered') }}</span>
                                     @endif

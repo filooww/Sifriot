@@ -39,6 +39,11 @@ class FileStorageService
             $fullPath = Storage::disk('library')->path($file);
             $extension = pathinfo($file, PATHINFO_EXTENSION);
 
+            // Check registration status and source
+            $registrationLog = FileRegistrationLog::where('file_path', $fullPath)->first();
+            $isRegistered = $registrationLog !== null;
+            $registrationSource = $isRegistered ? $registrationLog->registration_source : null;
+
             $fileList[] = [
                 'path' => $file,
                 'name' => basename($file),
@@ -46,7 +51,8 @@ class FileStorageService
                 'modified_date' => Storage::disk('library')->lastModified($file),
                 'extension' => $extension,
                 'format_icon' => $this->getFormatIcon($extension),
-                'is_registered' => FileRegistrationLog::where('file_path', $fullPath)->exists(),
+                'is_registered' => $isRegistered,
+                'registration_source' => $registrationSource,
             ];
         }
 

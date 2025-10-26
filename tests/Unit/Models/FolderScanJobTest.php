@@ -55,7 +55,6 @@ class FolderScanJobTest extends TestCase
         $options = [
             'recursive' => true,
             'file_format_filters' => ['pdf', 'epub'],
-            'max_depth' => 5,
         ];
 
         $scanJob = FolderScanJob::factory()->create(['scan_options' => $options]);

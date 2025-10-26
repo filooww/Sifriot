@@ -7,23 +7,27 @@ namespace App\Livewire\Admin;
 use App\Models\FileRegistrationLog;
 use App\Models\FolderScanJob;
 use App\Models\Publication;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+#[Layout('layouts.app')]
 class ScanResultsViewer extends Component
 {
     use WithPagination;
 
-    public int $scanJobId;
+    public ?int $scanJobId = null;
 
     public ?string $filterStatus = null;
 
     public ?FolderScanJob $scanJob = null;
 
-    public function mount(int $scanJobId): void
+    public function mount(?int $scanJobId = null): void
     {
         $this->scanJobId = $scanJobId;
-        $this->scanJob = FolderScanJob::findOrFail($scanJobId);
+        if ($scanJobId) {
+            $this->scanJob = FolderScanJob::findOrFail($scanJobId);
+        }
     }
 
     public function setFilter(?string $status): void
@@ -34,6 +38,10 @@ class ScanResultsViewer extends Component
 
     public function getResultsProperty()
     {
+        if (! $this->scanJobId) {
+            return collect();
+        }
+
         $query = FileRegistrationLog::where('folder_scan_job_id', $this->scanJobId);
 
         if ($this->filterStatus) {

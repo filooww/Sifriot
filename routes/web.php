@@ -4,6 +4,7 @@ use App\Http\Controllers\DownloadController;
 use App\Livewire\Admin\AdminDashboard;
 use App\Livewire\Admin\AdminLibrarySettings;
 use App\Livewire\Admin\BulkFolderScanner;
+use App\Livewire\Admin\FileManagement;
 use App\Livewire\Admin\FileRegistrationForm;
 use App\Livewire\Admin\FolderBrowser;
 use App\Livewire\Admin\ScanResultsViewer;
@@ -49,6 +50,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dashboard', AdminDashboard::class)
         ->name('dashboard');
 
+    // Unified file management page
+    Route::get('/admin/files', FileManagement::class)
+        ->name('admin.files');
+
+    // Legacy routes for backwards compatibility
     Route::get('/admin/files/browse', FolderBrowser::class)
         ->name('admin.files.browse');
 

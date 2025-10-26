@@ -1,6 +1,8 @@
 {
     "Publications": "Publications",
     "Dashboard": "Dashboard",
+    "Browse": "Browse",
+    "File Management": "File Management",
     "Profile": "Profile",
     "Log in": "Log in",
     "Log Out": "Log Out",
@@ -154,6 +156,11 @@
     "files": "files",
     "Show Only Errors": "Show Only Errors",
     "Show Only New Registrations": "Show Only New Registrations",
+    "Related Tools:": "Related Tools:",
+    "Browse & Register Files": "Browse & Register Files",
+    "Configured Library Paths": "Configured Library Paths",
+    "Bulk Scan": "Bulk Scan",
+    "Manual": "Manual",
     "Bulk Approve": "Bulk Approve",
     "Scan completed": "Scan completed",
     "Scan paused": "Scan paused",
@@ -173,5 +180,6 @@
     "Total Files": "Total Files",
     "No results found": "No results found",
     "Are you sure you want to approve all pending publications?": "Are you sure you want to approve all pending publications?",
-    "Error: ": "Error: "
+    "Error: ": "Error: ",
+    "Start Bulk Scan": "Start Bulk Scan"
 }

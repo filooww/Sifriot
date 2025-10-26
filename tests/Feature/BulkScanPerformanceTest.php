@@ -95,7 +95,6 @@ class BulkScanPerformanceTest extends TestCase
             'scan_options' => [
                 'recursive' => true,
                 'file_format_filters' => ['pdf'],
-                'max_depth' => 5,
             ],
             'status' => 'pending',
         ]);

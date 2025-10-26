@@ -67,16 +67,6 @@ class FolderScanService
             return in_array($extension, $fileFormatFilters);
         });
 
-        // Apply max depth filter if specified
-        if (isset($options['max_depth'])) {
-            $maxDepth = (int) $options['max_depth'];
-            $filteredFiles = array_filter($filteredFiles, function ($file) use ($folderPath, $maxDepth) {
-                $relativePath = str_replace($folderPath.'/', '', $file);
-                $depth = substr_count($relativePath, '/');
-
-                return $depth <= $maxDepth;
-            });
-        }
 
         $totalFiles = count($filteredFiles);
         $scanJob->update(['total_files_found' => $totalFiles]);

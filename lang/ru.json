@@ -1,6 +1,8 @@
 {
     "Publications": "Публикации",
     "Dashboard": "Панель управления",
+    "Browse": "Обзор",
+    "File Management": "Управление файлами",
     "Profile": "Профиль",
     "Log in": "Войти",
     "Log Out": "Выйти",
@@ -154,6 +156,11 @@
     "files": "файлов",
     "Show Only Errors": "Показать только ошибки",
     "Show Only New Registrations": "Показать только новые регистрации",
+    "Related Tools:": "Связанные инструменты:",
+    "Browse & Register Files": "Обзор и регистрация файлов",
+    "Configured Library Paths": "Настроенные пути библиотеки",
+    "Bulk Scan": "Массовое сканирование",
+    "Manual": "Вручную",
     "Bulk Approve": "Массовое одобрение",
     "Scan completed": "Сканирование завершено",
     "Scan paused": "Сканирование приостановлено",
@@ -173,5 +180,6 @@
     "Total Files": "Всего файлов",
     "No results found": "Результаты не найдены",
     "Are you sure you want to approve all pending publications?": "Вы уверены, что хотите одобрить все публикации в ожидании?",
-    "Error: ": "Ошибка: "
+    "Error: ": "Ошибка: ",
+    "Start Bulk Scan": "Начать массовое сканирование"
 }

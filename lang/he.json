@@ -1,6 +1,8 @@
 {
     "Publications": "פרסומים",
     "Dashboard": "לוח בקרה",
+    "Browse": "עיון",
+    "File Management": "ניהול קבצים",
     "Profile": "פרופיל",
     "Log in": "התחברות",
     "Log Out": "יציאה",
@@ -154,6 +156,11 @@
     "files": "קבצים",
     "Show Only Errors": "הצג שגיאות בלבד",
     "Show Only New Registrations": "הצג רישומים חדשים בלבד",
+    "Related Tools:": "כלים קשורים:",
+    "Browse & Register Files": "עיון ורישום קבצים",
+    "Configured Library Paths": "נתיבי ספרייה מוגדרים",
+    "Bulk Scan": "סריקה מרובה",
+    "Manual": "ידני",
     "Bulk Approve": "אישור מרובה",
     "Scan completed": "הסריקה הושלמה",
     "Scan paused": "הסריקה הושהתה",
@@ -173,5 +180,6 @@
     "Total Files": "סה\"כ קבצים",
     "No results found": "לא נמצאו תוצאות",
     "Are you sure you want to approve all pending publications?": "האם אתה בטוח שברצונך לאשר את כל הפרסומים הממתינים?",
-    "Error: ": "שגיאה: "
+    "Error: ": "שגיאה: ",
+    "Start Bulk Scan": "התחל סריקה קבוצתית"
 }

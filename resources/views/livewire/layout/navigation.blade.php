@@ -35,8 +35,8 @@ new class extends Component
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('admin.bulk-scan')" :active="request()->routeIs('admin.bulk-scan')" wire:navigate>
-                        {{ __('Bulk Folder Scan') }}
+                    <x-nav-link :href="route('admin.files')" :active="request()->routeIs('admin.files')" wire:navigate>
+                        {{ __('Browse') }}
                     </x-nav-link>
                     @endif
                     <x-nav-link :href="route('profile')" :active="request()->routeIs('profile')" wire:navigate>
@@ -139,8 +139,8 @@ new class extends Component
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('admin.bulk-scan')" :active="request()->routeIs('admin.bulk-scan')" wire:navigate>
-                {{ __('Bulk Folder Scan') }}
+            <x-responsive-nav-link :href="route('admin.files')" :active="request()->routeIs('admin.files*')" wire:navigate>
+                {{ __('Browse') }}
             </x-responsive-nav-link>
             @endif
             <x-responsive-nav-link :href="route('profile')" :active="request()->routeIs('profile')" wire:navigate>

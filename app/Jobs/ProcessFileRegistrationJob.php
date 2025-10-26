@@ -64,23 +64,29 @@ class ProcessFileRegistrationJob implements ShouldQueue
                 $metadata = $fileStorage->getFileMetadata($this->filePath);
 
                 // Create publication record with pending status
+                $title = $metadata['suggested_title'] ?? basename($this->filePath);
                 $publication = Publication::create([
-                    'title' => $metadata['filename'] ?? basename($this->filePath),
-                    'title_low' => strtolower($metadata['filename'] ?? basename($this->filePath)),
+                    'title' => $title,
+                    'title_low' => strtolower($title),
                     'status' => 'pending',
                     'upload_date' => now(),
                     'original_folder_path' => dirname($this->filePath),
-                    'content_type_id' => $this->determineContentTypeId($this->filePath),
+                    'content_type_id' => $metadata['content_type_id'] ?? $this->determineContentTypeId($this->filePath),
                 ]);
 
                 // Create file record
+                // Get the next ord_num for this publication (default to 1 for first file)
+                $nextOrdNum = File::where('id_publication', $publication->id_publication)->max('ord_num') ?? 0;
+                $nextOrdNum++;
+
                 File::create([
                     'id_publication' => $publication->id_publication,
+                    'ord_num' => $nextOrdNum,
                     'file_name' => basename($this->filePath),
                     'file_name_low' => strtolower(basename($this->filePath)),
                     'file_source' => 'bulk_scan',
                     'mime_type' => $metadata['mime_type'] ?? 'application/octet-stream',
-                    'file_size_bytes' => $metadata['size'] ?? 0,
+                    'file_size_bytes' => $metadata['file_size'] ?? 0,
                 ]);
 
                 // Create registration log

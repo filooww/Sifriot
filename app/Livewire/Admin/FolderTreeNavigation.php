@@ -8,6 +8,8 @@ use App\Models\LibraryPath;
 use App\Services\FileStorageService;
 use Livewire\Component;
 
+// This is an embedded component, not a page component
+// It will be embedded in BulkFolderScanner via @livewire directive
 class FolderTreeNavigation extends Component
 {
     public array $rootPaths = [];
@@ -42,7 +44,14 @@ class FolderTreeNavigation extends Component
         // Load child folders using injected service
         try {
             $fileStorageService = app(FileStorageService::class);
-            $folderContents = $fileStorageService->browseFolder($path);
+
+            // Convert absolute path to relative path for storage disk
+            // The library disk root is typically /library (set in LIBRARY_STORAGE_PATH)
+            // So absolute paths like /library need to be converted to empty string
+            $libStoragePath = config('filesystems.disks.library.root');
+            $relativePath = $this->getRelativePath($path, $libStoragePath);
+
+            $folderContents = $fileStorageService->browseFolder($relativePath);
             $this->childFolders[$path] = $folderContents['folders'];
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to expand folder', [
@@ -50,6 +59,31 @@ class FolderTreeNavigation extends Component
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Convert absolute path to relative path for storage disk
+     */
+    private function getRelativePath(string $absolutePath, string $storagePath): string
+    {
+        // Remove trailing slashes for comparison
+        $storagePath = rtrim($storagePath, '/');
+        $absolutePath = rtrim($absolutePath, '/');
+
+        // If paths are equal, return empty string (root)
+        if ($absolutePath === $storagePath) {
+            return '';
+        }
+
+        // If path starts with storage path, extract relative part
+        if (strpos($absolutePath, $storagePath) === 0) {
+            $relative = substr($absolutePath, strlen($storagePath) + 1);
+
+            return $relative ?: '';
+        }
+
+        // Return as-is if not under storage path (this shouldn't happen in normal use)
+        return $absolutePath;
     }
 
     public function collapseFolder(string $path): void

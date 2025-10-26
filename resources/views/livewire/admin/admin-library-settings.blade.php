@@ -32,8 +32,8 @@
                     >
                     <button
                         wire:click="openFolderPicker"
-                        class="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-md hover:bg-gray-700 dark:hover:bg-gray-600">
-                        {{ __('Browse Folders') }}
+                        class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-800">
+                        {{ __('Select Path') }}
                     </button>
                 </div>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('Or select via folder picker') }}</p>
