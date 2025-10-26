@@ -45,7 +45,7 @@ class FolderScanJob extends Model
 
     public function getProgressPercentAttribute(): float
     {
-        if ($this->total_files_found === 0) {
+        if ($this->total_files_found === null || $this->total_files_found === 0) {
             return 0.0;
         }
 
