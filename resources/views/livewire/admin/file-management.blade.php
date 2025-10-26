@@ -57,7 +57,7 @@
                 <!-- Scan Results Section (Inline) -->
                 <div class="bg-white dark:bg-gray-800 shadow-md rounded p-6" id="scan-results-section">
                     <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">{{ __('Scan Results') }}</h2>
-                    @livewire('admin.scan-results-viewer', ['scanJobId' => null, 'key' => 'scan-results-' . time()])
+                    @livewire('admin.scan-results-viewer', ['scanJobId' => $currentScanJobId, 'key' => 'scan-results-' . time()])
                 </div>
             </div>
         @endif
@@ -65,7 +65,7 @@
         <!-- Upload Tab -->
         @if ($activeTab === 'upload')
             <div class="bg-white dark:bg-gray-800 shadow-md rounded p-6">
-                @livewire('admin.file-registration-form', ['key' => 'file-registration-form-' . time()])
+                @livewire('admin.file-registration-form', ['filePath' => $selectedFilePath, 'key' => 'file-registration-form-' . time()])
             </div>
         @endif
 

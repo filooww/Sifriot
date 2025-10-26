@@ -60,13 +60,12 @@ class FolderScanService
             : Storage::disk('library')->files($folderPath);
 
         // Apply file format filters
-        $fileFormatFilters = $options['file_format_filters'] ?? ['pdf', 'epub', 'txt', 'docx'];
+        $fileFormatFilters = $options['file_format_filters'] ?? ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2'];
         $filteredFiles = array_filter($files, function ($file) use ($fileFormatFilters) {
             $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
             return in_array($extension, $fileFormatFilters);
         });
-
 
         $totalFiles = count($filteredFiles);
         $scanJob->update(['total_files_found' => $totalFiles]);
@@ -121,8 +120,23 @@ class FolderScanService
         ]);
     }
 
+    public function checkAndCompleteScan(FolderScanJob $scanJob): void
+    {
+        // Check if all files have been processed
+        $totalProcessed = $scanJob->files_registered + $scanJob->files_skipped + $scanJob->files_failed;
+
+        if ($totalProcessed >= $scanJob->total_files_found && $scanJob->total_files_found > 0) {
+            $this->completeScan($scanJob);
+        }
+    }
+
     public function completeScan(FolderScanJob $scanJob): void
     {
+        // Only complete if not already completed
+        if ($scanJob->status === 'completed') {
+            return;
+        }
+
         $scanJob->update([
             'status' => 'completed',
             'completed_at' => now(),
@@ -140,6 +154,8 @@ class FolderScanService
         Log::channel('folder_scan')->info('Scan completed', [
             'scan_job_id' => $scanJob->id,
             'files_registered' => $scanJob->files_registered,
+            'files_skipped' => $scanJob->files_skipped,
+            'files_failed' => $scanJob->files_failed,
             'processing_time_seconds' => $scanJob->processing_time_seconds,
         ]);
     }

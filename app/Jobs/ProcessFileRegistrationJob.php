@@ -9,6 +9,7 @@ use App\Models\FileRegistrationLog;
 use App\Models\FolderScanJob;
 use App\Models\Publication;
 use App\Services\FileStorageService;
+use App\Services\FolderScanService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,7 @@ class ProcessFileRegistrationJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(FileStorageService $fileStorage): void
+    public function handle(FileStorageService $fileStorage, FolderScanService $folderScanService): void
     {
         $scanJob = FolderScanJob::findOrFail($this->scanJobId);
 
@@ -109,8 +110,13 @@ class ProcessFileRegistrationJob implements ShouldQueue
                     'publication_id' => $publication->id_publication,
                 ]);
             });
+
+            // Check if all files have been processed and complete scan if done
+            $folderScanService->checkAndCompleteScan($scanJob->fresh());
         } catch (Throwable $e) {
             $this->recordFailure($scanJob, $e->getMessage());
+            // Check if all files have been processed after failure
+            $folderScanService->checkAndCompleteScan($scanJob->fresh());
             throw $e;
         }
     }
@@ -124,6 +130,8 @@ class ProcessFileRegistrationJob implements ShouldQueue
 
         if ($scanJob) {
             $this->recordFailure($scanJob, $exception->getMessage());
+            // Check if all files have been processed after job failure
+            app(FolderScanService::class)->checkAndCompleteScan($scanJob->fresh());
         }
     }
 

@@ -89,10 +89,10 @@ class FolderBrowser extends Component
             return;
         }
 
-        // Redirect to registration form with selected file path
+        // Dispatch event to parent FileManagement component to switch to upload tab
         $filePath = $this->selectedFiles[0];
-
-        return $this->redirect(route('admin.files.register', ['filePath' => $filePath]));
+        $this->dispatch('file-selected-for-registration', filePath: $filePath);
+        session()->flash('message', __('File selected. Switch to Upload tab to register.'));
     }
 
     public function startBulkScan(): void

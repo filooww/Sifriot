@@ -181,5 +181,20 @@
     "No results found": "No results found",
     "Are you sure you want to approve all pending publications?": "Are you sure you want to approve all pending publications?",
     "Error: ": "Error: ",
-    "Start Bulk Scan": "Start Bulk Scan"
+    "Start Bulk Scan": "Start Bulk Scan",
+    "File selected. Switch to Upload tab to register.": "File selected. Switch to Upload tab to register.",
+    "Scan Completed": "Scan Completed",
+    "New Scan": "New Scan",
+    "Ready for new scan": "Ready for new scan",
+    "Danger Zone": "Danger Zone",
+    "Delete all publications from the database. This action cannot be undone.": "Delete all publications from the database. This action cannot be undone.",
+    "Warning: This will permanently delete:": "Warning: This will permanently delete:",
+    "All publications": "All publications",
+    "All file references": "All file references",
+    "All registration logs": "All registration logs",
+    "The actual files on disk will remain untouched.": "The actual files on disk will remain untouched.",
+    "Delete All Publications": "Delete All Publications",
+    "Are you absolutely sure? This will permanently delete ALL publications and cannot be undone!": "Are you absolutely sure? This will permanently delete ALL publications and cannot be undone!",
+    "All publications have been deleted successfully": "All publications have been deleted successfully",
+    "Failed to cleanup publications: ": "Failed to cleanup publications: "
 }

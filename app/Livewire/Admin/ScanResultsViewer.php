@@ -8,6 +8,7 @@ use App\Models\FileRegistrationLog;
 use App\Models\FolderScanJob;
 use App\Models\Publication;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -28,6 +29,15 @@ class ScanResultsViewer extends Component
         if ($scanJobId) {
             $this->scanJob = FolderScanJob::findOrFail($scanJobId);
         }
+    }
+
+    #[On('scan-job-created')]
+    public function onScanJobCreated(int $scanJobId): void
+    {
+        $this->scanJobId = $scanJobId;
+        $this->scanJob = FolderScanJob::findOrFail($scanJobId);
+        $this->resetPage();
+        $this->filterStatus = null;
     }
 
     public function setFilter(?string $status): void

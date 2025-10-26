@@ -12,7 +12,7 @@
     @endif
 
     <!-- Scan Form -->
-    @if (!$currentScanJob || in_array($currentScanJob->status, ['completed', 'cancelled', 'failed']))
+    @if (!$currentScanJob || in_array($currentScanJob->status, ['cancelled', 'failed']))
         <div class="bg-white dark:bg-gray-800 shadow-md rounded px-8 pt-6 pb-8 mb-4">
             <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-gray-100">{{ __('Scan Options') }}</h2>
 
@@ -28,13 +28,6 @@
                     placeholder="content/books"
                 >
                 @error('folderPath') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
-            </div>
-
-            <div class="mb-4">
-                <label class="flex items-center">
-                    <input type="checkbox" wire:model="recursive" class="me-2 rounded dark:bg-gray-700 dark:border-gray-600">
-                    <span class="text-sm text-gray-900 dark:text-gray-100">{{ __('Recursive') }}</span>
-                </label>
             </div>
 
             <div class="mb-4">
@@ -55,8 +48,16 @@
                         <span class="text-sm text-gray-900 dark:text-gray-100">TXT</span>
                     </label>
                     <label class="flex items-center">
+                        <input type="checkbox" wire:model="fileFormatFilters" value="doc" class="me-1 rounded dark:bg-gray-700 dark:border-gray-600">
+                        <span class="text-sm text-gray-900 dark:text-gray-100">DOC</span>
+                    </label>
+                    <label class="flex items-center">
                         <input type="checkbox" wire:model="fileFormatFilters" value="docx" class="me-1 rounded dark:bg-gray-700 dark:border-gray-600">
                         <span class="text-sm text-gray-900 dark:text-gray-100">DOCX</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" wire:model="fileFormatFilters" value="fb2" class="me-1 rounded dark:bg-gray-700 dark:border-gray-600">
+                        <span class="text-sm text-gray-900 dark:text-gray-100">FB2</span>
                     </label>
                 </div>
             </div>
@@ -72,10 +73,16 @@
         </div>
     @endif
 
-    <!-- Scan Progress -->
-    @if ($currentScanJob && in_array($currentScanJob->status, ['pending', 'processing', 'paused']))
+    <!-- Scan Progress / Results Summary -->
+    @if ($currentScanJob && in_array($currentScanJob->status, ['pending', 'processing', 'paused', 'completed']))
         <div class="bg-white dark:bg-gray-800 shadow-md rounded px-8 pt-6 pb-8 mb-4">
-            <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-gray-100">{{ __('Scan Progress') }}</h2>
+            <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-gray-100">
+                @if ($currentScanJob->status === 'completed')
+                    {{ __('Scan Completed') }}
+                @else
+                    {{ __('Scan Progress') }}
+                @endif
+            </h2>
 
             <div class="mb-6">
                 <div class="flex justify-between mb-2">
@@ -115,19 +122,21 @@
                     </button>
                 @endif
 
-                <button
-                    wire:click="cancelScan"
-                    class="bg-red-500 dark:bg-red-600 hover:bg-red-700 dark:hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                >
-                    {{ __('Cancel Scan') }}
-                </button>
-
-                <a
-                    href="{{ route('admin.scan-results', ['scanJobId' => $currentScanJob->id]) }}"
-                    class="bg-gray-500 dark:bg-gray-600 hover:bg-gray-700 dark:hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                >
-                    {{ __('View Results') }}
-                </a>
+                @if ($currentScanJob->status !== 'completed')
+                    <button
+                        wire:click="cancelScan"
+                        class="bg-red-500 dark:bg-red-600 hover:bg-red-700 dark:hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    >
+                        {{ __('Cancel Scan') }}
+                    </button>
+                @else
+                    <button
+                        wire:click="resetScan"
+                        class="bg-blue-500 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    >
+                        {{ __('New Scan') }}
+                    </button>
+                @endif
             </div>
         </div>
     @endif

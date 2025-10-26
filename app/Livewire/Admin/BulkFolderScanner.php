@@ -15,9 +15,7 @@ class BulkFolderScanner extends Component
 {
     public string $folderPath = '';
 
-    public bool $recursive = true;
-
-    public array $fileFormatFilters = ['pdf', 'epub', 'txt', 'docx'];
+    public array $fileFormatFilters = ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2'];
 
     public ?FolderScanJob $currentScanJob = null;
 
@@ -44,11 +42,14 @@ class BulkFolderScanner extends Component
             $this->currentScanJob = $folderScanService->initiateScan(
                 $relativePath,
                 [
-                    'recursive' => $this->recursive,
+                    'recursive' => true, // Always recursive
                     'file_format_filters' => $this->fileFormatFilters,
                 ],
                 auth()->id()
             );
+
+            // Dispatch event to parent component so ScanResultsViewer gets the scanJobId
+            $this->dispatch('scan-job-created', scanJobId: $this->currentScanJob->id);
 
             session()->flash('message', __('Bulk scan started. Discovering files...'));
         } catch (\Exception $e) {
@@ -112,6 +113,15 @@ class BulkFolderScanner extends Component
             $this->currentScanJob->refresh();
             session()->flash('message', __('Scan cancelled'));
         }
+    }
+
+    public function resetScan(): void
+    {
+        // Clear current scan job to show the scan form again
+        $this->currentScanJob = null;
+        $this->folderPath = '';
+        $this->fileFormatFilters = ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2'];
+        session()->flash('message', __('Ready for new scan'));
     }
 
     #[On('folder-selected')]
