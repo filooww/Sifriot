@@ -91,6 +91,7 @@ class FileRegistrationForm extends Component
     public function registerFile(): void
     {
         $this->validate([
+            'selectedFilePath' => 'required|string',
             'publicationTitle' => 'required|max:500',
             'contentTypeId' => 'required|exists:content_types,id',
         ]);
