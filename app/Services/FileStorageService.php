@@ -150,4 +150,23 @@ class FileStorageService
         // Default to 'Other'
         return 4;
     }
+
+    /**
+     * Get all configured library paths from database
+     */
+    public function getConfiguredPaths(): array
+    {
+        return \App\Models\LibraryPath::active()->pluck('path')->toArray();
+    }
+
+    /**
+     * Check if file path is external (vs internal storage)
+     */
+    public function isExternalPath(string $filePath): bool
+    {
+        $internalStoragePath = Storage::disk('local')->path('content');
+        $realPath = realpath($filePath) ?: $filePath;
+
+        return strpos($realPath, $internalStoragePath) !== 0;
+    }
 }
