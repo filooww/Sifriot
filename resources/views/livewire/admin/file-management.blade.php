@@ -29,6 +29,13 @@
             </button>
 
             <button
+                wire:click="setActiveTab('metadata')"
+                class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'metadata' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
+            >
+                📋 {{ __('Metadata Review') }}
+            </button>
+
+            <button
                 wire:click="setActiveTab('settings')"
                 class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'settings' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
             >
@@ -66,6 +73,13 @@
         @if ($activeTab === 'upload')
             <div class="bg-white dark:bg-gray-800 shadow-md rounded p-6">
                 @livewire('admin.file-registration-form', ['filePath' => $selectedFilePath, 'key' => 'file-registration-form-' . time()])
+            </div>
+        @endif
+
+        <!-- Metadata Review Tab -->
+        @if ($activeTab === 'metadata')
+            <div>
+                @livewire('admin.metadata-review-queue', ['key' => 'metadata-review-queue-' . time()])
             </div>
         @endif
 

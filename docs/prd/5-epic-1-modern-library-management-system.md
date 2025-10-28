@@ -331,36 +331,6 @@ Build a complete, modern library management system for Seferium that enables adm
 - IV3: Extracted metadata populates correct fields in publication form
 - IV4: Extraction works identically for external server files (registered) and internal storage files (uploaded)
 
----
-
-## Story 1.6A: Folder Browser and File Discovery Interface
-
-**As an** administrator,
-**I want** an intuitive folder browsing interface to explore server files,
-**so that** I can easily discover and register existing content from the 1.1TB library.
-
-**Acceptance Criteria:**
-1. Folder browser component displays hierarchical folder tree view
-2. Starting path configurable via environment variable (e.g., `/mnt/library-storage`)
-3. Folder tree shows: folder icons, file icons (by type), file sizes, modification dates
-4. Visual indicators distinguish: unregistered files, registered files, unsupported formats, broken paths
-5. Admin can expand/collapse folders to navigate tree
-6. Admin can filter view: "Show only unregistered", "Show only [format]", "Show files > [size]"
-7. Breadcrumb navigation shows current path
-8. Multi-select capability (checkboxes) for bulk file selection
-9. Selected files show count: "23 files selected (145 MB total)"
-10. Quick actions on selected files: "Register Selected", "Preview Metadata", "Export File List"
-11. Search within current folder (filename search)
-12. Sort options: Name, Size, Date Modified, Registration Status
-13. Pagination or virtual scrolling for folders with 1000+ files
-14. Refresh button to rescan current folder for changes
-15. Performance: Folder loads within 2 seconds even with 1000 files
-
-**Integration Verification:**
-- IV1: Folder browser respects filesystem permissions (doesn't show inaccessible folders)
-- IV2: Clicking "Register Selected" opens registration form with all selected files
-- IV3: Browser handles symbolic links and mounted volumes correctly
-- IV4: Real-time registration status updates (when file registered elsewhere, browser reflects it)
 
 ---
 

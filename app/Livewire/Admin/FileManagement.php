@@ -33,6 +33,13 @@ class FileManagement extends Component
         $this->currentScanJobId = $scanJobId;
     }
 
+    #[On('metadata-confirmed')]
+    public function onMetadataConfirmed(): void
+    {
+        // Refresh metadata queue when item confirmed
+        $this->dispatch('refresh-metadata-queue');
+    }
+
     public function render()
     {
         return view('livewire.admin.file-management', [

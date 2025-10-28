@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
+use App\Jobs\ExtractMetadataFromFile;
 use App\Models\ContentType;
 use App\Models\File;
 use App\Models\FileRegistrationLog;
@@ -132,7 +133,18 @@ class FileRegistrationForm extends Component
                 'registered_by' => auth()->id(),
             ]);
 
-            session()->flash('message', __('File registered successfully'));
+            // Dispatch metadata extraction job if enabled
+            if (config('library.extraction.enabled', true)) {
+                $fileId = "{$publication->id_publication}-" . basename($this->selectedFilePath);
+                ExtractMetadataFromFile::dispatch(
+                    $fileId,
+                    $fullPath,
+                    $this->contentTypeId,
+                    Storage::disk('local')->mimeType($this->selectedFilePath)
+                );
+            }
+
+            session()->flash('message', __('File registered successfully. Metadata extraction started...'));
             $this->dispatch('file-registered-successfully');
             $this->reset(['publicationTitle', 'contentTypeId', 'selectedFilePath']);
 
@@ -195,7 +207,18 @@ class FileRegistrationForm extends Component
                 'registered_by' => auth()->id(),
             ]);
 
-            session()->flash('message', __('File uploaded successfully'));
+            // Dispatch metadata extraction job if enabled
+            if (config('library.extraction.enabled', true)) {
+                $fileId = "{$publication->id_publication}-{$uniqueFilename}";
+                ExtractMetadataFromFile::dispatch(
+                    $fileId,
+                    $fullPath,
+                    $this->contentTypeId,
+                    $this->uploadedFile->getMimeType()
+                );
+            }
+
+            session()->flash('message', __('File uploaded successfully. Metadata extraction started...'));
             $this->dispatch('file-uploaded-successfully');
             $this->reset(['publicationTitle', 'contentTypeId', 'uploadedFile']);
 
