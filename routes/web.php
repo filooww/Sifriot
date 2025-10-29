@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\FileViewController;
 use App\Livewire\Admin\AdminDashboard;
 use App\Livewire\Admin\AdminLibrarySettings;
 use App\Livewire\Admin\BulkFolderScanner;
@@ -43,6 +44,19 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/downloads/{publication}/{filename}', [DownloadController::class, 'download'])
         ->name('files.download')
         ->middleware('role:user');
+
+    // File viewer (inline viewing for document viewers)
+    // Filename is base64-encoded to handle Cyrillic characters
+    Route::get('/files/view/{publication}/{filename}', [FileViewController::class, 'view'])
+        ->name('files.view');
+
+    // DOC file converter (converts DOC to text using antiword)
+    Route::get('/files/convert-doc/{publication}/{filename}', [FileViewController::class, 'convertDoc'])
+        ->name('files.convert-doc');
+
+    // FB2 file converter (converts FB2 XML to HTML)
+    Route::get('/files/convert-fb2/{publication}/{filename}', [FileViewController::class, 'convertFb2'])
+        ->name('files.convert-fb2');
 });
 
 // Admin routes

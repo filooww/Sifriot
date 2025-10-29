@@ -85,7 +85,7 @@ class ProcessFileRegistrationJob implements ShouldQueue
                     'ord_num' => $nextOrdNum,
                     'file_name' => basename($this->filePath),
                     'file_name_low' => strtolower(basename($this->filePath)),
-                    'file_source' => 'bulk_scan',
+                    'file_source' => dirname($this->filePath), // Store relative directory path for library disk
                     'mime_type' => $metadata['mime_type'] ?? 'application/octet-stream',
                     'file_size_bytes' => $metadata['file_size'] ?? 0,
                 ]);

@@ -16,6 +16,10 @@ class PublicationDetail extends Component
 
     public bool $isGuest = true;
 
+    public ?string $selectedFileName = null;
+
+    public bool $showMetadata = false;
+
     public function mount(int $id): void
     {
         $this->isGuest = ! Auth::check();
@@ -35,8 +39,20 @@ class PublicationDetail extends Component
             ->when(! $this->isGuest, function ($query) {
                 $query->with('files');
             })
+            ->when($this->isGuest, function ($query) {
+                // Guests can only view published publications
+                $query->where('status', 'published');
+            })
             ->whereNull('deleted_at')
             ->findOrFail($id);
+    }
+
+    public function selectFile(string $fileName): void
+    {
+        if (! $this->isGuest) {
+            $this->selectedFileName = $fileName;
+            $this->dispatch('fileSelected', fileName: $fileName);
+        }
     }
 
     public function render()

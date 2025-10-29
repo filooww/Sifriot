@@ -97,8 +97,12 @@ class PublicationList extends Component
         // Check if MySQL (FULLTEXT) or SQLite (fallback to LIKE)
         $isMysql = DB::getDriverName() === 'mysql';
 
-        // For guests, only show active publications
+        // For guests, only show published publications
         $query = Publication::query()
+            ->when($this->isGuest, function ($query) {
+                // Guests see ONLY published publications
+                $query->where('status', 'published');
+            })
             ->when($this->search, function ($query) use ($isMysql) {
                 if ($isMysql && ! empty(trim($this->search))) {
                     // Use FULLTEXT search on MySQL
