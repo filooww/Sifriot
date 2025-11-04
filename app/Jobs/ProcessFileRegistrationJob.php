@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Jobs\ExtractMetadataFromFile;
 use App\Models\File;
 use App\Models\FileRegistrationLog;
 use App\Models\FolderScanJob;
@@ -89,6 +90,25 @@ class ProcessFileRegistrationJob implements ShouldQueue
                     'mime_type' => $metadata['mime_type'] ?? 'application/octet-stream',
                     'file_size_bytes' => $metadata['file_size'] ?? 0,
                 ]);
+
+                // Trigger metadata extraction for bulk scanned files
+                if (config('library.extraction.enabled', true)) {
+                    $fileId = "{$publication->id_publication}-" . basename($this->filePath);
+                    $fullPath = Storage::disk('library')->path($this->filePath);
+
+                    ExtractMetadataFromFile::dispatch(
+                        $fileId,
+                        $fullPath,
+                        $publication->content_type_id,
+                        $metadata['mime_type'] ?? 'application/octet-stream'
+                    );
+
+                    Log::channel('folder_scan')->info('Metadata extraction queued for bulk scanned file', [
+                        'file_id' => $fileId,
+                        'scan_job_id' => $this->scanJobId,
+                        'publication_id' => $publication->id_publication,
+                    ]);
+                }
 
                 // Create registration log
                 FileRegistrationLog::create([

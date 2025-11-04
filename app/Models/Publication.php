@@ -38,6 +38,15 @@ class Publication extends Model
         'add_int',
         'add_char',
         'word_count',
+        'extracted_author_names',
+        'extracted_publication_year',
+        'extracted_publisher',
+        'extracted_isbn',
+        'extracted_doi',
+        'metadata_source',
+        'metadata_confidence_avg',
+        'metadata_confirmed_at',
+        'metadata_previous_values',
     ];
 
     protected $casts = [
@@ -46,6 +55,11 @@ class Publication extends Model
         'add_int' => 'integer',
         'word_count' => 'integer',
         'status' => 'string',
+        'extracted_author_names' => 'array',
+        'extracted_publication_year' => 'integer',
+        'metadata_confidence_avg' => 'decimal:2',
+        'metadata_confirmed_at' => 'datetime',
+        'metadata_previous_values' => 'array',
     ];
 
     protected $appends = [
@@ -130,6 +144,11 @@ class Publication extends Model
         return $this->belongsTo(ContentType::class);
     }
 
+    public function fileMetadata(): HasMany
+    {
+        return $this->hasMany(FileMetadata::class, 'file_id', 'id_publication');
+    }
+
     // Scopes
     public function scopePending($query)
     {
@@ -154,5 +173,33 @@ class Publication extends Model
         return Attribute::make(
             get: fn () => $this->files()->sum('file_size_bytes') ?? 0
         );
+    }
+
+    // Metadata Accessors
+    public function getExtractedAuthorsAttribute(): array
+    {
+        if (is_array($this->extracted_author_names)) {
+            return $this->extracted_author_names;
+        }
+
+        if (is_string($this->extracted_author_names)) {
+            return json_decode($this->extracted_author_names, true) ?? [];
+        }
+
+        return [];
+    }
+
+    public function getMetadataAsArray(): array
+    {
+        return [
+            'authors' => $this->extracted_author_names,
+            'publication_year' => $this->extracted_publication_year,
+            'publisher' => $this->extracted_publisher,
+            'isbn' => $this->extracted_isbn,
+            'doi' => $this->extracted_doi,
+            'confidence_avg' => $this->metadata_confidence_avg,
+            'source' => $this->metadata_source,
+            'confirmed_at' => $this->metadata_confirmed_at,
+        ];
     }
 }

@@ -150,6 +150,14 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
                     $metadata->setPublicationYear($year, 0.95);
                 }
             }
+
+            // Extract genres
+            if ($name === 'genre') {
+                $genre = $this->cleanText((string) $element);
+                if ($genre) {
+                    $metadata->addGenre($genre, 0.9);
+                }
+            }
         }
 
         return $metadata;

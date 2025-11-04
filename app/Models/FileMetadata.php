@@ -114,6 +114,20 @@ class FileMetadata extends Model
     }
 
     /**
+     * Get genres from extracted data.
+     *
+     * @return array<string>
+     */
+    public function getGenres(): array
+    {
+        if (!isset($this->extracted_data['genres']) || !is_array($this->extracted_data['genres'])) {
+            return [];
+        }
+
+        return array_map(fn ($genre) => $genre['value'] ?? '', $this->extracted_data['genres']);
+    }
+
+    /**
      * Get fields above confidence threshold.
      *
      * @param float $threshold Minimum confidence (0.0-1.0)
@@ -163,6 +177,13 @@ class FileMetadata extends Model
             if ($confidence >= $threshold) {
                 $result['doi'] = $this->extracted_data['doi'];
             }
+        }
+
+        if (isset($this->extracted_data['genres'])) {
+            $result['genres'] = array_filter(
+                $this->extracted_data['genres'],
+                fn ($genre) => ($genre['confidence'] ?? 0) >= $threshold
+            );
         }
 
         return $result;

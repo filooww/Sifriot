@@ -39,8 +39,8 @@ class PublicationDetail extends Component
             ->when(! $this->isGuest, function ($query) {
                 $query->with('files');
             })
-            ->when($this->isGuest, function ($query) {
-                // Guests can only view published publications
+            ->when($this->isGuest || (Auth::check() && Auth::user()->role !== 'admin'), function ($query) {
+                // Guests and non-admin users can only view published publications
                 $query->where('status', 'published');
             })
             ->whereNull('deleted_at')

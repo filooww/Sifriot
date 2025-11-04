@@ -6,7 +6,6 @@ namespace App\Livewire;
 
 use App\Models\Publication;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
@@ -73,11 +72,12 @@ class PublicCatalog extends Component
 
     public function render()
     {
-        // Check if MySQL (FULLTEXT) or SQLite (fallback to LIKE)
-        $isMysql = DB::getDriverName() === 'mysql';
-
         // Public catalog only shows active, non-deleted publications
         $query = Publication::query()
+            ->when($this->isGuest || (Auth::check() && Auth::user()->role !== 'admin'), function ($query) {
+                // Guests and non-admin users can only see published publications
+                $query->where('status', 'published');
+            })
             ->when($this->search, function ($query) {
                 $searchTerm = trim($this->search);
                 if (! empty($searchTerm)) {

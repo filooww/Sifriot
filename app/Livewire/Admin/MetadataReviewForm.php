@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
+use App\Events\MetadataConfirmed;
 use App\Models\FileMetadata;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -23,6 +24,8 @@ class MetadataReviewForm extends Component
     public string $isbn = '';
 
     public string $doi = '';
+
+    public array $genres = [''];
 
     public bool $useExtracted = false;
 
@@ -46,6 +49,8 @@ class MetadataReviewForm extends Component
         'publisher' => 'nullable|string|max:255',
         'isbn' => 'nullable|string|regex:/^(?:ISBN(?:-1[03])?:?\s?)?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[X0-9]$/',
         'doi' => 'nullable|string|regex:/^10\.\d{4,}\/\S+$/',
+        'genres' => 'array',
+        'genres.*' => 'string|max:255',
     ];
 
     /**
@@ -83,6 +88,9 @@ class MetadataReviewForm extends Component
             $this->publisher = $this->fileMetadata->getPublisher() ?? '';
             $this->isbn = $this->fileMetadata->getIsbn() ?? '';
             $this->doi = $this->fileMetadata->getDoi() ?? '';
+            $this->genres = !empty($this->fileMetadata->getGenres())
+                ? $this->fileMetadata->getGenres()
+                : [''];
             $this->useExtracted = true;
         }
     }
@@ -107,6 +115,25 @@ class MetadataReviewForm extends Component
     }
 
     /**
+     * Add a new genre field.
+     */
+    public function addGenre(): void
+    {
+        $this->genres[] = '';
+    }
+
+    /**
+     * Remove a genre field.
+     *
+     * @param int $index
+     */
+    public function removeGenre(int $index): void
+    {
+        unset($this->genres[$index]);
+        $this->genres = array_values($this->genres);
+    }
+
+    /**
      * Confirm extraction with form data.
      */
     public function confirmExtraction(): void
@@ -116,6 +143,8 @@ class MetadataReviewForm extends Component
         try {
             // Clean empty authors
             $cleanedAuthors = array_filter($this->authors, fn ($author) => !empty(trim($author)));
+            // Clean empty genres
+            $cleanedGenres = array_filter($this->genres, fn ($genre) => !empty(trim($genre)));
 
             $this->fileMetadata->update([
                 'status' => 'confirmed',
@@ -148,6 +177,13 @@ class MetadataReviewForm extends Component
                         'value' => $this->doi,
                         'confidence' => $this->confidenceScores['doi'] ?? 0.8,
                     ] : null,
+                    'genres' => array_map(
+                        fn ($genre) => [
+                            'value' => trim($genre),
+                            'confidence' => $this->confidenceScores['genres'] ?? 0.8,
+                        ],
+                        $cleanedGenres
+                    ),
                 ],
             ]);
 
@@ -156,6 +192,9 @@ class MetadataReviewForm extends Component
                 'file_name' => $this->fileMetadata->file_name,
                 'title' => $this->title,
             ]);
+
+            // Fire event to auto-apply metadata to Publication
+            MetadataConfirmed::dispatch($this->fileMetadata);
 
             // Close modal and refresh parent queue
             $this->dispatch('refresh-metadata-queue');
@@ -205,6 +244,7 @@ class MetadataReviewForm extends Component
 
         try {
             $cleanedAuthors = array_filter($this->authors, fn ($author) => !empty(trim($author)));
+            $cleanedGenres = array_filter($this->genres, fn ($genre) => !empty(trim($genre)));
 
             $this->fileMetadata->update([
                 'status' => 'confirmed',
@@ -237,6 +277,13 @@ class MetadataReviewForm extends Component
                         'value' => $this->doi,
                         'confidence' => 1.0,
                     ] : null,
+                    'genres' => array_map(
+                        fn ($genre) => [
+                            'value' => trim($genre),
+                            'confidence' => 1.0,
+                        ],
+                        $cleanedGenres
+                    ),
                 ],
                 'extraction_method' => 'manual_entry',
             ]);
@@ -246,6 +293,9 @@ class MetadataReviewForm extends Component
                 'file_name' => $this->fileMetadata->file_name,
                 'title' => $this->title,
             ]);
+
+            // Fire event to auto-apply metadata to Publication
+            MetadataConfirmed::dispatch($this->fileMetadata);
 
             // Close modal and refresh parent queue
             $this->dispatch('refresh-metadata-queue');
@@ -278,6 +328,7 @@ class MetadataReviewForm extends Component
         $this->publisher = '';
         $this->isbn = '';
         $this->doi = '';
+        $this->genres = [''];
     }
 
     /**

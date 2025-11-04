@@ -190,9 +190,9 @@
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse ($fileMetadataList as $metadata)
                     @php
-                        $badgeInfo = $getStatusBadge($metadata->status);
+                        $badgeInfo = $this->getStatusBadge($metadata->status);
                     @endphp
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                         <td class="px-6 py-3">
                             <input
                                 type="checkbox"
@@ -213,7 +213,7 @@
                         </td>
                         <td class="px-6 py-3">
                             <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-                                {{ $getFileExtension($metadata->file_name) }}
+                                {{ $this->getFileExtension($metadata->file_name) }}
                             </span>
                         </td>
                         <td class="px-6 py-3">
@@ -229,7 +229,7 @@
                                 @if ($metadata->status === 'processed')
                                     <button
                                         type="button"
-                                        wire:click="$dispatch('open-review-modal', { metadataId: {{ $metadata->id }} })"
+                                        wire:click="$set('selectedMetadataId', {{ $metadata->id }})"
                                         class="px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition"
                                     >
                                         Review
@@ -237,7 +237,7 @@
                                 @elseif ($metadata->status === 'failed')
                                     <button
                                         type="button"
-                                        wire:click="reExtractSelected"
+                                        wire:click="reExtractSingle({{ $metadata->id }})"
                                         class="px-3 py-1 text-sm font-medium text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded transition"
                                     >
                                         Retry
@@ -267,7 +267,7 @@
         <!-- Pagination -->
         @if ($fileMetadataList->hasPages())
             <div class="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
-                {{ $fileMetadataList->links('pagination::tailwind') }}
+                {{ $fileMetadataList->links() }}
             </div>
         @endif
     </div>
@@ -279,8 +279,8 @@
         @endphp
 
         @if ($selectedMetadata)
-            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto">
-                <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto" wire:click="$set('selectedMetadataId', null)">
+                <div class="min-h-screen flex items-center justify-center p-4" wire:click.stop>
                     <div class="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
                         <!-- Modal Header -->
                         <div class="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">

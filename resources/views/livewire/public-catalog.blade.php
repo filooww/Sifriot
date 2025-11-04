@@ -110,30 +110,57 @@
                 <!-- Publications Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @forelse($publications as $publication)
-                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
+                            <!-- Cover Image -->
+                            <div class="relative bg-gray-200 dark:bg-gray-700 aspect-[2/3] overflow-hidden flex items-center justify-center">
+                                <a href="{{ route('publications.show', $publication->id_publication) }}" wire:navigate class="w-full h-full">
+                                    @if($publication->cover_image_path)
+                                        <img
+                                            src="{{ Storage::url($publication->cover_image_path) }}"
+                                            alt="{{ $publication->title }}"
+                                            class="w-full h-full object-cover hover:opacity-90 transition-opacity"
+                                        />
+                                    @else
+                                        <div class="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 flex flex-col items-center justify-center p-4">
+                                            <svg class="w-16 h-16 text-gray-500 dark:text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C6.5 6.253 2 10.58 2 15.667c0 5.087 4.5 9.414 10 9.414s10-4.327 10-9.414c0-5.087-4.5-9.414-10-9.414z"></path>
+                                            </svg>
+                                            <span class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ __('No cover image') }}</span>
+                                        </div>
+                                    @endif
+                                </a>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="p-4 flex flex-col flex-grow">
+                                <!-- Title -->
+                                <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
                                     <a href="{{ route('publications.show', $publication->id_publication) }}" wire:navigate
                                        class="hover:text-blue-600 dark:hover:text-blue-400 transition">
                                         {{ $publication->title }}
                                     </a>
                                 </h3>
 
+                                <!-- Authors -->
                                 @if($publication->authors->isNotEmpty())
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                    {{ __('By') }} {{ $publication->authors->pluck('author')->join(', ') }}
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                                    {{ $publication->authors->pluck('author')->join(', ') }}
                                 </p>
+                                @else
+                                <p class="text-sm text-gray-500 dark:text-gray-500 mb-3 italic">{{ __('No author') }}</p>
                                 @endif
 
+                                <!-- Publisher (optional) -->
                                 @if($publication->publishing)
-                                <p class="text-xs text-gray-500 dark:text-gray-500 mb-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-500 mb-2 line-clamp-1">
                                     {{ $publication->publishing->publishing }}
                                 </p>
                                 @endif
 
+                                <!-- Categories -->
                                 @if($publication->categories->isNotEmpty())
-                                <div class="flex flex-wrap gap-1 mb-2">
-                                    @foreach($publication->categories->take(3) as $category)
+                                <div class="flex flex-wrap gap-1 mb-3">
+                                    @foreach($publication->categories->take(2) as $category)
                                     <span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
                                         {{ $category->name }}
                                     </span>
@@ -141,7 +168,8 @@
                                 </div>
                                 @endif
 
-                                <div class="mt-4 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                                <!-- Metadata Footer -->
+                                <div class="mt-auto pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
                                     <span>{{ $publication->upload_date?->format('Y-m-d') }}</span>
                                     @if($publication->word_count)
                                     <span>{{ number_format($publication->word_count) }} {{ __('words') }}</span>

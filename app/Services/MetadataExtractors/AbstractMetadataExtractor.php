@@ -78,7 +78,13 @@ abstract class AbstractMetadataExtractor implements MetadataExtractorInterface
     protected function normalizeEncoding(string $text): string
     {
         if (!mb_check_encoding($text, 'UTF-8')) {
-            $text = mb_convert_encoding($text, 'UTF-8', mb_detect_encoding($text, null, true));
+            $encoding = mb_detect_encoding($text, ['UTF-8', 'Windows-1251', 'ISO-8859-1', 'ASCII'], true);
+            if ($encoding !== false) {
+                $text = mb_convert_encoding($text, 'UTF-8', $encoding);
+            } else {
+                // Fallback to Windows-1251 (common for Russian texts) if detection fails
+                $text = mb_convert_encoding($text, 'UTF-8', 'Windows-1251');
+            }
         }
         return $text;
     }

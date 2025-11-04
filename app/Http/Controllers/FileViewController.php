@@ -352,6 +352,250 @@ class FileViewController extends Controller
     }
 
     /**
+     * Convert DOC file to styled HTML using PHPWord
+     */
+    public function convertDocToHtml(int $publication, string $filename): Response|JsonResponse
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            abort(401, 'Unauthorized');
+        }
+
+        // Decode URL-safe base64-encoded filename
+        $base64 = str_pad(strtr($filename, '-_', '+/'), strlen($filename) % 4, '=', STR_PAD_RIGHT);
+        $decodedFilename = base64_decode($base64, true);
+
+        if ($decodedFilename === false) {
+            return response()->json([
+                'error' => 'Invalid filename encoding',
+            ], 400);
+        }
+
+        // Try to find the file
+        $file = File::where('id_publication', $publication)
+            ->where('file_name', $decodedFilename)
+            ->first();
+
+        if (! $file) {
+            return response()->json([
+                'error' => 'File not found in database',
+            ], 404);
+        }
+
+        // Verify publication exists and is accessible
+        $pub = Publication::findOrFail($publication);
+
+        if ($pub->status !== 'published' && Auth::user()->role !== 'admin') {
+            throw new AuthorizationException('Cannot view this publication');
+        }
+
+        // Get file path
+        $fileSource = $file->file_source;
+
+        if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
+            $disk = 'local';
+            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+        } elseif ($fileSource === 'bulk_scan') {
+            $disk = 'library';
+            $allFiles = Storage::disk($disk)->allFiles();
+            $storagePath = null;
+            foreach ($allFiles as $filePath) {
+                if (basename($filePath) === $decodedFilename) {
+                    $storagePath = $filePath;
+                    break;
+                }
+            }
+            if ($storagePath === null) {
+                abort(404, 'File not found in library storage');
+            }
+        } else {
+            $disk = 'library';
+            $storagePath = $fileSource . '/' . $decodedFilename;
+        }
+
+        if (! Storage::disk($disk)->exists($storagePath)) {
+            abort(404, 'File not found in storage');
+        }
+
+        try {
+            $fullPath = Storage::disk($disk)->path($storagePath);
+
+            // Load and parse DOC file using PHPWord
+            try {
+                $phpWord = \PhpOffice\PhpWord\IOFactory::load($fullPath);
+
+                // Build HTML from PHPWord document
+                $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+                $html .= '<style>';
+                $html .= 'body { font-family: "Segoe UI", "Calibri", sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 2rem; background: #f9fafb; color: #1f2937; }';
+                $html .= 'h1, h2, h3, h4, h5, h6 { color: #111827; margin-top: 1.5rem; margin-bottom: 0.5rem; }';
+                $html .= 'h1 { font-size: 2rem; }';
+                $html .= 'h2 { font-size: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }';
+                $html .= 'h3 { font-size: 1.25rem; }';
+                $html .= 'p { margin-bottom: 1rem; text-align: justify; }';
+                $html .= 'ul, ol { margin-bottom: 1rem; margin-left: 2rem; }';
+                $html .= 'li { margin-bottom: 0.5rem; }';
+                $html .= 'blockquote { border-left: 4px solid #3b82f6; padding-left: 1.5rem; margin: 1.5rem 0; color: #6b7280; font-style: italic; }';
+                $html .= 'code { background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: "Courier New", monospace; font-size: 0.9em; }';
+                $html .= 'pre { background: #1f2937; color: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }';
+                $html .= 'pre code { background: none; padding: 0; color: #f3f4f6; }';
+                $html .= 'table { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; }';
+                $html .= 'table th, table td { border: 1px solid #d1d5db; padding: 0.75rem; text-align: left; }';
+                $html .= 'table th { background: #f3f4f6; font-weight: 600; }';
+                $html .= 'strong { font-weight: 600; }';
+                $html .= 'em { font-style: italic; }';
+                $html .= 'u { text-decoration: underline; }';
+                $html .= '.content { background: #fff; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }';
+                $html .= '@media (prefers-color-scheme: dark) {';
+                $html .= '  body { background: #111827; color: #e5e7eb; }';
+                $html .= '  h1, h2, h3, h4, h5, h6 { color: #f9fafb; }';
+                $html .= '  .content { background: #1f2937; color: #e5e7eb; }';
+                $html .= '  table th { background: #374151; }';
+                $html .= '  code { background: #374151; color: #d1d5db; }';
+                $html .= '}';
+                $html .= '</style></head><body><div class="content">';
+
+                // Extract and convert all sections to HTML
+                foreach ($phpWord->getSections() as $section) {
+                    foreach ($section->getElements() as $element) {
+                        $html .= $this->convertWordElement($element);
+                    }
+                }
+
+                $html .= '</div></body></html>';
+
+                return response($html)
+                    ->header('Content-Type', 'text/html; charset=UTF-8')
+                    ->header('Cache-Control', 'public, max-age=3600');
+
+            } catch (\Exception $e) {
+                // Fallback to antiword if PHPWord fails
+                Log::warning('PHPWord parsing failed, falling back to antiword', [
+                    'publication_id' => $publication,
+                    'filename' => $decodedFilename,
+                    'error' => $e->getMessage(),
+                ]);
+
+                $command = sprintf('antiword -m UTF-8 -w 0 %s 2>&1', escapeshellarg($fullPath));
+                exec($command, $output, $returnCode);
+
+                if ($returnCode !== 0) {
+                    throw new \Exception('Both PHPWord and antiword conversion failed');
+                }
+
+                $textContent = implode("\n", $output);
+
+                // Clean up antiword messages
+                $lines = explode("\n", $textContent);
+                $cleanedLines = array_filter($lines, function($line) {
+                    $line = trim($line);
+                    if (empty($line)) return true;
+                    if (str_starts_with($line, "I can't find")) return false;
+                    if (str_starts_with($line, "I can not find")) return false;
+                    if (str_starts_with($line, "I couldn't find")) return false;
+                    if (str_starts_with($line, "Unable to")) return false;
+                    if (str_starts_with($line, "Warning:")) return false;
+                    return true;
+                });
+
+                $textContent = trim(implode("\n", $cleanedLines));
+
+                // Wrap plain text in HTML
+                $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+                $html .= '<style>';
+                $html .= 'body { font-family: "Segoe UI", "Calibri", sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 2rem; background: #f9fafb; color: #1f2937; }';
+                $html .= '.content { background: #fff; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }';
+                $html .= 'p { margin-bottom: 1rem; whitespace: pre-wrap; }';
+                $html .= '@media (prefers-color-scheme: dark) {';
+                $html .= '  body { background: #111827; color: #e5e7eb; }';
+                $html .= '  .content { background: #1f2937; color: #e5e7eb; }';
+                $html .= '}';
+                $html .= '</style></head><body><div class="content">';
+                $html .= '<p>' . nl2br(htmlspecialchars($textContent)) . '</p>';
+                $html .= '</div></body></html>';
+
+                return response($html)
+                    ->header('Content-Type', 'text/html; charset=UTF-8')
+                    ->header('Cache-Control', 'public, max-age=3600');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('DOC to HTML conversion failed', [
+                'publication_id' => $publication,
+                'filename' => $decodedFilename,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to convert DOC file',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Convert PHPWord element to HTML
+     */
+    private function convertWordElement($element): string
+    {
+        $html = '';
+
+        // Use reflection to check element type
+        $elementClass = get_class($element);
+
+        // Handle paragraphs
+        if (strpos($elementClass, 'Paragraph') !== false || $elementClass === 'PhpOffice\PhpWord\Element\Paragraph') {
+            $html .= '<p>';
+            foreach ($element->getElements() as $childElement) {
+                $childClass = get_class($childElement);
+                if (strpos($childClass, 'Text') !== false || $childClass === 'PhpOffice\PhpWord\Element\Text') {
+                    $text = htmlspecialchars($childElement->getText());
+                    $style = $childElement->getStyle();
+
+                    if ($style) {
+                        $classes = [];
+                        if ($style->getBold()) $classes[] = '<strong>';
+                        if ($style->getItalic()) $classes[] = '<em>';
+                        if ($style->getUnderline() !== 'none') $classes[] = '<u>';
+
+                        if (!empty($classes)) {
+                            $openTag = implode('', $classes);
+                            $closeTags = array_reverse($classes);
+                            $closeTag = str_replace(['<', '>'], ['</', '>'], implode('', $closeTags));
+                            $text = $openTag . $text . $closeTag;
+                        }
+                    }
+                    $html .= $text;
+                }
+            }
+            $html .= '</p>';
+
+        } // Handle tables
+        elseif (strpos($elementClass, 'Table') !== false || $elementClass === 'PhpOffice\PhpWord\Element\Table') {
+            $html .= '<table>';
+            foreach ($element->getRows() as $row) {
+                $html .= '<tr>';
+                foreach ($row->getCells() as $cell) {
+                    $html .= '<td>';
+                    foreach ($cell->getElements() as $cellElement) {
+                        $html .= $this->convertWordElement($cellElement);
+                    }
+                    $html .= '</td>';
+                }
+                $html .= '</tr>';
+            }
+            $html .= '</table>';
+
+        } // Handle lists (basic)
+        elseif (strpos($elementClass, 'ListItem') !== false) {
+            $html .= '<li>' . htmlspecialchars($element->getText()) . '</li>';
+
+        }
+
+        return $html;
+    }
+
+    /**
      * View a file inline (for document viewers)
      */
     public function view(int $publication, string $filename): Response|JsonResponse

@@ -90,8 +90,8 @@
             <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Title
                 @if ($useExtracted && isset($confidenceScores['title']))
-                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $getConfidenceColor($confidenceScores['title']) }}-100 text-{{ $getConfidenceColor($confidenceScores['title']) }}-800">
-                        {{ $getConfidencePercent('title') }}% confident
+                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['title']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['title']) }}-800">
+                        {{ $this->getConfidencePercent('title') }}% confident
                     </span>
                 @endif
             </label>
@@ -112,8 +112,8 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Authors
                 @if ($useExtracted && isset($confidenceScores['authors']))
-                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $getConfidenceColor($confidenceScores['authors']) }}-100 text-{{ $getConfidenceColor($confidenceScores['authors']) }}-800">
-                        {{ $getConfidencePercent('authors') }}% confident
+                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['authors']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['authors']) }}-800">
+                        {{ $this->getConfidencePercent('authors') }}% confident
                     </span>
                 @endif
             </label>
@@ -155,8 +155,8 @@
             <label for="publicationYear" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Publication Year
                 @if ($useExtracted && isset($confidenceScores['publication_year']))
-                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $getConfidenceColor($confidenceScores['publication_year']) }}-100 text-{{ $getConfidenceColor($confidenceScores['publication_year']) }}-800">
-                        {{ $getConfidencePercent('publication_year') }}% confident
+                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['publication_year']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['publication_year']) }}-800">
+                        {{ $this->getConfidencePercent('publication_year') }}% confident
                     </span>
                 @endif
             </label>
@@ -179,8 +179,8 @@
             <label for="publisher" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Publisher
                 @if ($useExtracted && isset($confidenceScores['publisher']))
-                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $getConfidenceColor($confidenceScores['publisher']) }}-100 text-{{ $getConfidenceColor($confidenceScores['publisher']) }}-800">
-                        {{ $getConfidencePercent('publisher') }}% confident
+                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['publisher']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['publisher']) }}-800">
+                        {{ $this->getConfidencePercent('publisher') }}% confident
                     </span>
                 @endif
             </label>
@@ -200,8 +200,8 @@
             <label for="isbn" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 ISBN
                 @if ($useExtracted && isset($confidenceScores['isbn']))
-                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $getConfidenceColor($confidenceScores['isbn']) }}-100 text-{{ $getConfidenceColor($confidenceScores['isbn']) }}-800">
-                        {{ $getConfidencePercent('isbn') }}% confident
+                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['isbn']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['isbn']) }}-800">
+                        {{ $this->getConfidencePercent('isbn') }}% confident
                     </span>
                 @endif
             </label>
@@ -221,8 +221,8 @@
             <label for="doi" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 DOI
                 @if ($useExtracted && isset($confidenceScores['doi']))
-                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $getConfidenceColor($confidenceScores['doi']) }}-100 text-{{ $getConfidenceColor($confidenceScores['doi']) }}-800">
-                        {{ $getConfidencePercent('doi') }}% confident
+                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['doi']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['doi']) }}-800">
+                        {{ $this->getConfidencePercent('doi') }}% confident
                     </span>
                 @endif
             </label>

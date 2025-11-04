@@ -16,28 +16,28 @@
         <div class="flex space-x-8">
             <button
                 wire:click="setActiveTab('browse')"
-                class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'browse' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
+                class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'browse' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
             >
                 📁 {{ __('Browse & Register Files') }}
             </button>
 
             <button
                 wire:click="setActiveTab('upload')"
-                class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'upload' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
+                class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'upload' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
             >
                 📤 {{ __('Upload New File') }}
             </button>
 
             <button
                 wire:click="setActiveTab('metadata')"
-                class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'metadata' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
+                class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'metadata' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
             >
                 📋 {{ __('Metadata Review') }}
             </button>
 
             <button
                 wire:click="setActiveTab('settings')"
-                class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'settings' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
+                class="px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-200 {{ $activeTab === 'settings' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300' }}"
             >
                 ⚙️ {{ __('Settings') }}
             </button>

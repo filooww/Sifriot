@@ -37,6 +37,11 @@ class ExtractedMetadata
     private array $doi = [];
 
     /**
+     * @var array<array<string, mixed>> Genres array with confidence scores
+     */
+    private array $genres = [];
+
+    /**
      * @var array<string, float> Overall field confidence scores (0.0-1.0)
      */
     private array $confidence_scores = [];
@@ -144,6 +149,23 @@ class ExtractedMetadata
     }
 
     /**
+     * Add genre with confidence score.
+     *
+     * @param string $name Genre name
+     * @param float $confidence (0.0-1.0)
+     */
+    public function addGenre(string $name, float $confidence = 0.5): self
+    {
+        if (!empty($name)) {
+            $this->genres[] = [
+                'value' => $name,
+                'confidence' => max(0.0, min(1.0, $confidence)),
+            ];
+        }
+        return $this;
+    }
+
+    /**
      * Get title value.
      */
     public function getTitle(): ?string
@@ -194,6 +216,16 @@ class ExtractedMetadata
     }
 
     /**
+     * Get all genres as array of names.
+     *
+     * @return string[]
+     */
+    public function getGenres(): array
+    {
+        return array_map(fn ($genre) => $genre['value'], $this->genres);
+    }
+
+    /**
      * Get highest confidence fields (above threshold).
      *
      * @param float $threshold Minimum confidence (0.0-1.0)
@@ -230,6 +262,13 @@ class ExtractedMetadata
             $result['doi'] = $this->doi;
         }
 
+        if (!empty($this->genres)) {
+            $result['genres'] = array_filter(
+                $this->genres,
+                fn ($genre) => $genre['confidence'] >= $threshold
+            );
+        }
+
         return $result;
     }
 
@@ -243,7 +282,8 @@ class ExtractedMetadata
             && empty($this->publication_year)
             && empty($this->publisher)
             && empty($this->isbn)
-            && empty($this->doi);
+            && empty($this->doi)
+            && empty($this->genres);
     }
 
     /**
@@ -260,6 +300,7 @@ class ExtractedMetadata
             'publisher' => $this->publisher,
             'isbn' => $this->isbn,
             'doi' => $this->doi,
+            'genres' => $this->genres,
         ];
     }
 
@@ -277,6 +318,7 @@ class ExtractedMetadata
             'publisher' => $this->publisher['confidence'] ?? 0.0,
             'isbn' => $this->isbn['confidence'] ?? 0.0,
             'doi' => $this->doi['confidence'] ?? 0.0,
+            'genres' => $this->genres ? (array_sum(array_column($this->genres, 'confidence')) / count($this->genres)) : 0.0,
         ];
     }
 }

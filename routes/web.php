@@ -54,6 +54,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/files/convert-doc/{publication}/{filename}', [FileViewController::class, 'convertDoc'])
         ->name('files.convert-doc');
 
+    // DOC file converter to HTML (converts DOC to styled HTML using PHPWord)
+    Route::get('/files/convert-doc-html/{publication}/{filename}', [FileViewController::class, 'convertDocToHtml'])
+        ->name('files.convert-doc-html');
+
     // FB2 file converter (converts FB2 XML to HTML)
     Route::get('/files/convert-fb2/{publication}/{filename}', [FileViewController::class, 'convertFb2'])
         ->name('files.convert-fb2');

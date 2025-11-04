@@ -190,36 +190,26 @@
                                 })();
                             </script>
                         @else
-                            <!-- DOC files - text viewer using antiword conversion -->
-                            <div class="w-full h-screen p-8 bg-white dark:bg-gray-900 overflow-auto">
-                                <div id="doc-content-{{ $publicationId }}" class="prose dark:prose-invert max-w-4xl mx-auto text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-serif text-base leading-relaxed">
-                                    <p class="text-gray-500">{{ __('Converting DOC file to text...') }}</p>
-                                </div>
-                                <div class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 max-w-4xl mx-auto">
-                                    <p class="text-sm text-amber-800 dark:text-amber-200">
-                                        <strong>{{ __('Note:') }}</strong> {{ __('Old DOC format is displayed as plain text without formatting. For better viewing, download the file or convert it to DOCX format.') }}
-                                    </p>
-                                </div>
+                            <!-- DOC files - HTML viewer using PHPWord conversion with fallback to antiword -->
+                            <div id="doc-viewer-{{ $publicationId }}" class="w-full h-screen overflow-auto">
+                                <iframe
+                                    id="doc-iframe-{{ $publicationId }}"
+                                    src="{{ route('files.convert-doc-html', ['publication' => $publicationId, 'filename' => $urlSafeBase64($fileName)]) }}"
+                                    class="w-full border-0"
+                                    style="height: calc(100vh - 140px);"
+                                    sandbox="allow-same-origin"
+                                ></iframe>
                             </div>
                             <script>
                                 (function() {
-                                    const contentEl = document.getElementById('doc-content-{{ $publicationId }}');
-                                    const convertUrl = '{{ route('files.convert-doc', ['publication' => $publicationId, 'filename' => $urlSafeBase64($fileName)]) }}';
-
-                                    fetch(convertUrl)
-                                        .then(response => {
-                                            if (!response.ok) {
-                                                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-                                            }
-                                            return response.text();
-                                        })
-                                        .then(text => {
-                                            contentEl.textContent = text;
-                                        })
-                                        .catch(error => {
-                                            console.error('Error converting DOC file:', error);
-                                            contentEl.innerHTML = '<div class="text-red-600"><p class="font-bold">{{ __("Error converting DOC file") }}</p><p class="text-sm mt-2">' + error.message + '</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $urlSafeBase64($fileName)]) }}" class="text-blue-600 hover:underline">{{ __("Download file instead") }}</a></p></div>';
-                                        });
+                                    const iframe = document.getElementById('doc-iframe-{{ $publicationId }}');
+                                    iframe.onerror = function() {
+                                        iframe.style.display = 'none';
+                                        const errorDiv = document.createElement('div');
+                                        errorDiv.className = 'flex items-center justify-center h-full';
+                                        errorDiv.innerHTML = '<div class="text-center text-red-600"><p class="font-bold">{{ __("Error converting DOC file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $urlSafeBase64($fileName)]) }}" class="text-blue-600 hover:underline">{{ __("Download file instead") }}</a></p></div>';
+                                        iframe.parentNode.insertBefore(errorDiv, iframe);
+                                    };
                                 })();
                             </script>
                         @endif

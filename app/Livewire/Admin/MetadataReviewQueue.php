@@ -234,6 +234,37 @@ class MetadataReviewQueue extends Component
     }
 
     /**
+     * Re-extract a single metadata record.
+     *
+     * @param int $id
+     */
+    public function reExtractSingle(int $id): void
+    {
+        $metadata = FileMetadata::find($id);
+        if ($metadata && $metadata->file_id) {
+            // Get file path from files table
+            [$publicationId, $fileName] = explode('-', $metadata->file_id, 2);
+            $file = \App\Models\File::where('id_publication', $publicationId)
+                ->where('file_name', $fileName)
+                ->first();
+
+            if ($file) {
+                $filePath = $file->file_source . '/' . $file->file_name;
+                $fullPath = \Storage::disk('library')->path($filePath);
+
+                ExtractMetadataFromFile::dispatch(
+                    $metadata->file_id,
+                    $fullPath,
+                    $file->publication->content_type_id ?? 1,
+                    $file->mime_type ?? 'application/octet-stream'
+                );
+
+                $this->dispatch('notify', message: 'Re-extraction queued', type: 'success');
+            }
+        }
+    }
+
+    /**
      * Delete a metadata record.
      *
      * @param int $id
