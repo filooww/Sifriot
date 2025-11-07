@@ -45,4 +45,14 @@ class ColoredLineFormatter extends LineFormatter
         // Check if running in CLI and STDOUT is a terminal
         return PHP_SAPI === 'cli' && function_exists('posix_isatty') && @posix_isatty(STDOUT);
     }
+
+    /**
+     * Laravel tap method to customize the logger.
+     */
+    public function __invoke($logger): void
+    {
+        foreach ($logger->getHandlers() as $handler) {
+            $handler->setFormatter(new self());
+        }
+    }
 }
