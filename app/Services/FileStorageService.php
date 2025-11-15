@@ -4,175 +4,57 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\FileRegistrationLog;
+use App\Contracts\FileStorageServiceInterface;
 use Illuminate\Support\Facades\Storage;
 
-class FileStorageService
+/**
+ * File Storage Service
+ *
+ * Implementation of FileStorageServiceInterface that wraps Laravel's Storage facade.
+ * This abstraction allows us to:
+ * - Test controllers without mocking facades
+ * - Switch storage implementations easily
+ * - Centralize storage logic in one place
+ */
+class FileStorageService implements FileStorageServiceInterface
 {
-    protected string $basePath;
-
-    public function __construct()
+    /**
+     * Get file content from storage
+     */
+    public function get(string $disk, string $path): string
     {
-        $this->basePath = config('library.storage.base_path');
+        return Storage::disk($disk)->get($path);
     }
 
     /**
-     * Browse folder and return folders and files with metadata
+     * Check if file exists in storage
      */
-    public function browseFolder(string $relativePath): array
+    public function exists(string $disk, string $path): bool
     {
-        $path = $relativePath ?: '';
-
-        $directories = Storage::disk('library')->directories($path);
-        $files = Storage::disk('library')->files($path);
-
-        $folders = [];
-        foreach ($directories as $directory) {
-            $folders[] = [
-                'path' => $directory,
-                'name' => basename($directory),
-            ];
-        }
-
-        $fileList = [];
-        foreach ($files as $file) {
-            $fullPath = Storage::disk('library')->path($file);
-            $extension = pathinfo($file, PATHINFO_EXTENSION);
-
-            // Check registration status and source
-            $registrationLog = FileRegistrationLog::where('file_path', $fullPath)->first();
-            $isRegistered = $registrationLog !== null;
-            $registrationSource = $isRegistered ? $registrationLog->registration_source : null;
-
-            $fileList[] = [
-                'path' => $file,
-                'name' => basename($file),
-                'size' => Storage::disk('library')->size($file),
-                'modified_date' => Storage::disk('library')->lastModified($file),
-                'extension' => $extension,
-                'format_icon' => $this->getFormatIcon($extension),
-                'is_registered' => $isRegistered,
-                'registration_source' => $registrationSource,
-            ];
-        }
-
-        return [
-            'folders' => $folders,
-            'files' => $fileList,
-        ];
+        return Storage::disk($disk)->exists($path);
     }
 
     /**
-     * Get file metadata from file path
+     * Download file from storage
      */
-    public function getFileMetadata(string $filePath): array
+    public function download(string $disk, string $path, string $filename)
     {
-        if (! Storage::disk('library')->exists($filePath)) {
-            throw new \Exception("File not found: {$filePath}");
-        }
-
-        $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-        $nameWithoutExt = pathinfo($filePath, PATHINFO_FILENAME);
-
-        // Extract suggested title from filename (remove underscores, hyphens)
-        $suggestedTitle = str_replace(['_', '-'], ' ', $nameWithoutExt);
-        $suggestedTitle = ucwords($suggestedTitle);
-
-        // Determine content type from extension or path
-        $contentTypeId = $this->guessContentTypeFromPath($filePath);
-
-        return [
-            'suggested_title' => $suggestedTitle,
-            'content_type_id' => $contentTypeId,
-            'file_size' => Storage::disk('library')->size($filePath),
-            'mime_type' => mime_content_type(Storage::disk('library')->path($filePath)),
-        ];
+        return Storage::disk($disk)->download($path, $filename);
     }
 
     /**
-     * Validate file path (security check for path traversal)
+     * Get the full filesystem path for a file
      */
-    public function validateFilePath(string $filePath): bool
+    public function path(string $disk, string $path): string
     {
-        // Check if file exists
-        if (! Storage::disk('library')->exists($filePath)) {
-            return false;
-        }
-
-        // Security check: ensure path is within allowed base path
-        $realPath = Storage::disk('library')->path($filePath);
-        $basePath = Storage::disk('library')->path('');
-
-        // Prevent path traversal attacks
-        if (strpos($realPath, $basePath) !== 0) {
-            throw new \Exception('Invalid file path: path traversal detected');
-        }
-
-        return true;
+        return Storage::disk($disk)->path($path);
     }
 
     /**
-     * Get file content
+     * Get all files from a disk recursively
      */
-    public function getFileContent(string $filePath): string
+    public function allFiles(string $disk): array
     {
-        try {
-            return Storage::disk('library')->get($filePath);
-        } catch (\Exception) {
-            throw new \Exception("Unable to read file: {$filePath}");
-        }
-    }
-
-    /**
-     * Get format icon based on file extension
-     */
-    protected function getFormatIcon(string $extension): string
-    {
-        return match (strtolower($extension)) {
-            'pdf' => 'document-text',
-            'epub' => 'book-open',
-            'txt' => 'document',
-            'docx', 'doc' => 'document',
-            default => 'document',
-        };
-    }
-
-    /**
-     * Guess content type from file path and extension
-     */
-    protected function guessContentTypeFromPath(string $filePath): ?int
-    {
-        // Try to determine from path structure
-        if (str_contains($filePath, '/books/') || str_contains($filePath, '/Books/')) {
-            return 1; // Books
-        }
-        if (str_contains($filePath, '/magazines/') || str_contains($filePath, '/Magazines/')) {
-            return 2; // Magazines
-        }
-        if (str_contains($filePath, '/articles/') || str_contains($filePath, '/Articles/')) {
-            return 3; // Articles
-        }
-
-        // Default to 'Other'
-        return 4;
-    }
-
-    /**
-     * Get configured library path
-     */
-    public function getConfiguredPath(): string
-    {
-        return config('library.storage.library_path');
-    }
-
-    /**
-     * Check if file path is external (vs internal storage)
-     */
-    public function isExternalPath(string $filePath): bool
-    {
-        $internalStoragePath = Storage::disk('local')->path('content');
-        $realPath = realpath($filePath) ?: $filePath;
-
-        return strpos($realPath, $internalStoragePath) !== 0;
+        return Storage::disk($disk)->allFiles();
     }
 }

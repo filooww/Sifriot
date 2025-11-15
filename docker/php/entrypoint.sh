@@ -1,20 +1,21 @@
 #!/bin/bash
 set -e
 
-echo "Starting container initialization..."
+# Fix permissions for mounted library paths (skip on Windows Docker mounts)
+if [ -d "/library" ]; then
+    # Only try to change permissions on Linux-native paths, not Windows mounts
+    # Windows mounts don't support chown/chmod and will hang/fail
+    if ! stat -c %a /library 2>/dev/null | grep -q .; then
+        # If stat fails, it's likely a Windows mount, skip
+        echo "Skipping permission changes on /library (Windows mount detected)"
+    else
+        chmod -R 755 /library 2>/dev/null || true
+    fi
+fi
 
-# Debug information
-echo "Checking mounted volumes and permissions..."
-ls -la /library || echo "Warning: Cannot access /library"
-ls -la /var/www/html || echo "Warning: Cannot access /var/www/html"
-
-# Check if running in Windows environment
-if grep -q Microsoft /proc/version || grep -q WSL /proc/version; then
-    echo "Running in Windows/WSL environment"
-    WINDOWS_ENV=1
-else
-    echo "Running in Linux native environment"
-    WINDOWS_ENV=0
+# Fix permissions for Laravel storage (this is Linux, not mounted from Windows)
+if [ -d "/var/www/html/storage" ]; then
+    chown -R www-data:www-data /var/www/html/storage 2>/dev/null || true
 fi
 
 # Handle /library mount
