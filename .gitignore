@@ -34,5 +34,3 @@ Thumbs.db
 *.sqlite
 *.sqlite-journal
 database.sqlite
-.bmad-core
-.claude
