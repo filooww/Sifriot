@@ -38,13 +38,14 @@ class FileMetadata extends Model
     ];
 
     /**
-     * Relationship: Belongs to File.
+     * Relationship: Belongs to Publication.
+     * Note: file_id actually stores the publication ID, not a file reference.
      *
      * @return BelongsTo
      */
-    public function file(): BelongsTo
+    public function publication(): BelongsTo
     {
-        return $this->belongsTo(File::class, 'file_id');
+        return $this->belongsTo(Publication::class, 'file_id', 'id_publication');
     }
 
     /**
