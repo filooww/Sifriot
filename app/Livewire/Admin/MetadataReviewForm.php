@@ -221,12 +221,13 @@ class MetadataReviewForm extends Component
                 ]);
             }
 
-            // Update publication with new metadata
+            // Update publication with new metadata and set status to pending
             $publication->update([
                 'title' => $this->title,
                 'title_low' => mb_strtolower($this->title),
                 'issue_year' => $this->publicationYear ? (string)$this->publicationYear : null,
                 'content_type_id' => $this->contentTypeId,
+                'status' => 'pending',
             ]);
 
             // Update FileMetadata to confirmed state
@@ -538,6 +539,205 @@ class MetadataReviewForm extends Component
             return 'yellow';
         }
         return 'red';
+    }
+
+    /**
+     * Search authors by name (autocomplete).
+     *
+     * @param string $query
+     * @return array
+     */
+    public function searchAuthors(string $query): array
+    {
+        if (strlen($query) < 2) {
+            return [];
+        }
+
+        return Author::query()
+            ->where(function ($q) use ($query) {
+                $q->where('author', 'like', "%{$query}%")
+                    ->orWhere('author_low', 'like', '%' . mb_strtolower($query) . '%');
+            })
+            ->limit(10)
+            ->get()
+            ->map(fn ($author) => [
+                'id' => $author->id_author,
+                'name' => $author->author,
+            ])
+            ->toArray();
+    }
+
+    /**
+     * Search publishers by name (autocomplete).
+     *
+     * @param string $query
+     * @return array
+     */
+    public function searchPublishers(string $query): array
+    {
+        if (strlen($query) < 2) {
+            return [];
+        }
+
+        return Publishing::query()
+            ->where(function ($q) use ($query) {
+                $q->where('publishing', 'like', "%{$query}%")
+                    ->orWhere('publishing_low', 'like', '%' . mb_strtolower($query) . '%');
+            })
+            ->limit(10)
+            ->get()
+            ->map(fn ($pub) => [
+                'id' => $pub->id_publishing,
+                'name' => $pub->publishing,
+            ])
+            ->toArray();
+    }
+
+    /**
+     * Search genres by name (autocomplete, multilingual).
+     *
+     * @param string $query
+     * @return array
+     */
+    public function searchGenres(string $query): array
+    {
+        if (strlen($query) < 2) {
+            return [];
+        }
+
+        return Genre::query()
+            ->where(function ($q) use ($query) {
+                $q->where('name_en', 'like', "%{$query}%")
+                    ->orWhere('name_ru', 'like', "%{$query}%")
+                    ->orWhere('name_he', 'like', "%{$query}%");
+            })
+            ->limit(10)
+            ->get()
+            ->map(fn ($genre) => [
+                'id' => $genre->id,
+                'name' => $genre->name_en ?? $genre->name_ru ?? $genre->name_he ?? 'Unknown',
+            ])
+            ->toArray();
+    }
+
+    /**
+     * Search themes by name (autocomplete, multilingual).
+     *
+     * @param string $query
+     * @return array
+     */
+    public function searchThemes(string $query): array
+    {
+        if (strlen($query) < 2) {
+            return [];
+        }
+
+        $themeSetModel = \App\Models\ThemeSet::class;
+        if (!class_exists($themeSetModel)) {
+            return [];
+        }
+
+        return $themeSetModel::query()
+            ->where(function ($q) use ($query) {
+                $q->where('theme_set_en', 'like', "%{$query}%")
+                    ->orWhere('theme_set_ru', 'like', "%{$query}%")
+                    ->orWhere('theme_set_he', 'like', "%{$query}%");
+            })
+            ->limit(10)
+            ->get()
+            ->map(fn ($theme) => [
+                'id' => $theme->id_theme_set,
+                'name' => $theme->theme_set_en ?? $theme->theme_set_ru ?? $theme->theme_set_he ?? 'Unknown',
+            ])
+            ->toArray();
+    }
+
+    /**
+     * Create new author (admin only).
+     *
+     * @param string $name
+     * @return array
+     */
+    public function createNewAuthor(string $name): array
+    {
+        abort_if (!auth()->user() || !auth()->user()->role === 'admin', 403, 'Unauthorized');
+
+        $author = Author::firstOrCreate(
+            ['author' => trim($name)],
+            ['author_low' => mb_strtolower(trim($name))]
+        );
+
+        return [
+            'id' => $author->id_author,
+            'name' => $author->author,
+        ];
+    }
+
+    /**
+     * Create new publisher (admin only).
+     *
+     * @param string $name
+     * @return array
+     */
+    public function createNewPublisher(string $name): array
+    {
+        abort_if (!auth()->user() || !auth()->user()->role === 'admin', 403, 'Unauthorized');
+
+        $publisher = Publishing::firstOrCreate(
+            ['publishing' => trim($name)],
+            ['publishing_low' => mb_strtolower(trim($name))]
+        );
+
+        return [
+            'id' => $publisher->id_publishing,
+            'name' => $publisher->publishing,
+        ];
+    }
+
+    /**
+     * Create new genre (admin only).
+     *
+     * @param string $name
+     * @return array
+     */
+    public function createNewGenre(string $name): array
+    {
+        abort_if (!auth()->user() || !auth()->user()->role === 'admin', 403, 'Unauthorized');
+
+        $genre = Genre::firstOrCreate(
+            ['slug' => Str::slug($name)],
+            ['name_en' => trim($name)]
+        );
+
+        return [
+            'id' => $genre->id,
+            'name' => $genre->name_en,
+        ];
+    }
+
+    /**
+     * Create new theme (admin only).
+     *
+     * @param string $name
+     * @return array
+     */
+    public function createNewTheme(string $name): array
+    {
+        abort_if (!auth()->user() || !auth()->user()->role === 'admin', 403, 'Unauthorized');
+
+        $themeSetModel = \App\Models\ThemeSet::class;
+        if (!class_exists($themeSetModel)) {
+            return [];
+        }
+
+        $theme = $themeSetModel::firstOrCreate(
+            ['theme_set_en' => trim($name)]
+        );
+
+        return [
+            'id' => $theme->id_theme_set,
+            'name' => $theme->theme_set_en,
+        ];
     }
 
     public function render()

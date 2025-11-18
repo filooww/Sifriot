@@ -120,11 +120,11 @@
             <div class="space-y-2">
                 @foreach ($authors as $index => $author)
                     <div class="flex gap-2">
-                        <input
-                            type="text"
-                            wire:model.live="authors.{{ $index }}"
-                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+                        <x-autocomplete-input
+                            wireModel="authors.{{ $index }}"
+                            searchMethod="searchAuthors"
                             placeholder="Author name"
+                            createNewLabel="Create new author"
                         />
                         @if (count($authors) > 1)
                             <button
@@ -184,11 +184,11 @@
                     </span>
                 @endif
             </label>
-            <input
-                type="text"
-                id="publisher"
-                wire:model="publisher"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+            <x-autocomplete-input
+                wireModel="publisher"
+                searchMethod="searchPublishers"
+                placeholder="Publisher name"
+                createNewLabel="Create new publisher"
             />
             @error('publisher')
                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -245,11 +245,11 @@
             <div class="space-y-2">
                 @foreach ($genres as $index => $genre)
                     <div class="flex gap-2">
-                        <input
-                            type="text"
-                            wire:model.live="genres.{{ $index }}"
-                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+                        <x-autocomplete-input
+                            wireModel="genres.{{ $index }}"
+                            searchMethod="searchGenres"
                             placeholder="Genre"
+                            createNewLabel="Create new genre"
                         />
                         @if (count($genres) > 1)
                             <button
@@ -280,12 +280,11 @@
             <label for="theme" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Theme/Category
             </label>
-            <input
-                type="text"
-                id="theme"
-                wire:model="theme"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+            <x-autocomplete-input
+                wireModel="theme"
+                searchMethod="searchThemes"
                 placeholder="Theme or category"
+                createNewLabel="Create new theme"
             />
             @error('theme')
                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>

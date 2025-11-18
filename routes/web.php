@@ -2,14 +2,15 @@
 
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\FileViewController;
-use App\Livewire\Admin\AdminDashboard;
 use App\Livewire\Admin\AdminLibrarySettings;
 use App\Livewire\Admin\BulkFolderScanner;
 use App\Livewire\Admin\FileManagement;
 use App\Livewire\Admin\FileRegistrationForm;
 use App\Livewire\Admin\FolderBrowser;
+use App\Livewire\Admin\MetadataReviewDashboard;
 use App\Livewire\Admin\ScanResultsViewer;
 use App\Livewire\Publications\PublicationDetail;
+use App\Livewire\Publications\PublicationPreview;
 use App\Livewire\PublicCatalog;
 use App\Livewire\User\UserProfile;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,9 @@ Route::get('/', PublicCatalog::class)
 
 Route::get('/publications/{id}', PublicationDetail::class)
     ->name('publications.show');
+
+Route::get('/publications/{id}/preview', PublicationPreview::class)
+    ->name('publications.preview');
 
 // Language switcher
 Route::get('/language/{locale}', function ($locale) {
@@ -65,7 +69,7 @@ Route::middleware(['auth'])->group(function () {
 
 // Admin routes
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/dashboard', AdminDashboard::class)
+    Route::get('/dashboard', MetadataReviewDashboard::class)
         ->name('dashboard');
 
     // Unified file management page

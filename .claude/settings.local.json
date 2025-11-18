@@ -8,7 +8,9 @@
       "Bash(nul)",
       "Bash(dir /s /b c:s*.jsx c:s*.tsx 2)",
       "Bash(findstr:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(php -l:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
