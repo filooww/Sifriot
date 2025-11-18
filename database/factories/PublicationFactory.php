@@ -29,8 +29,7 @@ class PublicationFactory extends Factory
             'actuality' => $this->faker->randomElement([0, 1]),
             'id_theme_set' => null,
             'id_author_set' => null,
-            'add_int' => $this->faker->numberBetween(1, 100),
-            'add_char' => $this->faker->word(),
+            'description' => $this->faker->optional()->sentence(),
             'word_count' => $this->faker->optional()->numberBetween(100, 50000),
         ];
     }
@@ -40,15 +39,13 @@ class PublicationFactory extends Factory
      */
     public function withRelationships(): static
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'id_publishing' => Publishing::factory(),
-                'id_part' => Part::factory(),
-                'id_issue_type' => IssueType::factory(),
-                'id_magazine' => Magazine::factory(),
-                'id_theme_set' => ThemeSet::factory(),
-                'id_author_set' => AuthorGroup::factory(),
-            ];
-        });
+        return $this->state([
+            'id_publishing' => Publishing::factory(),
+            'id_part' => Part::factory(),
+            'id_issue_type' => IssueType::factory(),
+            'id_magazine' => Magazine::factory(),
+            'id_theme_set' => ThemeSet::factory(),
+            'id_author_set' => AuthorGroup::factory(),
+        ]);
     }
 }

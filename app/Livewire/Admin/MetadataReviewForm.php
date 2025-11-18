@@ -5,12 +5,24 @@ declare(strict_types=1);
 namespace App\Livewire\Admin;
 
 use App\Events\MetadataConfirmed;
+use App\Models\Author;
+use App\Models\ContentType;
+use App\Models\File;
 use App\Models\FileMetadata;
+use App\Models\Genre;
+use App\Models\Publication;
+use App\Models\Publishing;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class MetadataReviewForm extends Component
 {
+    use WithFileUploads;
+
     public ?FileMetadata $fileMetadata = null;
 
     public string $title = '';
@@ -26,6 +38,12 @@ class MetadataReviewForm extends Component
     public string $doi = '';
 
     public array $genres = [''];
+
+    public string $theme = '';
+
+    public ?int $contentTypeId = null;
+
+    public $coverImage = null;
 
     public bool $useExtracted = false;
 
@@ -51,6 +69,9 @@ class MetadataReviewForm extends Component
         'doi' => 'nullable|string|regex:/^10\.\d{4,}\/\S+$/',
         'genres' => 'array',
         'genres.*' => 'string|max:255',
+        'theme' => 'nullable|string|max:255',
+        'contentTypeId' => 'nullable|integer|exists:content_types,id',
+        'coverImage' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
     ];
 
     /**
@@ -134,18 +155,81 @@ class MetadataReviewForm extends Component
     }
 
     /**
-     * Confirm extraction with form data.
+     * Confirm extraction with form data and save to normalized tables.
      */
     public function confirmExtraction(): void
     {
         $this->validate();
 
+        DB::beginTransaction();
         try {
-            // Clean empty authors
+            // Clean empty values
             $cleanedAuthors = array_filter($this->authors, fn ($author) => !empty(trim($author)));
-            // Clean empty genres
             $cleanedGenres = array_filter($this->genres, fn ($genre) => !empty(trim($genre)));
 
+            // Get or create Publication (from FileMetadata's relationship)
+            $publication = $this->fileMetadata->file()->first()?->publication
+                ?? Publication::find($this->fileMetadata->file_id);
+
+            if (!$publication) {
+                throw new \Exception('Publication not found for this file metadata');
+            }
+
+            // Save authors to normalized tables
+            foreach ($cleanedAuthors as $authorName) {
+                $author = Author::firstOrCreate(
+                    ['name' => trim($authorName)]
+                );
+                $publication->authors()->syncWithoutDetaching([$author->id_author]);
+            }
+
+            // Save publisher if provided
+            if (!empty($this->publisher)) {
+                $publisher = Publishing::firstOrCreate(
+                    ['publisher' => trim($this->publisher)]
+                );
+                $publication->update(['id_publishing' => $publisher->id_publishing]);
+            }
+
+            // Save genres to normalized tables
+            foreach ($cleanedGenres as $genreName) {
+                $genre = Genre::firstOrCreate(
+                    ['slug' => Str::slug($genreName)],
+                    ['name_en' => trim($genreName)]
+                );
+                $publication->genres()->syncWithoutDetaching([$genre->id]);
+            }
+
+            // Handle cover image upload
+            if ($this->coverImage) {
+                $coverPath = $this->coverImage->store(
+                    'public/covers',
+                    'public'
+                );
+
+                // Create File record for cover image
+                File::create([
+                    'id_publication' => $publication->id_publication,
+                    'file_name' => $this->coverImage->getClientOriginalName(),
+                    'file_name_low' => mb_strtolower($this->coverImage->getClientOriginalName()),
+                    'file_size' => $this->coverImage->getSize(),
+                    'file_size_bytes' => $this->coverImage->getSize(),
+                    'mime_type' => $this->coverImage->getMimeType(),
+                    'file_type' => 'cover',
+                    'file_path' => $coverPath,
+                    'file_source' => 'manual_upload',
+                ]);
+            }
+
+            // Update publication with new metadata
+            $publication->update([
+                'title' => $this->title,
+                'title_low' => mb_strtolower($this->title),
+                'issue_year' => $this->publicationYear ? (string)$this->publicationYear : null,
+                'content_type_id' => $this->contentTypeId,
+            ]);
+
+            // Update FileMetadata to confirmed state
             $this->fileMetadata->update([
                 'status' => 'confirmed',
                 'confirmed_at' => now(),
@@ -184,13 +268,22 @@ class MetadataReviewForm extends Component
                         ],
                         $cleanedGenres
                     ),
+                    'theme' => $this->theme ? [
+                        'value' => trim($this->theme),
+                        'confidence' => 0.95,
+                    ] : null,
                 ],
             ]);
 
-            Log::channel('folder_scan')->info('Metadata extraction confirmed by admin', [
+            DB::commit();
+
+            Log::channel('folder_scan')->info('Metadata extraction confirmed and saved to normalized tables', [
                 'file_metadata_id' => $this->fileMetadata->id,
                 'file_name' => $this->fileMetadata->file_name,
+                'publication_id' => $publication->id_publication,
                 'title' => $this->title,
+                'authors_count' => count($cleanedAuthors),
+                'genres_count' => count($cleanedGenres),
             ]);
 
             // Fire event to auto-apply metadata to Publication
@@ -198,12 +291,16 @@ class MetadataReviewForm extends Component
 
             // Close modal and refresh parent queue
             $this->dispatch('refresh-metadata-queue');
-            $this->dispatch('notify', message: 'Metadata confirmed successfully!', type: 'success');
+            $this->dispatch('notify', message: 'Metadata confirmed and saved successfully!', type: 'success');
 
             // Emit parent close event
             $this->parent?->call('set', 'selectedMetadataId', null);
         } catch (\Exception $e) {
-            Log::error('Failed to confirm metadata', ['error' => $e->getMessage()]);
+            DB::rollBack();
+            Log::error('Failed to confirm metadata', [
+                'error' => $e->getMessage(),
+                'file_metadata_id' => $this->fileMetadata->id ?? null,
+            ]);
             $this->dispatch('notify', message: 'Failed to confirm metadata: ' . $e->getMessage(), type: 'error');
         }
     }
@@ -236,16 +333,80 @@ class MetadataReviewForm extends Component
     }
 
     /**
-     * Save manual entry without extracted data.
+     * Save manual entry without extracted data and save to normalized tables.
      */
     public function saveManualEntry(): void
     {
         $this->validate();
 
+        DB::beginTransaction();
         try {
             $cleanedAuthors = array_filter($this->authors, fn ($author) => !empty(trim($author)));
             $cleanedGenres = array_filter($this->genres, fn ($genre) => !empty(trim($genre)));
 
+            // Get or create Publication (from FileMetadata's relationship)
+            $publication = $this->fileMetadata->file()->first()?->publication
+                ?? Publication::find($this->fileMetadata->file_id);
+
+            if (!$publication) {
+                throw new \Exception('Publication not found for this file metadata');
+            }
+
+            // Save authors to normalized tables
+            foreach ($cleanedAuthors as $authorName) {
+                $author = Author::firstOrCreate(
+                    ['name' => trim($authorName)]
+                );
+                $publication->authors()->syncWithoutDetaching([$author->id_author]);
+            }
+
+            // Save publisher if provided
+            if (!empty($this->publisher)) {
+                $publisher = Publishing::firstOrCreate(
+                    ['publisher' => trim($this->publisher)]
+                );
+                $publication->update(['id_publishing' => $publisher->id_publishing]);
+            }
+
+            // Save genres to normalized tables
+            foreach ($cleanedGenres as $genreName) {
+                $genre = Genre::firstOrCreate(
+                    ['slug' => Str::slug($genreName)],
+                    ['name_en' => trim($genreName)]
+                );
+                $publication->genres()->syncWithoutDetaching([$genre->id]);
+            }
+
+            // Handle cover image upload
+            if ($this->coverImage) {
+                $coverPath = $this->coverImage->store(
+                    'public/covers',
+                    'public'
+                );
+
+                // Create File record for cover image
+                File::create([
+                    'id_publication' => $publication->id_publication,
+                    'file_name' => $this->coverImage->getClientOriginalName(),
+                    'file_name_low' => mb_strtolower($this->coverImage->getClientOriginalName()),
+                    'file_size' => $this->coverImage->getSize(),
+                    'file_size_bytes' => $this->coverImage->getSize(),
+                    'mime_type' => $this->coverImage->getMimeType(),
+                    'file_type' => 'cover',
+                    'file_path' => $coverPath,
+                    'file_source' => 'manual_upload',
+                ]);
+            }
+
+            // Update publication with new metadata
+            $publication->update([
+                'title' => $this->title,
+                'title_low' => mb_strtolower($this->title),
+                'issue_year' => $this->publicationYear ? (string)$this->publicationYear : null,
+                'content_type_id' => $this->contentTypeId,
+            ]);
+
+            // Update FileMetadata to confirmed state
             $this->fileMetadata->update([
                 'status' => 'confirmed',
                 'confirmed_at' => now(),
@@ -284,14 +445,23 @@ class MetadataReviewForm extends Component
                         ],
                         $cleanedGenres
                     ),
+                    'theme' => $this->theme ? [
+                        'value' => trim($this->theme),
+                        'confidence' => 1.0,
+                    ] : null,
                 ],
                 'extraction_method' => 'manual_entry',
             ]);
 
-            Log::channel('folder_scan')->info('Metadata manually entered by admin', [
+            DB::commit();
+
+            Log::channel('folder_scan')->info('Metadata manually entered and saved to normalized tables', [
                 'file_metadata_id' => $this->fileMetadata->id,
                 'file_name' => $this->fileMetadata->file_name,
+                'publication_id' => $publication->id_publication,
                 'title' => $this->title,
+                'authors_count' => count($cleanedAuthors),
+                'genres_count' => count($cleanedGenres),
             ]);
 
             // Fire event to auto-apply metadata to Publication
@@ -304,7 +474,11 @@ class MetadataReviewForm extends Component
             // Emit parent close event
             $this->parent?->call('set', 'selectedMetadataId', null);
         } catch (\Exception $e) {
-            Log::error('Failed to save manual metadata entry', ['error' => $e->getMessage()]);
+            DB::rollBack();
+            Log::error('Failed to save manual metadata entry', [
+                'error' => $e->getMessage(),
+                'file_metadata_id' => $this->fileMetadata->id ?? null,
+            ]);
             $this->dispatch('notify', message: 'Failed to save metadata: ' . $e->getMessage(), type: 'error');
         }
     }
@@ -329,6 +503,9 @@ class MetadataReviewForm extends Component
         $this->isbn = '';
         $this->doi = '';
         $this->genres = [''];
+        $this->theme = '';
+        $this->contentTypeId = null;
+        $this->coverImage = null;
     }
 
     /**

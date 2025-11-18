@@ -34,16 +34,31 @@ class File extends Model
         'file_source',
         'mime_type',
         'file_size_bytes',
+        'file_type',
+        'file_path',
     ];
 
     protected $casts = [
         'file_size_bytes' => 'integer',
+        'file_type' => 'string',
     ];
 
     // Relationship
     public function publication(): BelongsTo
     {
         return $this->belongsTo(Publication::class, 'id_publication', 'id_publication');
+    }
+
+    // Scope for cover images
+    public function scopeCovers($query)
+    {
+        return $query->where('file_type', 'cover');
+    }
+
+    // Scope for content files
+    public function scopeContent($query)
+    {
+        return $query->where('file_type', 'content');
     }
 
     // Auto-lowercase file_name

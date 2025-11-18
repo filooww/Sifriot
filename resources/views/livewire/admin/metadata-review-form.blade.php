@@ -237,6 +237,110 @@
             @enderror
         </div>
 
+        <!-- Genres Field -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Genres
+            </label>
+            <div class="space-y-2">
+                @foreach ($genres as $index => $genre)
+                    <div class="flex gap-2">
+                        <input
+                            type="text"
+                            wire:model.live="genres.{{ $index }}"
+                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+                            placeholder="Genre"
+                        />
+                        @if (count($genres) > 1)
+                            <button
+                                type="button"
+                                wire:click="removeGenre({{ $index }})"
+                                class="px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                            >
+                                Remove
+                            </button>
+                        @endif
+                    </div>
+                @endforeach
+                <button
+                    type="button"
+                    wire:click="addGenre"
+                    class="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition text-sm font-medium"
+                >
+                    + Add Genre
+                </button>
+            </div>
+            @error('genres')
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Theme Field -->
+        <div>
+            <label for="theme" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Theme/Category
+            </label>
+            <input
+                type="text"
+                id="theme"
+                wire:model="theme"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+                placeholder="Theme or category"
+            />
+            @error('theme')
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Content Type Field -->
+        <div>
+            <label for="contentTypeId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Content Type
+            </label>
+            <select
+                id="contentTypeId"
+                wire:model="contentTypeId"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+            >
+                <option value="">-- Select Content Type --</option>
+                @foreach (\App\Models\ContentType::all() as $contentType)
+                    <option value="{{ $contentType->id }}">{{ $contentType->name }}</option>
+                @endforeach
+            </select>
+            @error('contentTypeId')
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Cover Image Field -->
+        <div>
+            <label for="coverImage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Cover Image
+            </label>
+            <div class="space-y-3">
+                <input
+                    type="file"
+                    id="coverImage"
+                    wire:model="coverImage"
+                    accept="image/jpeg,image/png,image/webp"
+                    class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/20 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/30"
+                />
+                <p class="text-xs text-gray-500 dark:text-gray-400">JPG, PNG or WebP. Max 5MB.</p>
+
+                @if ($coverImage)
+                    <div class="mt-4">
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preview:</p>
+                        <div class="w-32 h-48 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                            <img src="{{ $coverImage->temporaryUrl() }}" alt="Cover preview" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                @endif
+            </div>
+            @error('coverImage')
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+            @enderror
+        </div>
+
         <!-- Action Buttons -->
         <div class="flex gap-3 pt-6">
             @if ($useExtracted && $extractionStatus === 'processed')

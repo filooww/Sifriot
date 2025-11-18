@@ -35,30 +35,16 @@ class Publication extends Model
         'actuality',
         'id_theme_set',
         'id_author_set',
-        'add_int',
-        'add_char',
+        'description',
         'word_count',
-        'extracted_author_names',
-        'extracted_publication_year',
-        'extracted_publisher',
-        'extracted_isbn',
-        'extracted_doi',
-        'metadata_source',
-        'metadata_confidence_avg',
-        'metadata_confirmed_at',
         'metadata_previous_values',
     ];
 
     protected $casts = [
         'upload_date' => 'date',
         'actuality' => 'integer',
-        'add_int' => 'integer',
         'word_count' => 'integer',
         'status' => 'string',
-        'extracted_author_names' => 'array',
-        'extracted_publication_year' => 'integer',
-        'metadata_confidence_avg' => 'decimal:2',
-        'metadata_confirmed_at' => 'datetime',
         'metadata_previous_values' => 'array',
     ];
 
@@ -175,31 +161,46 @@ class Publication extends Model
         );
     }
 
-    // Metadata Accessors
-    public function getExtractedAuthorsAttribute(): array
+    // New Relationships (Task 3: Cover Images)
+    public function coverImage(): HasMany
     {
-        if (is_array($this->extracted_author_names)) {
-            return $this->extracted_author_names;
-        }
-
-        if (is_string($this->extracted_author_names)) {
-            return json_decode($this->extracted_author_names, true) ?? [];
-        }
-
-        return [];
+        return $this->hasMany(File::class, 'id_publication', 'id_publication')
+            ->where('file_type', 'cover')
+            ->latest('created_at');
     }
 
-    public function getMetadataAsArray(): array
+    // New Relationships (Task 2: Genres)
+    public function genres(): BelongsToMany
     {
-        return [
-            'authors' => $this->extracted_author_names,
-            'publication_year' => $this->extracted_publication_year,
-            'publisher' => $this->extracted_publisher,
-            'isbn' => $this->extracted_isbn,
-            'doi' => $this->extracted_doi,
-            'confidence_avg' => $this->metadata_confidence_avg,
-            'source' => $this->metadata_source,
-            'confirmed_at' => $this->metadata_confirmed_at,
-        ];
+        return $this->belongsToMany(
+            Genre::class,
+            'genre_publication',
+            'publication_id',
+            'genre_id'
+        )->withTimestamps();
+    }
+
+    // Accessors for cover image and genres (Task 7)
+    protected function coverImageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $cover = $this->coverImage()->first();
+                return $cover ? $cover->file_path : null;
+            }
+        );
+    }
+
+    protected function primaryGenres(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return $this->genres()
+                    ->limit(3)
+                    ->get()
+                    ->map(fn ($genre) => $genre->name_en)
+                    ->toArray();
+            }
+        );
     }
 }

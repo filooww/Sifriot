@@ -1,0 +1,41 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('publications', function (Blueprint $table) {
+            // Drop metadata tracking columns
+            // Confidence tracking now stays in FileMetadata
+            // Status tracking moved to FileMetadata.status enum
+            $table->dropColumn([
+                'metadata_source',
+                'metadata_confidence_avg',
+                'metadata_confirmed_at',
+            ]);
+
+            // Drop the index on metadata status
+            $table->dropIndex('idx_publications_metadata_status');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('publications', function (Blueprint $table) {
+            $table->enum('metadata_source', ['manual', 'extracted', 'hybrid'])->default('manual')->after('extracted_doi');
+            $table->decimal('metadata_confidence_avg', 3, 2)->nullable()->after('metadata_source');
+            $table->timestamp('metadata_confirmed_at')->nullable()->after('metadata_confidence_avg');
+            $table->index(['metadata_source', 'metadata_confirmed_at'], 'idx_publications_metadata_status');
+        });
+    }
+};

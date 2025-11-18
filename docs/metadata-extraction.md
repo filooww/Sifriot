@@ -132,13 +132,25 @@ ExtractionRule::create([
 ### Admin UI Components
 
 #### **MetadataReviewForm** (`app/Livewire/Admin/MetadataReviewForm.php`)
-Livewire component for reviewing and confirming extracted metadata:
+Livewire component for reviewing and confirming extracted metadata (Story 1.21 enhancement):
 - **Features:**
   - Displays extraction status and confidence scores
   - Pre-filled editable form fields
   - Manual entry fallback
   - Confirm/reject/edit actions
   - Real-time validation
+  - **NEW (1.21):** Genre dynamic list (add/remove multiple genres)
+  - **NEW (1.21):** Theme/Category text field
+  - **NEW (1.21):** Content Type dropdown (loaded from ContentType model)
+  - **NEW (1.21):** Cover image file upload with preview (JPG/PNG/WebP, max 5MB)
+
+- **Save Logic (Story 1.21):**
+  - Authors → `authors` table + `author_publication` pivot (normalized)
+  - Publisher → `publishings` table via `id_publishing` FK (normalized)
+  - Genres → `genres` table + `genre_publication` pivot (NEW, normalized)
+  - Cover Image → `files` table with `file_type='cover'` (NEW, normalized)
+  - All saves wrapped in database transaction for consistency
+  - Metadata stored in FileMetadata.extracted_data for audit trail and confidence tracking
 
 #### **MetadataReviewQueue** (`app/Livewire/Admin/MetadataReviewQueue.php`)
 Dashboard for managing pending metadata reviews:
