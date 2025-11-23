@@ -186,6 +186,24 @@ class Publication extends Model
         return Attribute::make(
             get: function () {
                 $cover = $this->coverImage()->first();
+                return $cover && $cover->file_path ? \Illuminate\Support\Facades\Storage::url($cover->file_path) : null;
+            }
+        );
+    }
+
+    /**
+     * Get the relative file path for cover image (used in templates with Storage::url())
+     */
+    protected function coverImagePath(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                // Check if files relationship is already loaded, otherwise load it
+                if (!$this->relationLoaded('files')) {
+                    $cover = $this->coverImage()->first();
+                } else {
+                    $cover = $this->files()->where('file_type', 'cover')->first();
+                }
                 return $cover ? $cover->file_path : null;
             }
         );

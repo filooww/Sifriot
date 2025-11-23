@@ -10,10 +10,19 @@
       "Bash(findstr:*)",
       "Bash(find:*)",
       "Bash(php -l:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(php artisan pint:*)",
+      "Bash(node --version)",
+      "Bash(mise ls:*)",
+      "Bash(mise install:*)",
+      "Bash(php artisan cache:clear:*)",
+      "Bash(php artisan:*)",
+      "Bash(php artisan config:clear:*)",
+      "Bash(docker compose:*)",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []
   },
-  "outputStyle": "Explanatory"
+  "outputStyle": "default"
 }

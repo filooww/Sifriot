@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -12,17 +13,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('publications', function (Blueprint $table) {
-            // Drop metadata tracking columns
+            // Drop metadata tracking columns if they exist
             // Confidence tracking now stays in FileMetadata
             // Status tracking moved to FileMetadata.status enum
-            $table->dropColumn([
-                'metadata_source',
-                'metadata_confidence_avg',
-                'metadata_confirmed_at',
-            ]);
+            $columns = ['metadata_source', 'metadata_confidence_avg', 'metadata_confirmed_at'];
+            $existingColumns = Schema::getColumnListing('publications');
+            $columnsToDelete = array_intersect($columns, $existingColumns);
 
-            // Drop the index on metadata status
-            $table->dropIndex('idx_publications_metadata_status');
+            if (!empty($columnsToDelete)) {
+                $table->dropColumn($columnsToDelete);
+            }
+
+            // Drop the index on metadata status if it exists
+            $indexExists = collect(DB::select('SHOW INDEXES FROM publications WHERE Key_name = ?', ['idx_publications_metadata_status']))->isNotEmpty();
+            if ($indexExists) {
+                $table->dropIndex('idx_publications_metadata_status');
+            }
         });
     }
 

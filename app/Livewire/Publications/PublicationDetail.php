@@ -18,8 +18,6 @@ class PublicationDetail extends Component
 
     public ?string $selectedFileName = null;
 
-    public bool $showMetadata = false;
-
     public function mount(int $id): void
     {
         $this->isGuest = ! Auth::check();

@@ -140,12 +140,20 @@
                                 </a>
 
                                 @if ($this->isPublished())
-                                    <button
-                                        onclick="alert('Download coming soon!')"
-                                        class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition"
-                                    >
-                                        ⬇️ {{ __('Download') }}
-                                    </button>
+                                    @php
+                                        $primaryFile = $this->getPrimaryFile();
+                                    @endphp
+                                    @if ($primaryFile)
+                                        <a
+                                            href="{{ route('files.download', [
+                                                'publication' => $publication->id_publication,
+                                                'filename' => $primaryFile->file_name
+                                            ]) }}"
+                                            class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition inline-block text-center"
+                                        >
+                                            ⬇️ {{ __('Download') }}
+                                        </a>
+                                    @endif
                                 @endif
                             </div>
                         </div>

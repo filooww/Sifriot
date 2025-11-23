@@ -32,6 +32,13 @@ class PublicationFilters extends Component
 
     public string $authorSearchQuery = '';
 
+    // Metadata-specific filters (admin only)
+    public string $statusFilter = 'all';
+
+    public string $formatFilter = 'all';
+
+    public string $dateFilter = 'all';
+
     protected $queryString = [
         'selectedCategories' => ['as' => 'cat', 'except' => []],
         'selectedAuthors' => ['as' => 'auth', 'except' => []],
@@ -41,6 +48,9 @@ class PublicationFilters extends Component
         'textSizeRange' => ['as' => 'size', 'except' => [0, 500000]],
         'alphabeticalSort' => ['as' => 'sort', 'except' => null],
         'publicationStatus' => ['as' => 'status', 'except' => []],
+        'statusFilter' => ['as' => 'ext_status', 'except' => 'all'],
+        'formatFilter' => ['as' => 'format', 'except' => 'all'],
+        'dateFilter' => ['as' => 'ext_date', 'except' => 'all'],
     ];
 
     public function updatedSelectedCategories(): void
@@ -83,6 +93,21 @@ class PublicationFilters extends Component
         $this->emitFilters();
     }
 
+    public function updatedStatusFilter(): void
+    {
+        $this->emitFilters();
+    }
+
+    public function updatedFormatFilter(): void
+    {
+        $this->emitFilters();
+    }
+
+    public function updatedDateFilter(): void
+    {
+        $this->emitFilters();
+    }
+
     public function clearAllFilters(): void
     {
         $this->selectedCategories = [];
@@ -94,6 +119,9 @@ class PublicationFilters extends Component
         $this->alphabeticalSort = null;
         $this->publicationStatus = [];
         $this->authorSearchQuery = '';
+        $this->statusFilter = 'all';
+        $this->formatFilter = 'all';
+        $this->dateFilter = 'all';
 
         $this->emitFilters();
     }
@@ -109,6 +137,9 @@ class PublicationFilters extends Component
             'textSize' => $this->textSizeRange = [0, 500000],
             'alphabetical' => $this->alphabeticalSort = null,
             'status' => $this->publicationStatus = array_values(array_diff($this->publicationStatus, [$value])),
+            'extractionStatus' => $this->statusFilter = 'all',
+            'format' => $this->formatFilter = 'all',
+            'extractionDate' => $this->dateFilter = 'all',
             default => null,
         };
 
@@ -193,6 +224,37 @@ class PublicationFilters extends Component
             ];
         }
 
+        // Metadata filters (admin only)
+        if ($this->statusFilter !== 'all') {
+            $filters[] = [
+                'type' => 'extractionStatus',
+                'value' => $this->statusFilter,
+                'label' => __('Extraction Status').': '.__(ucfirst($this->statusFilter)),
+            ];
+        }
+
+        if ($this->formatFilter !== 'all') {
+            $filters[] = [
+                'type' => 'format',
+                'value' => $this->formatFilter,
+                'label' => __('Format').': '.strtoupper($this->formatFilter),
+            ];
+        }
+
+        if ($this->dateFilter !== 'all') {
+            $dateLabel = match ($this->dateFilter) {
+                '1day' => __('Last 24h'),
+                '7days' => __('Last 7 days'),
+                '30days' => __('Last 30 days'),
+                default => $this->dateFilter,
+            };
+            $filters[] = [
+                'type' => 'extractionDate',
+                'value' => $this->dateFilter,
+                'label' => __('Extraction Date').': '.$dateLabel,
+            ];
+        }
+
         return $filters;
     }
 
@@ -243,6 +305,9 @@ class PublicationFilters extends Component
             'textSizeRange' => $this->textSizeRange,
             'alphabeticalSort' => $this->alphabeticalSort,
             'publicationStatus' => $this->publicationStatus,
+            'statusFilter' => $this->statusFilter,
+            'formatFilter' => $this->formatFilter,
+            'dateFilter' => $this->dateFilter,
         ]);
     }
 

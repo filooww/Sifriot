@@ -6,7 +6,10 @@
         genre: false,
         textSize: false,
         alphabetical: false,
-        status: false
+        status: false,
+        extractionStatus: false,
+        format: false,
+        extractionDate: false
     }
 }" class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 sticky top-4">
 
@@ -353,9 +356,258 @@
             </div>
         </div>
 
-        {{-- Publication Status Filter (Admin Only) --}}
+        {{-- Metadata Filters (Admin Only) --}}
         @if(!$hideAdminFilters && auth()->check() && auth()->user()->role === 'admin')
+
         <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+
+        {{-- Extraction Status Filter --}}
+        <div class="mb-3">
+            <button
+                @click="openSections.extractionStatus = !openSections.extractionStatus"
+                class="w-full flex items-center justify-between text-start font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+            >
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>{{ __('Extraction Status') }}</span>
+                </div>
+                <svg
+                    class="w-5 h-5 transition-transform duration-200"
+                    :class="openSections.extractionStatus ? 'rotate-180' : ''"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="openSections.extractionStatus" x-transition class="mt-2 space-y-2">
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="statusFilter"
+                        value="all"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">{{ __('All') }}</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="statusFilter"
+                        value="pending"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">⏳ {{ __('Pending') }}</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="statusFilter"
+                        value="processed"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">📋 {{ __('Ready for Review') }}</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="statusFilter"
+                        value="confirmed"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">✅ {{ __('Confirmed') }}</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="statusFilter"
+                        value="failed"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">❌ {{ __('Failed') }}</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="statusFilter"
+                        value="rejected"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">🚫 {{ __('Rejected') }}</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+
+        {{-- File Format Filter --}}
+        <div class="mb-3">
+            <button
+                @click="openSections.format = !openSections.format"
+                class="w-full flex items-center justify-between text-start font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+            >
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>{{ __('File Format') }}</span>
+                </div>
+                <svg
+                    class="w-5 h-5 transition-transform duration-200"
+                    :class="openSections.format ? 'rotate-180' : ''"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="openSections.format" x-transition class="mt-2 space-y-2">
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="all"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">{{ __('All') }}</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="pdf"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">PDF</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="epub"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">EPUB</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="txt"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">TXT</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="doc"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">DOC</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="docx"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">DOCX</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="fb2"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">FB2</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="djvu"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">DJVU</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+
+        {{-- Extraction Date Filter --}}
+        <div class="mb-3">
+            <button
+                @click="openSections.extractionDate = !openSections.extractionDate"
+                class="w-full flex items-center justify-between text-start font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+            >
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span>{{ __('Extraction Date') }}</span>
+                </div>
+                <svg
+                    class="w-5 h-5 transition-transform duration-200"
+                    :class="openSections.extractionDate ? 'rotate-180' : ''"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="openSections.extractionDate" x-transition class="mt-2 space-y-2">
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="dateFilter"
+                        value="all"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">{{ __('All Time') }}</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="dateFilter"
+                        value="1day"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">{{ __('Last 24h') }}</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="dateFilter"
+                        value="7days"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">{{ __('Last 7 days') }}</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="dateFilter"
+                        value="30days"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">{{ __('Last 30 days') }}</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+
+        {{-- Publication Status Filter (Admin Only) --}}
         <div class="mb-3">
             <button
                 @click="openSections.status = !openSections.status"

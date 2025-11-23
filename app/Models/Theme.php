@@ -18,6 +18,7 @@ class Theme extends Model
 
     protected $fillable = [
         'theme',
+        'theme_low',
     ];
 
     // Relationships

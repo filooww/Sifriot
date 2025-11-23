@@ -123,8 +123,8 @@ class PublicCatalog extends Component
         // Public catalog: only show non-deleted publications
         $query->whereNull('deleted_at');
 
-        // Eager load basic relationships
-        $query->with(['publishing', 'authorGroup', 'issueType', 'categories', 'authors']);
+        // Eager load basic relationships (including files for cover image display)
+        $query->with(['publishing', 'authorGroup', 'issueType', 'categories', 'authors', 'files']);
 
         // Apply alphabetical sort if set
         if ($this->filterAlphabeticalSort) {

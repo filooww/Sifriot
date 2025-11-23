@@ -113,7 +113,7 @@
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
                             <!-- Cover Image -->
                             <div class="relative bg-gray-200 dark:bg-gray-700 aspect-[2/3] overflow-hidden flex items-center justify-center">
-                                <a href="{{ route('publications.show', $publication->id_publication) }}" wire:navigate class="w-full h-full">
+                                <a href="{{ route('publications.preview', $publication->id_publication) }}" wire:navigate class="w-full h-full">
                                     @if($publication->cover_image_path)
                                         <img
                                             src="{{ Storage::url($publication->cover_image_path) }}"
@@ -135,7 +135,7 @@
                             <div class="p-4 flex flex-col flex-grow">
                                 <!-- Title -->
                                 <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                                    <a href="{{ route('publications.show', $publication->id_publication) }}" wire:navigate
+                                    <a href="{{ route('publications.preview', $publication->id_publication) }}" wire:navigate
                                        class="hover:text-blue-600 dark:hover:text-blue-400 transition">
                                         {{ $publication->title }}
                                     </a>

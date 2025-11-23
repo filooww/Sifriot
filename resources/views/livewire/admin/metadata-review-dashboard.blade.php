@@ -1,7 +1,7 @@
 <div class="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
     <!-- Page Header -->
     <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-        <div class="px-6 py-4">
+        <div class="px-4 py-2">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ __('Metadata Review Dashboard') }}</h1>
@@ -40,111 +40,43 @@
         <!-- Sidebar Filters -->
         <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
             <div class="p-4 space-y-4">
-                <!-- Statistics Cards (Compact) -->
+                <!-- Statistics Cards (Compact) - Clickable filters -->
                 <div class="space-y-2">
-                    <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
+                    <button wire:click="$set('statusFilter', 'pending')" class="w-full text-left bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition {{ $statusFilter === 'pending' ? 'ring-2 ring-yellow-600' : '' }}">
                         <p class="text-xs text-gray-600 dark:text-gray-400">⏳ {{ __('Pending') }}</p>
                         <p class="text-xl font-bold text-yellow-600 dark:text-yellow-400">{{ $stats['pending'] }}</p>
-                    </div>
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                    </button>
+                    <button wire:click="$set('statusFilter', 'processed')" class="w-full text-left bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition {{ $statusFilter === 'processed' ? 'ring-2 ring-blue-600' : '' }}">
                         <p class="text-xs text-gray-600 dark:text-gray-400">📋 {{ __('Ready for Review') }}</p>
                         <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ $stats['processed'] }}</p>
-                    </div>
-                    <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                    </button>
+                    <button wire:click="$set('statusFilter', 'confirmed')" class="w-full text-left bg-green-50 dark:bg-green-900/20 rounded-lg p-3 hover:bg-green-100 dark:hover:bg-green-900/40 transition {{ $statusFilter === 'confirmed' ? 'ring-2 ring-green-600' : '' }}">
                         <p class="text-xs text-gray-600 dark:text-gray-400">✅ {{ __('Confirmed') }}</p>
                         <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ $stats['confirmed'] }}</p>
-                    </div>
-                    <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                    </button>
+                    <button wire:click="$set('statusFilter', 'failed')" class="w-full text-left bg-red-50 dark:bg-red-900/20 rounded-lg p-3 hover:bg-red-100 dark:hover:bg-red-900/40 transition {{ $statusFilter === 'failed' ? 'ring-2 ring-red-600' : '' }}">
                         <p class="text-xs text-gray-600 dark:text-gray-400">❌ {{ __('Failed') }}</p>
                         <p class="text-xl font-bold text-red-600 dark:text-red-400">{{ $stats['failed'] }}</p>
-                    </div>
-                    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                    </button>
+                    <button wire:click="$set('statusFilter', 'rejected')" class="w-full text-left bg-gray-100 dark:bg-gray-800 rounded-lg p-3 hover:bg-gray-200 dark:hover:bg-gray-700 transition {{ $statusFilter === 'rejected' ? 'ring-2 ring-gray-600' : '' }}">
                         <p class="text-xs text-gray-600 dark:text-gray-400">🚫 {{ __('Rejected') }}</p>
                         <p class="text-xl font-bold text-gray-600 dark:text-gray-400">{{ $stats['rejected'] }}</p>
-                    </div>
+                    </button>
+                    <button wire:click="$set('statusFilter', 'all')" class="w-full text-left bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition {{ $statusFilter === 'all' ? 'ring-2 ring-gray-400' : '' }} mt-2">
+                        <p class="text-xs text-gray-600 dark:text-gray-400">📊 {{ __('All') }}</p>
+                        <p class="text-xl font-bold text-gray-600 dark:text-gray-400">{{ $stats['pending'] + $stats['processed'] + $stats['confirmed'] + $stats['failed'] + $stats['rejected'] }}</p>
+                    </button>
                 </div>
 
                 <!-- Divider -->
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-4"></div>
 
-                <!-- Filter Controls -->
-                <div class="space-y-3">
-                    <!-- Metadata Status Filter -->
-                    <div>
-                        <label for="statusFilter" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                            {{ __('Metadata Status') }}
-                        </label>
-                        <select
-                            id="statusFilter"
-                            wire:model.live="statusFilter"
-                            class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                        >
-                            <option value="all">{{ __('All') }}</option>
-                            <option value="pending">{{ __('Pending') }}</option>
-                            <option value="processed">{{ __('Ready for Review') }}</option>
-                            <option value="confirmed">{{ __('Confirmed') }}</option>
-                            <option value="failed">{{ __('Failed') }}</option>
-                            <option value="rejected">{{ __('Rejected') }}</option>
-                        </select>
-                    </div>
-
-                    <!-- Format Filter -->
-                    <div>
-                        <label for="formatFilter" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                            {{ __('Format') }}
-                        </label>
-                        <select
-                            id="formatFilter"
-                            wire:model.live="formatFilter"
-                            class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                        >
-                            <option value="all">{{ __('All') }}</option>
-                            <option value="pdf">PDF</option>
-                            <option value="epub">EPUB</option>
-                            <option value="txt">TXT</option>
-                            <option value="doc">DOC</option>
-                            <option value="docx">DOCX</option>
-                            <option value="fb2">FB2</option>
-                            <option value="djvu">DJVU</option>
-                        </select>
-                    </div>
-
-                    <!-- Date Filter -->
-                    <div>
-                        <label for="dateFilter" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                            {{ __('Date Range') }}
-                        </label>
-                        <select
-                            id="dateFilter"
-                            wire:model.live="dateFilter"
-                            class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                        >
-                            <option value="all">{{ __('All Time') }}</option>
-                            <option value="1day">{{ __('Last 24h') }}</option>
-                            <option value="7days">{{ __('Last 7 days') }}</option>
-                            <option value="30days">{{ __('Last 30 days') }}</option>
-                        </select>
-                    </div>
-
-                    <!-- Publication Status Filter -->
-                    <div>
-                        <label for="pubStatus" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                            {{ __('Publication Status') }}
-                        </label>
-                        <select
-                            id="pubStatus"
-                            wire:model.live="filterPublicationStatus"
-                            multiple
-                            class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                        >
-                            <option value="published">{{ __('Published') }}</option>
-                            <option value="hidden">{{ __('Hidden') }}</option>
-                            <option value="pending">{{ __('Pending') }}</option>
-                        </select>
-                    </div>
+                <!-- Table Sort Controls -->
+                <div class="space-y-3 mb-4">
+                    <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ __('Table Sort') }}</h4>
 
                     <!-- Sort -->
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <div>
                         <label for="sortBy" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                             {{ __('Sort By') }}
                         </label>
@@ -174,22 +106,18 @@
                     </div>
                 </div>
 
-                <!-- Divider -->
-                <div class="border-t border-gray-200 dark:border-gray-700 pt-4"></div>
-
-                <!-- Publication Filters -->
+                <!-- Publication & Metadata Filters Component -->
                 <div class="pb-4">
-                    <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ __('Publication Filters') }}</h4>
-                    @livewire('publications.publication-filters')
+                    @livewire('publications.publication-filters', ['hideAdminFilters' => false])
                 </div>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-y-auto p-6">
+        <main class="flex-1 overflow-y-auto">
             <!-- Bulk Actions -->
     @if (count($selectedItems) > 0)
-        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg flex items-center justify-between">
+        <div class="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg flex items-center justify-between">
             <span class="text-sm font-medium text-blue-900 dark:text-blue-200">
                 {{ count($selectedItems) }} item{{ count($selectedItems) !== 1 ? 's' : '' }} selected
             </span>
@@ -220,7 +148,7 @@
     @endif
 
             <!-- File Metadata Table -->
-            <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col min-h-96 flex-1 dark:bg-gray-900">
                 <table class="w-full">
                     <thead class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                         <tr>
@@ -275,14 +203,14 @@
                             </th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 flex-1">
                         @forelse ($fileMetadataList as $metadata)
                             @php
                                 $badgeInfo = $this->getStatusBadge($metadata->status);
                                 $publication = $metadata->publication;
                                 $pubStatusBadge = $publication ? $this->getPublicationStatusBadge($publication->status) : null;
                             @endphp
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                            <tr wire:key="metadata-{{ $metadata->id }}" class="hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                                 <td class="px-6 py-3">
                                     <input
                                         type="checkbox"
@@ -314,40 +242,55 @@
                                 <td class="px-6 py-3">
                                     @if ($publication)
                                         <div class="flex items-center gap-2">
-                                            <span class="text-{{ $pubStatusBadge['color'] }}-600 dark:text-{{ $pubStatusBadge['color'] }}-400">{{ $pubStatusBadge['icon'] }}</span>
+                                            <span class="text-lg">{{ $pubStatusBadge['icon'] }}</span>
                                             <select
                                                 wire:change="togglePublicationStatus({{ $publication->id_publication }}, $event.target.value)"
-                                                class="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
+                                                class="text-sm font-medium border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white bg-white text-gray-900 hover:border-blue-400 dark:hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             >
-                                                <option value="pending" {{ $publication->status === 'pending' ? 'selected' : '' }}>{{ __('Pending') }}</option>
-                                                <option value="published" {{ $publication->status === 'published' ? 'selected' : '' }}>{{ __('Published') }}</option>
-                                                <option value="hidden" {{ $publication->status === 'hidden' ? 'selected' : '' }}>{{ __('Hidden') }}</option>
+                                                <option value="pending" {{ $publication->status === 'pending' ? 'selected' : '' }}>⏳ Pending</option>
+                                                <option value="published" {{ $publication->status === 'published' ? 'selected' : '' }}>🌐 Published</option>
+                                                <option value="hidden" {{ $publication->status === 'hidden' ? 'selected' : '' }}>🔒 Hidden</option>
                                             </select>
                                         </div>
                                     @else
-                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('N/A') }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 px-3 py-1.5 inline-block bg-gray-100 dark:bg-gray-800 rounded-lg">{{ __('No Publication') }}</span>
                                     @endif
                                 </td>
                                 <td class="px-6 py-3 text-sm text-gray-600 dark:text-gray-400">
                                     {{ $metadata->created_at->format('M d, Y H:i') }}
                                 </td>
                                 <td class="px-6 py-3 text-right">
-                                    <div class="flex justify-end gap-2">
-                                        @if ($metadata->status === 'processed')
+                                    <div class="flex justify-end gap-2 items-center">
+                                        <!-- DEBUG: Show status for testing -->
+                                        <span class="text-xs text-gray-500 mr-2">{{ $metadata->status }}</span>
+
+                                        @if ($metadata->status === 'processed' || $metadata->status === 'rejected')
                                             <button
                                                 type="button"
-                                                wire:click="$set('selectedMetadataId', {{ $metadata->id }})"
+                                                wire:click="openReview({{ (int)$metadata->id }})"
                                                 class="px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition"
                                             >
                                                 {{ __('Review') }}
                                             </button>
+                                        @elseif ($metadata->status === 'confirmed')
+                                            <button
+                                                type="button"
+                                                wire:click="openReview({{ (int)$metadata->id }})"
+                                                class="px-3 py-1 text-sm font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition"
+                                            >
+                                                {{ __('Edit') }}
+                                            </button>
                                         @elseif ($metadata->status === 'failed')
                                             <button
                                                 type="button"
-                                                wire:click="reExtractSingle({{ $metadata->id }})"
-                                                class="px-3 py-1 text-sm font-medium text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded transition"
+                                                wire:click="reExtractSingle({{ (int)$metadata->id }})"
+                                                wire:loading.attr="disabled"
+                                                wire:loading.delay.longer
+                                                wire:target="reExtractSingle({{ (int)$metadata->id }})"
+                                                class="px-3 py-1 text-sm font-medium text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                {{ __('Retry') }}
+                                                <span wire:loading.remove wire:target="reExtractSingle({{ (int)$metadata->id }})">{{ __('Retry') }}</span>
+                                                <span wire:loading wire:target="reExtractSingle({{ (int)$metadata->id }})">{{ __('Processing...') }}</span>
                                             </button>
                                         @endif
                                         <button
@@ -380,34 +323,45 @@
             </div>
         </main>
     </div>
-</div>
 
-<!-- Review Modal -->
+    <!-- Review Modal -->
     @if (isset($selectedMetadataId) && $selectedMetadataId)
         @php
             $selectedMetadata = \App\Models\FileMetadata::find($selectedMetadataId);
         @endphp
 
         @if ($selectedMetadata)
-            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto" wire:click="$set('selectedMetadataId', null)">
-                <div class="min-h-screen flex items-center justify-center p-4" wire:click.stop>
-                    <div class="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-                        <!-- Modal Header -->
-                        <div class="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                Review Metadata
-                            </h3>
-                            <button
-                                type="button"
-                                wire:click="$set('selectedMetadataId', null)"
-                                class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                            >
-                                ✕
-                            </button>
+            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto flex items-center justify-center p-4" wire:click="closeReview">
+                <div class="bg-white dark:bg-gray-900 rounded-xl max-w-3xl w-full max-h-[95vh] overflow-hidden shadow-2xl" wire:click.stop>
+                    <!-- Modal Header with Status -->
+                    <div class="sticky top-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-600 px-6 py-5 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                                    @if ($selectedMetadata->status === 'confirmed')
+                                        ✏️ {{ __('Edit Metadata') }}
+                                    @else
+                                        📋 {{ __('Review Metadata') }}
+                                    @endif
+                                </h2>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                    {{ Str::limit($selectedMetadata->file_name, 50) }}
+                                </p>
+                            </div>
                         </div>
+                        <button
+                            type="button"
+                            wire:click="closeReview"
+                            class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-lg transition"
+                            title="Close (Esc)"
+                        >
+                            ✕
+                        </button>
+                    </div>
 
-                        <!-- Modal Content -->
-                        <div class="p-6">
+                    <!-- Modal Content with Scrollable Form -->
+                    <div class="overflow-y-auto" style="max-height: calc(95vh - 100px);">
+                        <div class="p-6 md:p-8">
                             @livewire('admin.metadata-review-form', ['fileMetadata' => $selectedMetadata], key('metadata-review-' . $selectedMetadata->id))
                         </div>
                     </div>
