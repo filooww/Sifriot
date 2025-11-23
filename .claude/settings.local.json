@@ -19,7 +19,9 @@
       "Bash(php artisan:*)",
       "Bash(php artisan config:clear:*)",
       "Bash(docker compose:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(git config:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
