@@ -25,6 +25,10 @@ Route::get('/publications/{id}', PublicationDetail::class)
 Route::get('/publications/{id}/preview', PublicationPreview::class)
     ->name('publications.preview');
 
+// Public cover image access (no auth required for previews)
+Route::get('/covers/{publication}/{filename}', [FileViewController::class, 'serveCover'])
+    ->name('covers.serve');
+
 // Language switcher
 Route::get('/language/{locale}', function ($locale) {
     if (in_array($locale, ['en', 'ru', 'he'])) {

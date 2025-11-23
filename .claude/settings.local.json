@@ -21,7 +21,9 @@
       "Bash(docker compose:*)",
       "Bash(xargs cat:*)",
       "Bash(git config:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(docker ps:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

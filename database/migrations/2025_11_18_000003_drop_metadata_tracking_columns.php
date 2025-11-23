@@ -12,7 +12,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('publications', function (Blueprint $table) {
+        // Check if index exists before entering the Schema closure
+        $indexExists = collect(DB::select('SHOW INDEXES FROM publications WHERE Key_name = ?', ['idx_publications_metadata_status']))->isNotEmpty();
+
+        Schema::table('publications', function (Blueprint $table) use ($indexExists) {
+            // Drop the index on metadata status FIRST (before dropping columns it depends on)
+            if ($indexExists) {
+                $table->dropIndex('idx_publications_metadata_status');
+            }
+
             // Drop metadata tracking columns if they exist
             // Confidence tracking now stays in FileMetadata
             // Status tracking moved to FileMetadata.status enum
@@ -22,12 +30,6 @@ return new class extends Migration
 
             if (!empty($columnsToDelete)) {
                 $table->dropColumn($columnsToDelete);
-            }
-
-            // Drop the index on metadata status if it exists
-            $indexExists = collect(DB::select('SHOW INDEXES FROM publications WHERE Key_name = ?', ['idx_publications_metadata_status']))->isNotEmpty();
-            if ($indexExists) {
-                $table->dropIndex('idx_publications_metadata_status');
             }
         });
     }

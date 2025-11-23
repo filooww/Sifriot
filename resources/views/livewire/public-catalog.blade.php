@@ -116,7 +116,7 @@
                                 <a href="{{ route('publications.preview', $publication->id_publication) }}" wire:navigate class="w-full h-full">
                                     @if($publication->cover_image_path)
                                         <img
-                                            src="{{ Storage::url($publication->cover_image_path) }}"
+                                            src="{{ $publication->cover_image_path }}"
                                             alt="{{ $publication->title }}"
                                             class="w-full h-full object-cover hover:opacity-90 transition-opacity"
                                         />

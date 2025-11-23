@@ -1,6 +1,31 @@
-<div class="space-y-6">
+<div class="space-y-6" wire:poll.5s="{{ $queueStats['is_processing'] ? '' : 'keep-alive' }}">
+
+    <!-- Processing Progress Banner -->
+    @if ($queueStats['is_processing'])
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <div class="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                    <span class="text-sm font-medium text-blue-900 dark:text-blue-200">
+                        Processing Metadata Extraction
+                    </span>
+                </div>
+                <span class="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                    {{ $queueStats['completed'] }} / {{ $queueStats['total'] }} ({{ $queueStats['percent_complete'] }}%)
+                </span>
+            </div>
+            <div class="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2.5">
+                <div class="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: {{ $queueStats['percent_complete'] }}%"></div>
+            </div>
+            <div class="mt-2 text-xs text-blue-700 dark:text-blue-300">
+                <span class="font-medium">{{ $queueStats['pending'] }}</span> pending,
+                <span class="font-medium">{{ $queueStats['processing'] }}</span> processing
+            </div>
+        </div>
+    @endif
+
     <!-- Statistics Header -->
-    <div class="grid grid-cols-5 gap-4">
+    <div class="grid grid-cols-6 gap-4">
         <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <p class="text-sm text-gray-600 dark:text-gray-400">⏳ Pending</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['pending'] }}</p>
@@ -8,6 +33,10 @@
         <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <p class="text-sm text-gray-600 dark:text-gray-400">🔄 Processing</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['processing'] }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400">📋 Processed</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['processed'] }}</p>
         </div>
         <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <p class="text-sm text-gray-600 dark:text-gray-400">✅ Confirmed</p>
@@ -25,6 +54,22 @@
 
     <!-- Filters and Controls -->
     <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Filters</h2>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                    Last updated: {{ now()->format('H:i:s') }}
+                </span>
+                <button
+                    type="button"
+                    wire:click="$refresh"
+                    class="px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition"
+                    title="Refresh now"
+                >
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <!-- Status Filter -->
             <div>
@@ -191,8 +236,9 @@
                 @forelse ($fileMetadataList as $metadata)
                     @php
                         $badgeInfo = $this->getStatusBadge($metadata->status);
+                        $isProcessing = in_array($metadata->status, ['pending', 'processing']);
                     @endphp
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition {{ $isProcessing ? 'bg-blue-50/30 dark:bg-blue-900/10' : '' }}">
                         <td class="px-6 py-3">
                             <input
                                 type="checkbox"
@@ -202,13 +248,18 @@
                             />
                         </td>
                         <td class="px-6 py-3">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ Str::limit($metadata->file_name, 40) }}</span>
-                                @if ($metadata->status === 'processed' || $metadata->status === 'confirmed')
-                                    <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        {{ $metadata->getTitle() ? Str::limit($metadata->getTitle(), 50) : 'No title' }}
-                                    </span>
+                            <div class="flex items-center gap-2">
+                                @if ($isProcessing)
+                                    <div class="animate-pulse h-2 w-2 bg-blue-500 rounded-full"></div>
                                 @endif
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ Str::limit($metadata->file_name, 40) }}</span>
+                                    @if ($metadata->status === 'processed' || $metadata->status === 'confirmed')
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            {{ $metadata->getTitle() ? Str::limit($metadata->getTitle(), 50) : 'No title' }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                         </td>
                         <td class="px-6 py-3">

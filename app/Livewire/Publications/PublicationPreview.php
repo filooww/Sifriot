@@ -48,8 +48,13 @@ class PublicationPreview extends Component
             ->where('file_type', 'cover')
             ->first();
 
-        if ($coverFile && $coverFile->file_path) {
-            return \Storage::url($coverFile->file_path);
+        if ($coverFile && $coverFile->file_name) {
+            // Generate public URL for cover image (no auth required)
+            $encodedFilename = rtrim(strtr(base64_encode($coverFile->file_name), '+/', '-_'), '=');
+            return route('covers.serve', [
+                'publication' => $this->publication->id_publication,
+                'filename' => $encodedFilename,
+            ]);
         }
 
         return null;

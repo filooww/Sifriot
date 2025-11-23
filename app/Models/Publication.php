@@ -186,7 +186,16 @@ class Publication extends Model
         return Attribute::make(
             get: function () {
                 $cover = $this->coverImage()->first();
-                return $cover && $cover->file_path ? \Illuminate\Support\Facades\Storage::url($cover->file_path) : null;
+                if (!$cover || !$cover->file_name) {
+                    return null;
+                }
+
+                // Generate public URL for cover image (no auth required)
+                $encodedFilename = rtrim(strtr(base64_encode($cover->file_name), '+/', '-_'), '=');
+                return route('covers.serve', [
+                    'publication' => $this->id_publication,
+                    'filename' => $encodedFilename,
+                ]);
             }
         );
     }
@@ -202,9 +211,19 @@ class Publication extends Model
                 if (!$this->relationLoaded('files')) {
                     $cover = $this->coverImage()->first();
                 } else {
-                    $cover = $this->files()->where('file_type', 'cover')->first();
+                    $cover = $this->files->where('file_type', 'cover')->first();
                 }
-                return $cover ? $cover->file_path : null;
+
+                if (!$cover || !$cover->file_name) {
+                    return null;
+                }
+
+                // Generate public URL for cover image (no auth required)
+                $encodedFilename = rtrim(strtr(base64_encode($cover->file_name), '+/', '-_'), '=');
+                return route('covers.serve', [
+                    'publication' => $this->id_publication,
+                    'filename' => $encodedFilename,
+                ]);
             }
         );
     }

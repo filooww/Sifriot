@@ -89,9 +89,34 @@ class MetadataReviewQueue extends Component
         return [
             'pending' => (clone $query)->where('status', 'pending')->count(),
             'processing' => (clone $query)->where('status', 'processing')->count(),
+            'processed' => (clone $query)->where('status', 'processed')->count(),
             'confirmed' => (clone $query)->where('status', 'confirmed')->count(),
             'failed' => (clone $query)->where('status', 'failed')->count(),
             'rejected' => (clone $query)->where('status', 'rejected')->count(),
+        ];
+    }
+
+    /**
+     * Get queue processing statistics.
+     */
+    public function getQueueStats(): array
+    {
+        $total = FileMetadata::count();
+        $pending = FileMetadata::where('status', 'pending')->count();
+        $processing = FileMetadata::where('status', 'processing')->count();
+        $completed = FileMetadata::whereIn('status', ['processed', 'confirmed'])->count();
+
+        $inProgress = $pending + $processing;
+        $percentComplete = $total > 0 ? round(($completed / $total) * 100, 1) : 0;
+
+        return [
+            'total' => $total,
+            'pending' => $pending,
+            'processing' => $processing,
+            'completed' => $completed,
+            'in_progress' => $inProgress,
+            'percent_complete' => $percentComplete,
+            'is_processing' => $inProgress > 0,
         ];
     }
 
@@ -310,6 +335,7 @@ class MetadataReviewQueue extends Component
         return view('livewire.admin.metadata-review-queue', [
             'fileMetadataList' => $this->getFileMetadataList(),
             'stats' => $this->getStats(),
+            'queueStats' => $this->getQueueStats(),
         ]);
     }
 }

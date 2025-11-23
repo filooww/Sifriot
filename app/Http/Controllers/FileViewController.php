@@ -596,6 +596,68 @@ class FileViewController extends Controller
     }
 
     /**
+     * Serve cover image (public access, no authentication required)
+     */
+    public function serveCover(int $publication, string $filename): Response
+    {
+        // Decode URL-safe base64-encoded filename
+        $base64 = str_pad(strtr($filename, '-_', '+/'), strlen($filename) % 4, '=', STR_PAD_RIGHT);
+        $decodedFilename = base64_decode($base64, true);
+
+        if ($decodedFilename === false) {
+            abort(400, 'Invalid filename encoding');
+        }
+
+        // Find the cover file by original file_name
+        $file = File::where('id_publication', $publication)
+            ->where('file_name', $decodedFilename)
+            ->where('file_type', 'cover')
+            ->first();
+
+        if (! $file) {
+            abort(404, 'Cover image not found');
+        }
+
+        // For cover images, use file_path if available (uploaded files), otherwise use file_source logic
+        if ($file->file_path) {
+            // Uploaded cover: file_path contains the actual storage path
+            // Check if it's in public storage (covers/) or private storage (content/)
+            if (str_starts_with($file->file_path, 'covers/')) {
+                $disk = 'public';
+                $storagePath = $file->file_path;
+            } else {
+                $disk = 'local';
+                $storagePath = $file->file_path;
+            }
+        } else {
+            // Fallback to file_source logic for bulk scanned covers
+            $fileSource = $file->file_source;
+
+            if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
+                $disk = 'local';
+                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+            } else {
+                $disk = 'library';
+                $storagePath = $fileSource . '/' . $decodedFilename;
+            }
+        }
+
+        if (! Storage::disk($disk)->exists($storagePath)) {
+            abort(404, 'Cover image file not found in storage');
+        }
+
+        // Get file content
+        $content = Storage::disk($disk)->get($storagePath);
+        $mimeType = $file->mime_type ?? 'image/jpeg';
+
+        // Return image with caching headers
+        return response($content)
+            ->header('Content-Type', $mimeType)
+            ->header('Cache-Control', 'public, max-age=86400') // Cache for 24 hours
+            ->header('Access-Control-Allow-Origin', '*');
+    }
+
+    /**
      * View a file inline (for document viewers)
      */
     public function view(int $publication, string $filename): Response|JsonResponse
