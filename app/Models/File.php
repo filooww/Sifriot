@@ -61,13 +61,27 @@ class File extends Model
         return $query->where('file_type', 'content');
     }
 
-    // Auto-lowercase file_name
+    // Auto-lowercase file_name and cleanup on delete
     protected static function boot()
     {
         parent::boot();
 
         static::saving(function ($file) {
             $file->file_name_low = mb_strtolower($file->file_name);
+        });
+
+        // Delete physical file from storage when File record is deleted
+        static::deleting(function ($file) {
+            if ($file->file_path && $file->file_type === 'cover') {
+                try {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($file->file_path);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to delete cover image from storage', [
+                        'file_path' => $file->file_path,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         });
     }
 }

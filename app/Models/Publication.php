@@ -135,6 +135,25 @@ class Publication extends Model
         return $this->hasMany(FileMetadata::class, 'file_id', 'id_publication');
     }
 
+    // Boot method for model lifecycle hooks
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Delete associated files (including cover images) when publication is deleted
+        static::deleting(function ($publication) {
+            // Soft delete: cascade delete cover images through File model
+            // This will trigger File::deleting hook to clean up physical files
+            $publication->files()->where('file_type', 'cover')->delete();
+        });
+
+        // Force delete: clean up all files including those soft-deleted
+        static::forceDeleting(function ($publication) {
+            // Force delete all files associated with this publication
+            $publication->files()->withTrashed()->where('file_type', 'cover')->forceDelete();
+        });
+    }
+
     // Scopes
     public function scopePending($query)
     {
