@@ -852,7 +852,8 @@ class MetadataReviewForm extends Component
 
         $trimmedName = trim($name);
         $publisher = Publishing::firstOrCreate(
-            ['publishing' => $trimmedName, 'publishing_low' => mb_strtolower($trimmedName)]
+            ['publishing' => $trimmedName],
+            ['publishing_low' => mb_strtolower($trimmedName)]
         );
 
         return [

@@ -23,6 +23,28 @@
                 </div>
             </div>
 
+            <!-- Status Filter Buttons (Horizontal) -->
+            <div class="mt-4 flex flex-wrap gap-2">
+                <button wire:click="$set('statusFilter', 'all')" class="px-4 py-2 rounded-lg text-sm font-medium transition {{ $statusFilter === 'all' ? 'bg-gray-600 text-white ring-2 ring-gray-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700' }}">
+                    📊 {{ __('All') }} ({{ $stats['pending'] + $stats['processed'] + $stats['confirmed'] + $stats['failed'] + $stats['rejected'] }})
+                </button>
+                <button wire:click="$set('statusFilter', 'pending')" class="px-4 py-2 rounded-lg text-sm font-medium transition {{ $statusFilter === 'pending' ? 'bg-yellow-600 text-white ring-2 ring-yellow-400' : 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/40' }}">
+                    ⏳ {{ __('Pending') }} ({{ $stats['pending'] }})
+                </button>
+                <button wire:click="$set('statusFilter', 'processed')" class="px-4 py-2 rounded-lg text-sm font-medium transition {{ $statusFilter === 'processed' ? 'bg-blue-600 text-white ring-2 ring-blue-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40' }}">
+                    📋 {{ __('Ready for Review') }} ({{ $stats['processed'] }})
+                </button>
+                <button wire:click="$set('statusFilter', 'confirmed')" class="px-4 py-2 rounded-lg text-sm font-medium transition {{ $statusFilter === 'confirmed' ? 'bg-green-600 text-white ring-2 ring-green-400' : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40' }}">
+                    ✅ {{ __('Confirmed') }} ({{ $stats['confirmed'] }})
+                </button>
+                <button wire:click="$set('statusFilter', 'failed')" class="px-4 py-2 rounded-lg text-sm font-medium transition {{ $statusFilter === 'failed' ? 'bg-red-600 text-white ring-2 ring-red-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40' }}">
+                    ❌ {{ __('Failed') }} ({{ $stats['failed'] }})
+                </button>
+                <button wire:click="$set('statusFilter', 'rejected')" class="px-4 py-2 rounded-lg text-sm font-medium transition {{ $statusFilter === 'rejected' ? 'bg-gray-600 text-white ring-2 ring-gray-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700' }}">
+                    🚫 {{ __('Rejected') }} ({{ $stats['rejected'] }})
+                </button>
+            </div>
+
             <!-- Search Bar -->
             <div class="mt-4">
                 <input
@@ -38,38 +60,29 @@
     <!-- Main Content with Sidebar -->
     <div class="flex flex-1 overflow-hidden">
         <!-- Sidebar Filters -->
-        <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
-            <div class="p-4 space-y-4">
-                <!-- Statistics Cards (Compact) - Clickable filters -->
-                <div class="space-y-2">
-                    <button wire:click="$set('statusFilter', 'pending')" class="w-full text-left bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition {{ $statusFilter === 'pending' ? 'ring-2 ring-yellow-600' : '' }}">
-                        <p class="text-xs text-gray-600 dark:text-gray-400">⏳ {{ __('Pending') }}</p>
-                        <p class="text-xl font-bold text-yellow-600 dark:text-yellow-400">{{ $stats['pending'] }}</p>
-                    </button>
-                    <button wire:click="$set('statusFilter', 'processed')" class="w-full text-left bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition {{ $statusFilter === 'processed' ? 'ring-2 ring-blue-600' : '' }}">
-                        <p class="text-xs text-gray-600 dark:text-gray-400">📋 {{ __('Ready for Review') }}</p>
-                        <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ $stats['processed'] }}</p>
-                    </button>
-                    <button wire:click="$set('statusFilter', 'confirmed')" class="w-full text-left bg-green-50 dark:bg-green-900/20 rounded-lg p-3 hover:bg-green-100 dark:hover:bg-green-900/40 transition {{ $statusFilter === 'confirmed' ? 'ring-2 ring-green-600' : '' }}">
-                        <p class="text-xs text-gray-600 dark:text-gray-400">✅ {{ __('Confirmed') }}</p>
-                        <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ $stats['confirmed'] }}</p>
-                    </button>
-                    <button wire:click="$set('statusFilter', 'failed')" class="w-full text-left bg-red-50 dark:bg-red-900/20 rounded-lg p-3 hover:bg-red-100 dark:hover:bg-red-900/40 transition {{ $statusFilter === 'failed' ? 'ring-2 ring-red-600' : '' }}">
-                        <p class="text-xs text-gray-600 dark:text-gray-400">❌ {{ __('Failed') }}</p>
-                        <p class="text-xl font-bold text-red-600 dark:text-red-400">{{ $stats['failed'] }}</p>
-                    </button>
-                    <button wire:click="$set('statusFilter', 'rejected')" class="w-full text-left bg-gray-100 dark:bg-gray-800 rounded-lg p-3 hover:bg-gray-200 dark:hover:bg-gray-700 transition {{ $statusFilter === 'rejected' ? 'ring-2 ring-gray-600' : '' }}">
-                        <p class="text-xs text-gray-600 dark:text-gray-400">🚫 {{ __('Rejected') }}</p>
-                        <p class="text-xl font-bold text-gray-600 dark:text-gray-400">{{ $stats['rejected'] }}</p>
-                    </button>
-                    <button wire:click="$set('statusFilter', 'all')" class="w-full text-left bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition {{ $statusFilter === 'all' ? 'ring-2 ring-gray-400' : '' }} mt-2">
-                        <p class="text-xs text-gray-600 dark:text-gray-400">📊 {{ __('All') }}</p>
-                        <p class="text-xl font-bold text-gray-600 dark:text-gray-400">{{ $stats['pending'] + $stats['processed'] + $stats['confirmed'] + $stats['failed'] + $stats['rejected'] }}</p>
-                    </button>
-                </div>
+        <aside class="bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-all duration-300 {{ $sidebarCollapsed ? 'w-12' : 'w-64' }}">
+            <!-- Collapse Toggle Button -->
+            <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+                <button
+                    wire:click="$toggle('sidebarCollapsed')"
+                    class="w-full p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition flex items-center justify-center"
+                    title="{{ $sidebarCollapsed ? __('Expand Filters') : __('Collapse Filters') }}"
+                >
+                    @if($sidebarCollapsed)
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                        </svg>
+                    @else
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                        </svg>
+                    @endif
+                </button>
+            </div>
 
+            @if(!$sidebarCollapsed)
+            <div class="p-4 space-y-4">
                 <!-- Divider -->
-                <div class="border-t border-gray-200 dark:border-gray-700 pt-4"></div>
 
                 <!-- Table Sort Controls -->
                 <div class="space-y-3 mb-4">
@@ -108,9 +121,10 @@
 
                 <!-- Publication & Metadata Filters Component -->
                 <div class="pb-4">
-                    @livewire('publications.publication-filters', ['hideAdminFilters' => false])
+                    @livewire('publications.publication-filters', ['hideAdminFilters' => true])
                 </div>
             </div>
+            @endif
         </aside>
 
         <!-- Main Content -->

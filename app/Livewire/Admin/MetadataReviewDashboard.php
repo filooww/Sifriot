@@ -75,6 +75,9 @@ class MetadataReviewDashboard extends Component
 
     public int $perPage = 20;
 
+    // UI state
+    public bool $sidebarCollapsed = false;
+
     protected $queryString = [
         'search' => ['except' => ''],
         'statusFilter' => ['except' => 'all'],
@@ -176,17 +179,126 @@ class MetadataReviewDashboard extends Component
 
     /**
      * Get statistics for metadata statuses
+     * Stats now respect all active filters except statusFilter itself
      */
     private function getStats(): array
     {
-        $baseQuery = FileMetadata::query();
+        // Helper to build base query with all filters except status
+        $getBaseQuery = function() {
+            $query = FileMetadata::query();
+
+            // Text search
+            if ($this->search) {
+                $searchTerm = trim($this->search);
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('file_name', 'like', '%'.$searchTerm.'%')
+                        ->orWhere('extracted_data->title', 'like', '%'.$searchTerm.'%');
+                });
+            }
+
+            // Format filter
+            if ($this->formatFilter !== 'all') {
+                $extension = strtolower($this->formatFilter);
+                $query->whereRaw("LOWER(SUBSTRING_INDEX(file_name, '.', -1)) = ?", [$extension]);
+            }
+
+            // Date filter
+            if ($this->dateFilter !== 'all') {
+                $days = match ($this->dateFilter) {
+                    '1day' => 1,
+                    '7days' => 7,
+                    '30days' => 30,
+                    default => null,
+                };
+                if ($days) {
+                    $query->where('created_at', '>=', now()->subDays($days));
+                }
+            }
+
+            // Apply publication filters
+            if (! empty($this->filterCategories)) {
+                $query->whereRaw("
+                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
+                        SELECT DISTINCT p.id_publication
+                        FROM publications p
+                        JOIN publication_category pc ON p.id_publication = pc.publication_id
+                        WHERE pc.category_id IN (?)
+                    )
+                ", [$this->filterCategories]);
+            }
+
+            if (! empty($this->filterAuthors)) {
+                $query->whereRaw("
+                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
+                        SELECT DISTINCT p.id_publication
+                        FROM publications p
+                        JOIN publication_authors pa ON p.id_publication = pa.publication_id
+                        WHERE pa.author_id IN (?)
+                    )
+                ", [$this->filterAuthors]);
+            }
+
+            if ($this->filterDateFrom && $this->filterDateTo) {
+                $query->whereRaw("
+                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
+                        SELECT id_publication FROM publications
+                        WHERE upload_date BETWEEN ? AND ?
+                    )
+                ", [$this->filterDateFrom, $this->filterDateTo]);
+            } elseif ($this->filterDateFrom) {
+                $query->whereRaw("
+                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
+                        SELECT id_publication FROM publications
+                        WHERE upload_date >= ?
+                    )
+                ", [$this->filterDateFrom]);
+            } elseif ($this->filterDateTo) {
+                $query->whereRaw("
+                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
+                        SELECT id_publication FROM publications
+                        WHERE upload_date <= ?
+                    )
+                ", [$this->filterDateTo]);
+            }
+
+            if (! empty($this->filterGenres)) {
+                $query->whereRaw("
+                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
+                        SELECT DISTINCT p.id_publication
+                        FROM publications p
+                        JOIN publication_genre pg ON p.id_publication = pg.publication_id
+                        WHERE pg.genre_id IN (?)
+                    )
+                ", [$this->filterGenres]);
+            }
+
+            if ($this->filterTextSizeRange !== [0, 500000]) {
+                $query->whereRaw("
+                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
+                        SELECT id_publication FROM publications
+                        WHERE word_count BETWEEN ? AND ?
+                    )
+                ", [$this->filterTextSizeRange[0], $this->filterTextSizeRange[1]]);
+            }
+
+            if (! empty($this->filterPublicationStatus)) {
+                $query->whereRaw("
+                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
+                        SELECT id_publication FROM publications
+                        WHERE status IN (?)
+                    )
+                ", [$this->filterPublicationStatus]);
+            }
+
+            return $query;
+        };
 
         return [
-            'pending' => (clone $baseQuery)->where('status', 'pending')->count(),
-            'processed' => (clone $baseQuery)->where('status', 'processed')->count(),
-            'confirmed' => (clone $baseQuery)->where('status', 'confirmed')->count(),
-            'failed' => (clone $baseQuery)->where('status', 'failed')->count(),
-            'rejected' => (clone $baseQuery)->where('status', 'rejected')->count(),
+            'pending' => (clone $getBaseQuery())->where('status', 'pending')->count(),
+            'processed' => (clone $getBaseQuery())->where('status', 'processed')->count(),
+            'confirmed' => (clone $getBaseQuery())->where('status', 'confirmed')->count(),
+            'failed' => (clone $getBaseQuery())->where('status', 'failed')->count(),
+            'rejected' => (clone $getBaseQuery())->where('status', 'rejected')->count(),
         ];
     }
 
@@ -344,16 +456,18 @@ class MetadataReviewDashboard extends Component
     }
 
     /**
-     * Toggle select all
+     * Watch for selectAll changes and toggle items on current page
      */
-    public function toggleSelectAll(): void
+    public function updatedSelectAll(): void
     {
         if ($this->selectAll) {
+            // Select all items on current page
             $this->selectedItems = $this->getFileMetadataList()
                 ->pluck('id')
                 ->map(fn ($id) => (string) $id)
                 ->toArray();
         } else {
+            // Deselect all items
             $this->selectedItems = [];
         }
     }

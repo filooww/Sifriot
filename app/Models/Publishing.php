@@ -18,6 +18,7 @@ class Publishing extends Model
 
     protected $fillable = [
         'publishing',
+        'publishing_low',
     ];
 
     // Relationships
