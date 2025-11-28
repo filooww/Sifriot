@@ -261,9 +261,6 @@
                                 </td>
                                 <td class="px-6 py-3 text-right">
                                     <div class="flex justify-end gap-2 items-center">
-                                        <!-- DEBUG: Show status for testing -->
-                                        <span class="text-xs text-gray-500 mr-2">{{ $metadata->status }}</span>
-
                                         @if ($metadata->status === 'processed' || $metadata->status === 'rejected')
                                             <button
                                                 type="button"
