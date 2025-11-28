@@ -69,6 +69,34 @@
         @endif
     </div>
 
+    <!-- File Content Preview -->
+    @php
+        $publication = \App\Models\Publication::with('files')->find($fileMetadata->file_id);
+    @endphp
+    @if($publication)
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <button
+                type="button"
+                wire:click="$toggle('showFilePreview')"
+                class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+            >
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">📄 File Preview</span>
+                <svg class="w-5 h-5 transition transform {{ $showFilePreview ?? false ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+            </button>
+
+            @if($showFilePreview ?? false)
+                <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                    <livewire:publications.document-viewer
+                        :publicationId="$publication->id_publication"
+                        :key="'metadata-viewer-' . $fileMetadata->id"
+                    />
+                </div>
+            @endif
+        </div>
+    @endif
+
     <!-- Extraction Details (Collapsible) -->
     @if ($useExtracted && count($confidenceScores) > 0)
         <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -225,7 +253,7 @@
                     >
                         <option value="">-- Select Content Type --</option>
                         @foreach (\App\Models\ContentType::all() as $contentType)
-                            <option value="{{ $contentType->id }}">{{ $contentType->name }}</option>
+                            <option value="{{ $contentType->id }}">{{ $contentType->name_en }}</option>
                         @endforeach
                     </select>
                     @error('contentTypeId')

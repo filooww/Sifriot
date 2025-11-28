@@ -61,6 +61,8 @@ class MetadataReviewForm extends Component
 
     public bool $showDetails = false;
 
+    public bool $showFilePreview = false;
+
     /**
      * Updated hook: Auto-save cover image when uploaded
      * This ensures the image is persisted even if user closes modal without clicking save button
