@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Listeners;
 
 use App\Events\MetadataConfirmed;
-use App\Models\Publication;
-use App\Models\Theme;
 use Illuminate\Support\Facades\Log;
 
 class ApplyConfirmedMetadataToPublication

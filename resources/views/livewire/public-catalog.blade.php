@@ -157,14 +157,12 @@
                                 </p>
                                 @endif
 
-                                <!-- Categories -->
-                                @if($publication->categories->isNotEmpty())
+                                <!-- Content Type -->
+                                @if($publication->contentType)
                                 <div class="flex flex-wrap gap-1 mb-3">
-                                    @foreach($publication->categories->take(2) as $category)
-                                    <span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
-                                        {{ $category->name }}
+                                    <span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                                        {{ $publication->contentType->icon ?? '' }} {{ $publication->contentType->{'name_' . app()->getLocale()} ?? $publication->contentType->name_en }}
                                     </span>
-                                    @endforeach
                                 </div>
                                 @endif
 

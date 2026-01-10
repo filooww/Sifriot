@@ -11,22 +11,20 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
 {
     /**
      * Extract metadata from FB2 (FictionBook) file.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     public function extract(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
-        if (!$this->fileExists($filePath)) {
+        if (! $this->fileExists($filePath)) {
             $this->logExtraction('error', 'FB2 file not found', ['file' => $filePath]);
+
             return $metadata;
         }
 
         try {
             $content = file_get_contents($filePath);
-            if (!$content) {
+            if (! $content) {
                 throw new \Exception('Failed to read FB2 file');
             }
 
@@ -55,13 +53,10 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Parse description element from FB2 XML.
-     *
-     * @param \SimpleXMLElement $xml
-     * @return ExtractedMetadata
      */
     private function parseDescription(\SimpleXMLElement $xml): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         // Find description element
         foreach ($xml->children() as $element) {
@@ -76,13 +71,10 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata from description element.
-     *
-     * @param \SimpleXMLElement $description
-     * @return ExtractedMetadata
      */
     private function extractFromDescription(\SimpleXMLElement $description): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         // Find title-info section
         foreach ($description->children() as $section) {
@@ -97,13 +89,10 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata from title-info section.
-     *
-     * @param \SimpleXMLElement $titleInfo
-     * @return ExtractedMetadata
      */
     private function extractFromTitleInfo(\SimpleXMLElement $titleInfo): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         foreach ($titleInfo->children() as $element) {
             $name = $element->getName();
@@ -165,9 +154,6 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract author name from author element.
-     *
-     * @param \SimpleXMLElement $authorElement
-     * @return string|null
      */
     private function extractAuthorName(\SimpleXMLElement $authorElement): ?string
     {
@@ -190,18 +176,16 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
         }
 
         $author = implode(' ', array_filter($parts));
+
         return $this->cleanText($author);
     }
 
     /**
      * Extract metadata from filename (fallback).
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function extractFromFilename(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         $filename = pathinfo($filePath, PATHINFO_FILENAME);
         $filename = $this->cleanText($filename);

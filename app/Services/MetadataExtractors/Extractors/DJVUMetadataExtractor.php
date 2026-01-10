@@ -11,16 +11,14 @@ class DJVUMetadataExtractor extends AbstractMetadataExtractor
 {
     /**
      * Extract metadata from DJVU file.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     public function extract(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
-        if (!$this->fileExists($filePath)) {
+        if (! $this->fileExists($filePath)) {
             $this->logExtraction('error', 'DJVU file not found', ['file' => $filePath]);
+
             return $metadata;
         }
 
@@ -57,13 +55,10 @@ class DJVUMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Try to extract metadata using native DJVU library.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function extractFromDjvuLibrary(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         // Check if djvulibre-php or similar is available
         // For now, this is a placeholder as no standard PHP DJVU library exists
@@ -74,13 +69,10 @@ class DJVUMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata from filename (primary fallback).
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function extractFromFilename(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         $filename = pathinfo($filePath, PATHINFO_FILENAME);
         $filename = $this->cleanText($filename);
@@ -108,13 +100,10 @@ class DJVUMetadataExtractor extends AbstractMetadataExtractor
      *
      * This is a placeholder for OCR integration (e.g., Tesseract).
      * Requires external OCR service and is disabled by default.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function extractViaOCR(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         $this->logExtraction('warning', 'DJVU OCR extraction requested but not implemented', [
             'file' => $filePath,

@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\FileMetadata;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -58,11 +57,6 @@ class FileMetadataFactory extends Factory
                         'value' => $this->faker->company(),
                         'confidence' => 0.7,
                     ],
-                    'isbn' => [
-                        'value' => '978-3-16-148410-0',
-                        'confidence' => 0.95,
-                    ],
-                    'doi' => null,
                 ],
                 'extraction_method' => 'PDFMetadataExtractor',
                 'confidence_scores' => [
@@ -70,8 +64,6 @@ class FileMetadataFactory extends Factory
                     'authors' => 0.85,
                     'publication_year' => 0.8,
                     'publisher' => 0.7,
-                    'isbn' => 0.95,
-                    'doi' => 0.0,
                 ],
                 'extracted_at' => now(),
             ];

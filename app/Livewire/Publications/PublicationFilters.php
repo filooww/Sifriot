@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Publications;
 
 use App\Models\Author;
-use App\Models\Category;
+use App\Models\ContentType;
 use App\Models\Theme;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -14,7 +14,7 @@ class PublicationFilters extends Component
 {
     public bool $hideAdminFilters = false;
 
-    public array $selectedCategories = [];
+    public array $selectedContentTypes = [];
 
     public array $selectedAuthors = [];
 
@@ -40,7 +40,7 @@ class PublicationFilters extends Component
     public string $dateFilter = 'all';
 
     protected $queryString = [
-        'selectedCategories' => ['as' => 'cat', 'except' => []],
+        'selectedContentTypes' => ['as' => 'type', 'except' => []],
         'selectedAuthors' => ['as' => 'auth', 'except' => []],
         'dateFrom' => ['as' => 'from', 'except' => null],
         'dateTo' => ['as' => 'to', 'except' => null],
@@ -53,7 +53,7 @@ class PublicationFilters extends Component
         'dateFilter' => ['as' => 'ext_date', 'except' => 'all'],
     ];
 
-    public function updatedSelectedCategories(): void
+    public function updatedSelectedContentTypes(): void
     {
         $this->emitFilters();
     }
@@ -110,7 +110,7 @@ class PublicationFilters extends Component
 
     public function clearAllFilters(): void
     {
-        $this->selectedCategories = [];
+        $this->selectedContentTypes = [];
         $this->selectedAuthors = [];
         $this->dateFrom = null;
         $this->dateTo = null;
@@ -129,7 +129,7 @@ class PublicationFilters extends Component
     public function removeFilter(string $filterType, mixed $value): void
     {
         match ($filterType) {
-            'category' => $this->selectedCategories = array_values(array_diff($this->selectedCategories, [$value])),
+            'contentType' => $this->selectedContentTypes = array_values(array_diff($this->selectedContentTypes, [$value])),
             'author' => $this->selectedAuthors = array_values(array_diff($this->selectedAuthors, [$value])),
             'dateFrom' => $this->dateFrom = null,
             'dateTo' => $this->dateTo = null,
@@ -151,13 +151,15 @@ class PublicationFilters extends Component
     {
         $filters = [];
 
-        foreach ($this->selectedCategories as $categoryId) {
-            $category = Category::find($categoryId);
-            if ($category) {
+        foreach ($this->selectedContentTypes as $contentTypeId) {
+            $contentType = ContentType::find($contentTypeId);
+            if ($contentType) {
+                $locale = app()->getLocale();
+                $nameColumn = 'name_' . $locale;
                 $filters[] = [
-                    'type' => 'category',
-                    'value' => $categoryId,
-                    'label' => $category->localized_name,
+                    'type' => 'contentType',
+                    'value' => $contentTypeId,
+                    'label' => ($contentType->icon ?? '') . ' ' . ($contentType->$nameColumn ?? $contentType->name_en),
                 ];
             }
         }
@@ -276,11 +278,9 @@ class PublicationFilters extends Component
     }
 
     #[Computed]
-    public function categories(): array
+    public function contentTypes(): array
     {
-        return Category::whereNull('parent_id')
-            ->with('children')
-            ->orderBy('sort_order')
+        return ContentType::orderBy('name_en')
             ->get()
             ->toArray();
     }
@@ -297,7 +297,7 @@ class PublicationFilters extends Component
     protected function emitFilters(): void
     {
         $this->dispatch('filtersChanged', filters: [
-            'categories' => $this->selectedCategories,
+            'contentTypes' => $this->selectedContentTypes,
             'authors' => $this->selectedAuthors,
             'dateFrom' => $this->dateFrom,
             'dateTo' => $this->dateTo,

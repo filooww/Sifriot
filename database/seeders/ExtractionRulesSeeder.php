@@ -22,64 +22,6 @@ class ExtractionRulesSeeder extends Seeder
         ];
 
         $rules = [
-            // Books (PDF/EPUB/DOCX) - ISBN patterns
-            [
-                'content_type_id' => $contentTypes['books'],
-                'format' => 'pdf',
-                'priority' => 1,
-                'pattern_type' => 'regex',
-                'pattern' => '/\b(?:ISBN(?:-1[03])?:?\s?)?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[X0-9]\b/i',
-                'target_field' => 'isbn',
-                'enabled' => true,
-            ],
-            [
-                'content_type_id' => $contentTypes['books'],
-                'format' => 'pdf',
-                'priority' => 2,
-                'pattern_type' => 'regex',
-                'pattern' => '/10\.\d{4,}\/\S+/i',
-                'target_field' => 'doi',
-                'enabled' => true,
-            ],
-            [
-                'content_type_id' => $contentTypes['books'],
-                'format' => 'epub',
-                'priority' => 1,
-                'pattern_type' => 'regex',
-                'pattern' => '/\b(?:ISBN(?:-1[03])?:?\s?)?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[X0-9]\b/i',
-                'target_field' => 'isbn',
-                'enabled' => true,
-            ],
-            [
-                'content_type_id' => $contentTypes['books'],
-                'format' => 'docx',
-                'priority' => 1,
-                'pattern_type' => 'regex',
-                'pattern' => '/\b(?:ISBN(?:-1[03])?:?\s?)?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[X0-9]\b/i',
-                'target_field' => 'isbn',
-                'enabled' => true,
-            ],
-
-            // Articles (PDF/TXT) - DOI patterns
-            [
-                'content_type_id' => $contentTypes['articles'],
-                'format' => 'pdf',
-                'priority' => 1,
-                'pattern_type' => 'regex',
-                'pattern' => '/10\.\d{4,}\/\S+/i',
-                'target_field' => 'doi',
-                'enabled' => true,
-            ],
-            [
-                'content_type_id' => $contentTypes['articles'],
-                'format' => 'txt',
-                'priority' => 1,
-                'pattern_type' => 'regex',
-                'pattern' => '/10\.\d{4,}\/\S+/i',
-                'target_field' => 'doi',
-                'enabled' => true,
-            ],
-
             // Magazines (PDF/EPUB) - ISSN patterns
             [
                 'content_type_id' => $contentTypes['magazines'],

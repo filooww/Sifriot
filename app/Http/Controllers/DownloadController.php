@@ -28,8 +28,8 @@ class DownloadController extends Controller
      * Laravel's Service Container automatically creates these services
      * and passes them to the constructor based on the type hints.
      *
-     * @param FileStorageServiceInterface $storage The file storage service
-     * @param LoggerServiceInterface $logger The logger service
+     * @param  FileStorageServiceInterface  $storage  The file storage service
+     * @param  LoggerServiceInterface  $logger  The logger service
      */
     public function __construct(
         private FileStorageServiceInterface $storage,
@@ -66,7 +66,7 @@ class DownloadController extends Controller
         if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
             // Uploaded file: has an extension, use local disk with content/ prefix if not already included
             $disk = 'local';
-            $filePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+            $filePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
         } elseif ($fileSource === 'bulk_scan') {
             // Legacy bulk_scan files: search recursively in library disk (for backwards compatibility)
             $disk = 'library';
@@ -95,7 +95,7 @@ class DownloadController extends Controller
         } else {
             // New bulk scanned file: file_source is the relative directory path on library disk
             $disk = 'library';
-            $filePath = $fileSource . '/' . $decodedFilename;
+            $filePath = $fileSource.'/'.$decodedFilename;
         }
 
         // Check if file exists in storage

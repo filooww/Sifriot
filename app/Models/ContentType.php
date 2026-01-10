@@ -31,4 +31,14 @@ class ContentType extends Model
     {
         return $this->hasMany(Publication::class);
     }
+
+    public function customFields(): HasMany
+    {
+        return $this->hasMany(CustomField::class)->orderBy('sort_order', 'asc');
+    }
+
+    public function getActiveCustomFieldsAttribute()
+    {
+        return $this->customFields()->whereNull('deleted_at')->get();
+    }
 }

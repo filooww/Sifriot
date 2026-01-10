@@ -18,6 +18,5 @@ class MetadataExtracted
      */
     public function __construct(
         public FileMetadata $fileMetadata
-    ) {
-    }
+    ) {}
 }

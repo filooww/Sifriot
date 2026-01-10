@@ -16,23 +16,21 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata from TXT file.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     public function extract(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
-        if (!$this->fileExists($filePath)) {
+        if (! $this->fileExists($filePath)) {
             $this->logExtraction('error', 'TXT file not found', ['file' => $filePath]);
+
             return $metadata;
         }
 
         try {
             $content = $this->readFileContent($filePath);
 
-            if (!$content) {
+            if (! $content) {
                 $metadata = $this->extractFromFilename($filePath);
             } else {
                 $metadata = $this->parseContent($content, $filePath);
@@ -41,7 +39,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
             $this->logExtraction('info', 'TXT extraction completed', [
                 'file' => $filePath,
                 'has_title' => (bool) $metadata->getTitle(),
-                'has_authors' => !empty($metadata->getAuthors()),
+                'has_authors' => ! empty($metadata->getAuthors()),
             ]);
         } catch (\Exception $e) {
             $this->logExtraction('error', 'TXT extraction failed', [
@@ -57,9 +55,6 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Read file content safely with encoding detection.
-     *
-     * @param string $filePath
-     * @return string|null
      */
     private function readFileContent(string $filePath): ?string
     {
@@ -75,20 +70,17 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
             return $content;
         } catch (\Exception $e) {
             $this->logExtraction('debug', 'Failed to read TXT file', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
 
     /**
      * Parse TXT content for metadata patterns.
-     *
-     * @param string $content
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function parseContent(string $content, string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         // Split into lines
         $lines = preg_split('/[\r\n]+/', $content, -1, PREG_SPLIT_NO_EMPTY);
@@ -124,7 +116,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
             }
 
             // Pattern: "Title: ..."
-            if (!$metadata->getTitle() && preg_match('/title\s*:\s*([^,\n]+)/i', $line, $matches)) {
+            if (! $metadata->getTitle() && preg_match('/title\s*:\s*([^,\n]+)/i', $line, $matches)) {
                 $title = $this->cleanText($matches[1]);
                 if ($title) {
                     $metadata->setTitle($title, 0.35);
@@ -133,7 +125,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
         }
 
         // If no title found, use filename
-        if (!$metadata->getTitle()) {
+        if (! $metadata->getTitle()) {
             $filename = pathinfo($filePath, PATHINFO_FILENAME);
             $filename = $this->cleanText($filename);
             if ($filename) {
@@ -146,13 +138,10 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata from filename (fallback).
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function extractFromFilename(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         $filename = pathinfo($filePath, PATHINFO_FILENAME);
         $filename = $this->cleanText($filename);

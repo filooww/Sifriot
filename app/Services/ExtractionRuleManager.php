@@ -17,7 +17,6 @@ class ExtractionRuleManager
     /**
      * Get all enabled rules for a content type.
      *
-     * @param int $contentTypeId
      * @return Collection<ExtractionRule>
      */
     public function getRulesForContentType(int $contentTypeId): Collection
@@ -38,8 +37,7 @@ class ExtractionRuleManager
     /**
      * Get all enabled rules for a content type and format.
      *
-     * @param int $contentTypeId
-     * @param string $format File format (pdf, epub, docx, etc.)
+     * @param  string  $format  File format (pdf, epub, docx, etc.)
      * @return Collection<ExtractionRule>
      */
     public function getRulesForContentTypeAndFormat(int $contentTypeId, string $format): Collection
@@ -51,9 +49,7 @@ class ExtractionRuleManager
     /**
      * Apply extraction rules to metadata.
      *
-     * @param ExtractedMetadata $metadata
-     * @param int $contentTypeId
-     * @param string $format File format
+     * @param  string  $format  File format
      * @return ExtractedMetadata Modified metadata
      */
     public function applyRules(ExtractedMetadata $metadata, int $contentTypeId, string $format): ExtractedMetadata
@@ -79,10 +75,6 @@ class ExtractionRuleManager
 
     /**
      * Apply a single extraction rule to metadata.
-     *
-     * @param ExtractedMetadata $metadata
-     * @param ExtractionRule $rule
-     * @return void
      */
     private function applyRule(ExtractedMetadata $metadata, ExtractionRule $rule): void
     {
@@ -100,17 +92,14 @@ class ExtractionRuleManager
     /**
      * Validate rule pattern syntax.
      *
-     * @param string $patternType
-     * @param string $pattern
-     * @return bool
      * @throws \InvalidArgumentException
      */
     public function validateRulePattern(string $patternType, string $pattern): bool
     {
         return match (strtolower($patternType)) {
             'regex' => $this->validateRegex($pattern),
-            'delimiter' => !empty($pattern),
-            'field_mapping' => !empty($pattern),
+            'delimiter' => ! empty($pattern),
+            'field_mapping' => ! empty($pattern),
             'xpath' => $this->validateXpath($pattern),
             default => throw new \InvalidArgumentException("Unknown pattern type: {$patternType}"),
         };
@@ -118,15 +107,13 @@ class ExtractionRuleManager
 
     /**
      * Validate regex pattern.
-     *
-     * @param string $pattern
-     * @return bool
      */
     private function validateRegex(string $pattern): bool
     {
         try {
             // Test regex pattern
             @preg_match($pattern, '');
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -135,20 +122,17 @@ class ExtractionRuleManager
 
     /**
      * Validate XPath pattern.
-     *
-     * @param string $pattern
-     * @return bool
      */
     private function validateXpath(string $pattern): bool
     {
         // Basic XPath validation
-        return !empty($pattern) && str_starts_with($pattern, '/');
+        return ! empty($pattern) && str_starts_with($pattern, '/');
     }
 
     /**
      * Clear cache for a content type.
      *
-     * @param int|null $contentTypeId If null, clears all caches
+     * @param  int|null  $contentTypeId  If null, clears all caches
      */
     public function clearCache(?int $contentTypeId = null): void
     {

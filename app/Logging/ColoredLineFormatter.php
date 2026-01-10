@@ -52,7 +52,7 @@ class ColoredLineFormatter extends LineFormatter
     public function __invoke($logger): void
     {
         foreach ($logger->getHandlers() as $handler) {
-            $handler->setFormatter(new self());
+            $handler->setFormatter(new self);
         }
     }
 }

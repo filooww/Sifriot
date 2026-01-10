@@ -37,8 +37,6 @@ class FileStorageService implements FileStorageServiceInterface
 
     /**
      * Download file from storage
-     *
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function download(string $disk, string $path, string $filename): \Symfony\Component\HttpFoundation\StreamedResponse
     {
@@ -66,7 +64,7 @@ class FileStorageService implements FileStorageServiceInterface
      *
      * Returns folders and files in a given directory with metadata
      *
-     * @param string $relativePath The relative path to browse (from library base path)
+     * @param  string  $relativePath  The relative path to browse (from library base path)
      * @return array Array with 'folders' and 'files' keys containing directory contents
      *
      * @throws \Exception If path doesn't exist or is inaccessible
@@ -132,7 +130,7 @@ class FileStorageService implements FileStorageServiceInterface
      *
      * Extracts suggested metadata from a file path
      *
-     * @param string $filePath The file path
+     * @param  string  $filePath  The file path
      * @return array Array with 'suggested_title', 'content_type_id', 'file_size', 'mime_type'
      *
      * @throws \Exception If file doesn't exist
@@ -142,7 +140,7 @@ class FileStorageService implements FileStorageServiceInterface
         $disk = Storage::disk('library');
 
         // Verify file exists
-        if (!$disk->exists($filePath)) {
+        if (! $disk->exists($filePath)) {
             throw new \Exception("File not found: {$filePath}");
         }
 
@@ -186,7 +184,7 @@ class FileStorageService implements FileStorageServiceInterface
      *
      * Verifies that a path exists and is within allowed directories
      *
-     * @param string $filePath The file path to validate
+     * @param  string  $filePath  The file path to validate
      * @return bool True if path is valid
      *
      * @throws \Exception If path is invalid or outside allowed locations
@@ -201,7 +199,7 @@ class FileStorageService implements FileStorageServiceInterface
         $disk = Storage::disk('library');
 
         // Verify path exists
-        if (!$disk->exists($filePath)) {
+        if (! $disk->exists($filePath)) {
             throw new \Exception("File path does not exist: {$filePath}");
         }
 

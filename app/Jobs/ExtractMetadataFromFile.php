@@ -13,7 +13,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class ExtractMetadataFromFile implements ShouldQueue
 {
@@ -42,10 +41,10 @@ class ExtractMetadataFromFile implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param string $fileId File identifier
-     * @param string $filePath Absolute path to file
-     * @param string|int $contentTypeId Content type ID
-     * @param string|null $mimeType MIME type of file
+     * @param  string  $fileId  File identifier
+     * @param  string  $filePath  Absolute path to file
+     * @param  string|int  $contentTypeId  Content type ID
+     * @param  string|null  $mimeType  MIME type of file
      */
     public function __construct(
         public string $fileId,
@@ -71,7 +70,7 @@ class ExtractMetadataFromFile implements ShouldQueue
             ]);
 
             // Step 1: Validate file exists and is readable
-            if (!$this->validateFile()) {
+            if (! $this->validateFile()) {
                 throw new \Exception('File does not exist or is not readable');
             }
 
@@ -133,8 +132,6 @@ class ExtractMetadataFromFile implements ShouldQueue
 
     /**
      * Handle job failure.
-     *
-     * @param \Throwable $exception
      */
     public function failed(\Throwable $exception): void
     {
@@ -165,8 +162,6 @@ class ExtractMetadataFromFile implements ShouldQueue
 
     /**
      * Validate that file exists and is readable.
-     *
-     * @return bool
      */
     private function validateFile(): bool
     {
@@ -176,8 +171,6 @@ class ExtractMetadataFromFile implements ShouldQueue
     /**
      * Handle extraction errors.
      *
-     * @param \Exception $e
-     * @param float $startTime
      * @throws \Exception
      */
     private function handleError(\Exception $e, float $startTime): void

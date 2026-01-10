@@ -58,7 +58,7 @@ class FileViewController extends Controller
 
         if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
             $disk = 'local';
-            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
         } elseif ($fileSource === 'bulk_scan') {
             $disk = 'library';
             $allFiles = Storage::disk($disk)->allFiles();
@@ -74,7 +74,7 @@ class FileViewController extends Controller
             }
         } else {
             $disk = 'library';
-            $storagePath = $fileSource . '/' . $decodedFilename;
+            $storagePath = $fileSource.'/'.$decodedFilename;
         }
 
         if (! Storage::disk($disk)->exists($storagePath)) {
@@ -91,7 +91,7 @@ class FileViewController extends Controller
             if ($xml === false) {
                 $errors = libxml_get_errors();
                 libxml_clear_errors();
-                throw new \Exception('Failed to parse FB2 XML: ' . ($errors[0]->message ?? 'Unknown error'));
+                throw new \Exception('Failed to parse FB2 XML: '.($errors[0]->message ?? 'Unknown error'));
             }
 
             // Get the namespaces from the document
@@ -103,17 +103,17 @@ class FileViewController extends Controller
 
             // Extract book information
             $titleNodes = $xml->xpath('//fb:title-info/fb:book-title');
-            $title = !empty($titleNodes) ? (string)$titleNodes[0] : 'Untitled';
+            $title = ! empty($titleNodes) ? (string) $titleNodes[0] : 'Untitled';
 
             $authors = $xml->xpath('//fb:title-info/fb:author');
             $authorNames = [];
-            if (!empty($authors)) {
+            if (! empty($authors)) {
                 foreach ($authors as $author) {
                     $author->registerXPathNamespace('fb', $fbNamespace);
                     $firstNameNodes = $author->xpath('fb:first-name');
                     $lastNameNodes = $author->xpath('fb:last-name');
-                    $firstName = !empty($firstNameNodes) ? (string)$firstNameNodes[0] : '';
-                    $lastName = !empty($lastNameNodes) ? (string)$lastNameNodes[0] : '';
+                    $firstName = ! empty($firstNameNodes) ? (string) $firstNameNodes[0] : '';
+                    $lastName = ! empty($lastNameNodes) ? (string) $lastNameNodes[0] : '';
                     if ($firstName || $lastName) {
                         $authorNames[] = trim("$firstName $lastName");
                     }
@@ -143,17 +143,17 @@ class FileViewController extends Controller
             $html .= '</style></head><body>';
 
             // Add title and author
-            $html .= '<h1>' . htmlspecialchars($title) . '</h1>';
-            if (!empty($authorNames)) {
-                $html .= '<div class="author">' . htmlspecialchars(implode(', ', $authorNames)) . '</div>';
+            $html .= '<h1>'.htmlspecialchars($title).'</h1>';
+            if (! empty($authorNames)) {
+                $html .= '<div class="author">'.htmlspecialchars(implode(', ', $authorNames)).'</div>';
             }
 
             // Add annotation if available
-            if (!empty($annotation)) {
+            if (! empty($annotation)) {
                 $html .= '<div class="annotation">';
                 foreach ($annotation[0]->children($fbNamespace) as $child) {
                     if ($child->getName() === 'p') {
-                        $html .= '<p>' . htmlspecialchars((string)$child) . '</p>';
+                        $html .= '<p>'.htmlspecialchars((string) $child).'</p>';
                     }
                 }
                 $html .= '</div>';
@@ -162,7 +162,7 @@ class FileViewController extends Controller
             // Process body content
             $html .= '<div class="content">';
             $bodies = $xml->xpath('//fb:body');
-            if (!empty($bodies)) {
+            if (! empty($bodies)) {
                 foreach ($bodies as $body) {
                     $html .= $this->processFb2Node($body, $fbNamespace);
                 }
@@ -214,7 +214,7 @@ class FileViewController extends Controller
                     break;
 
                 case 'p':
-                    $html .= '<p>' . htmlspecialchars((string)$child) . '</p>';
+                    $html .= '<p>'.htmlspecialchars((string) $child).'</p>';
                     break;
 
                 case 'empty-line':
@@ -275,7 +275,7 @@ class FileViewController extends Controller
 
         if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
             $disk = 'local';
-            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
         } elseif ($fileSource === 'bulk_scan') {
             $disk = 'library';
             $allFiles = Storage::disk($disk)->allFiles();
@@ -291,7 +291,7 @@ class FileViewController extends Controller
             }
         } else {
             $disk = 'library';
-            $storagePath = $fileSource . '/' . $decodedFilename;
+            $storagePath = $fileSource.'/'.$decodedFilename;
         }
 
         if (! Storage::disk($disk)->exists($storagePath)) {
@@ -307,7 +307,7 @@ class FileViewController extends Controller
             exec($command, $output, $returnCode);
 
             if ($returnCode !== 0) {
-                throw new \Exception('Antiword conversion failed: ' . implode("\n", $output));
+                throw new \Exception('Antiword conversion failed: '.implode("\n", $output));
             }
 
             $textContent = implode("\n", $output);
@@ -315,15 +315,28 @@ class FileViewController extends Controller
             // Clean up antiword error messages and warnings
             // Remove lines that start with "I can't find" or other error patterns
             $lines = explode("\n", $textContent);
-            $cleanedLines = array_filter($lines, function($line) {
+            $cleanedLines = array_filter($lines, function ($line) {
                 $line = trim($line);
                 // Skip antiword error/warning messages
-                if (empty($line)) return true;
-                if (str_starts_with($line, "I can't find")) return false;
-                if (str_starts_with($line, "I can not find")) return false;
-                if (str_starts_with($line, "I couldn't find")) return false;
-                if (str_starts_with($line, "Unable to")) return false;
-                if (str_starts_with($line, "Warning:")) return false;
+                if (empty($line)) {
+                    return true;
+                }
+                if (str_starts_with($line, "I can't find")) {
+                    return false;
+                }
+                if (str_starts_with($line, 'I can not find')) {
+                    return false;
+                }
+                if (str_starts_with($line, "I couldn't find")) {
+                    return false;
+                }
+                if (str_starts_with($line, 'Unable to')) {
+                    return false;
+                }
+                if (str_starts_with($line, 'Warning:')) {
+                    return false;
+                }
+
                 return true;
             });
 
@@ -394,7 +407,7 @@ class FileViewController extends Controller
 
         if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
             $disk = 'local';
-            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
         } elseif ($fileSource === 'bulk_scan') {
             $disk = 'library';
             $allFiles = Storage::disk($disk)->allFiles();
@@ -410,7 +423,7 @@ class FileViewController extends Controller
             }
         } else {
             $disk = 'library';
-            $storagePath = $fileSource . '/' . $decodedFilename;
+            $storagePath = $fileSource.'/'.$decodedFilename;
         }
 
         if (! Storage::disk($disk)->exists($storagePath)) {
@@ -487,14 +500,27 @@ class FileViewController extends Controller
 
                 // Clean up antiword messages
                 $lines = explode("\n", $textContent);
-                $cleanedLines = array_filter($lines, function($line) {
+                $cleanedLines = array_filter($lines, function ($line) {
                     $line = trim($line);
-                    if (empty($line)) return true;
-                    if (str_starts_with($line, "I can't find")) return false;
-                    if (str_starts_with($line, "I can not find")) return false;
-                    if (str_starts_with($line, "I couldn't find")) return false;
-                    if (str_starts_with($line, "Unable to")) return false;
-                    if (str_starts_with($line, "Warning:")) return false;
+                    if (empty($line)) {
+                        return true;
+                    }
+                    if (str_starts_with($line, "I can't find")) {
+                        return false;
+                    }
+                    if (str_starts_with($line, 'I can not find')) {
+                        return false;
+                    }
+                    if (str_starts_with($line, "I couldn't find")) {
+                        return false;
+                    }
+                    if (str_starts_with($line, 'Unable to')) {
+                        return false;
+                    }
+                    if (str_starts_with($line, 'Warning:')) {
+                        return false;
+                    }
+
                     return true;
                 });
 
@@ -511,7 +537,7 @@ class FileViewController extends Controller
                 $html .= '  .content { background: #1f2937; color: #e5e7eb; }';
                 $html .= '}';
                 $html .= '</style></head><body><div class="content">';
-                $html .= '<p>' . nl2br(htmlspecialchars($textContent)) . '</p>';
+                $html .= '<p>'.nl2br(htmlspecialchars($textContent)).'</p>';
                 $html .= '</div></body></html>';
 
                 return response($html)
@@ -554,15 +580,21 @@ class FileViewController extends Controller
 
                     if ($style) {
                         $classes = [];
-                        if ($style->getBold()) $classes[] = '<strong>';
-                        if ($style->getItalic()) $classes[] = '<em>';
-                        if ($style->getUnderline() !== 'none') $classes[] = '<u>';
+                        if ($style->getBold()) {
+                            $classes[] = '<strong>';
+                        }
+                        if ($style->getItalic()) {
+                            $classes[] = '<em>';
+                        }
+                        if ($style->getUnderline() !== 'none') {
+                            $classes[] = '<u>';
+                        }
 
-                        if (!empty($classes)) {
+                        if (! empty($classes)) {
                             $openTag = implode('', $classes);
                             $closeTags = array_reverse($classes);
                             $closeTag = str_replace(['<', '>'], ['</', '>'], implode('', $closeTags));
-                            $text = $openTag . $text . $closeTag;
+                            $text = $openTag.$text.$closeTag;
                         }
                     }
                     $html .= $text;
@@ -588,7 +620,7 @@ class FileViewController extends Controller
 
         } // Handle lists (basic)
         elseif (strpos($elementClass, 'ListItem') !== false) {
-            $html .= '<li>' . htmlspecialchars($element->getText()) . '</li>';
+            $html .= '<li>'.htmlspecialchars($element->getText()).'</li>';
 
         }
 
@@ -635,10 +667,10 @@ class FileViewController extends Controller
 
             if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
                 $disk = 'local';
-                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
             } else {
                 $disk = 'library';
-                $storagePath = $fileSource . '/' . $decodedFilename;
+                $storagePath = $fileSource.'/'.$decodedFilename;
             }
         }
 
@@ -725,7 +757,7 @@ class FileViewController extends Controller
         if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
             // Uploaded file: has an extension, use local disk with content/ prefix if not already included
             $disk = 'local';
-            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
         } elseif ($fileSource === 'bulk_scan') {
             // Legacy bulk_scan files: search recursively in library disk (for backwards compatibility)
             $disk = 'library';
@@ -752,7 +784,7 @@ class FileViewController extends Controller
         } else {
             // New bulk scanned file: file_source is the relative directory path on library disk
             $disk = 'library';
-            $storagePath = $fileSource . '/' . $decodedFilename;
+            $storagePath = $fileSource.'/'.$decodedFilename;
         }
 
         // Debug logging
@@ -775,7 +807,7 @@ class FileViewController extends Controller
                 'attempted_full_path' => Storage::disk($disk)->path($storagePath),
             ]);
 
-            abort(404, 'File not found at resolved path: ' . $storagePath);
+            abort(404, 'File not found at resolved path: '.$storagePath);
         }
 
         try {
@@ -798,7 +830,7 @@ class FileViewController extends Controller
         // Return response with proper headers for inline viewing
         return response($content)
             ->header('Content-Type', $mimeType)
-            ->header('Content-Disposition', 'inline; filename="' . basename($filename) . '"')
+            ->header('Content-Disposition', 'inline; filename="'.basename($filename).'"')
             ->header('Cache-Control', 'public, max-age=3600')
             ->header('Access-Control-Allow-Origin', '*');
     }

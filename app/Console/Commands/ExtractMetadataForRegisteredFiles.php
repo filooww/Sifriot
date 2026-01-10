@@ -70,7 +70,7 @@ class ExtractMetadataForRegisteredFiles extends Command
             foreach ($chunk as $file) {
                 try {
                     // Get full path
-                    $filePath = $file->file_source . '/' . $file->file_name;
+                    $filePath = $file->file_source.'/'.$file->file_name;
                     $fullPath = Storage::disk('library')->path($filePath);
 
                     // Verify file still exists

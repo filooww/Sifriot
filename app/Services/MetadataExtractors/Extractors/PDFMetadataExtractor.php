@@ -11,16 +11,14 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
 {
     /**
      * Extract metadata from PDF file.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     public function extract(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
-        if (!$this->fileExists($filePath)) {
+        if (! $this->fileExists($filePath)) {
             $this->logExtraction('error', 'PDF file not found', ['file' => $filePath]);
+
             return $metadata;
         }
 
@@ -33,24 +31,10 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
                 $metadata = $this->extractFromFilename($filePath);
             }
 
-            // Try to extract ISBN/DOI from PDF text
+            // Try to extract year from PDF text
             $text = $this->extractTextFromPdf($filePath);
             if ($text) {
-                if (!$metadata->getIsbn()) {
-                    $isbn = $this->extractIsbn($text);
-                    if ($isbn) {
-                        $metadata->setIsbn($isbn, 0.6);
-                    }
-                }
-
-                if (!$metadata->getDoi()) {
-                    $doi = $this->extractDoi($text);
-                    if ($doi) {
-                        $metadata->setDoi($doi, 0.6);
-                    }
-                }
-
-                if (!$metadata->getPublicationYear()) {
+                if (! $metadata->getPublicationYear()) {
                     $year = $this->extractYear($text);
                     if ($year) {
                         $metadata->setPublicationYear($year, 0.5);
@@ -61,7 +45,7 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
             $this->logExtraction('info', 'PDF extraction completed', [
                 'file' => $filePath,
                 'has_title' => (bool) $metadata->getTitle(),
-                'has_authors' => !empty($metadata->getAuthors()),
+                'has_authors' => ! empty($metadata->getAuthors()),
             ]);
         } catch (\Exception $e) {
             $this->logExtraction('error', 'PDF extraction failed', [
@@ -75,16 +59,13 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata using smalot/pdfparser library.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function extractWithParser(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         try {
-            $parser = new \Smalot\PdfParser\Parser();
+            $parser = new \Smalot\PdfParser\Parser;
             $pdf = $parser->parseFile($filePath);
 
             $details = $pdf->getDetails();
@@ -121,7 +102,7 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
             // Extract subject (might contain publisher info)
             if (isset($details['Subject'])) {
                 $subject = $this->cleanText($details['Subject'][0] ?? '');
-                if ($subject && !$metadata->getPublisher()) {
+                if ($subject && ! $metadata->getPublisher()) {
                     $metadata->setPublisher($subject, 0.4);
                 }
             }
@@ -136,39 +117,34 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract text content from PDF file.
-     *
-     * @param string $filePath
-     * @return string|null
      */
     private function extractTextFromPdf(string $filePath): ?string
     {
         try {
-            if (!class_exists('\Smalot\PdfParser\Parser')) {
+            if (! class_exists('\Smalot\PdfParser\Parser')) {
                 return null;
             }
 
-            $parser = new \Smalot\PdfParser\Parser();
+            $parser = new \Smalot\PdfParser\Parser;
             $pdf = $parser->parseFile($filePath);
             $text = $pdf->getText();
 
-            return !empty($text) ? substr($text, 0, 5000) : null; // Limit to first 5000 chars
+            return ! empty($text) ? substr($text, 0, 5000) : null; // Limit to first 5000 chars
         } catch (\Exception $e) {
             $this->logExtraction('debug', 'Failed to extract text from PDF', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     /**
      * Fallback: Extract metadata from filename.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function extractFromFilename(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         // Get filename without extension
         $filename = pathinfo($filePath, PATHINFO_FILENAME);

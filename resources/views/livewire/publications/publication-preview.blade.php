@@ -35,6 +35,18 @@
                         @endif
                     </div>
 
+                    <!-- Content Type Badge -->
+                    @if($publication->contentType)
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Type') }}</span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
+                                {{ $publication->contentType->icon ?? '' }} {{ $publication->contentType->{'name_' . app()->getLocale()} ?? $publication->contentType->name_en }}
+                            </span>
+                        </div>
+                    </div>
+                    @endif
+
                     <!-- File Format Badge -->
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
                         <div class="flex items-center justify-between mb-3">
@@ -93,6 +105,24 @@
                         <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
                             {{ $this->getTruncatedDescription() }}
                         </p>
+                    </div>
+                @endif
+
+                <!-- Custom Fields -->
+                @php
+                    $customFields = $this->getVisibleCustomFields();
+                @endphp
+                @if (!empty($customFields))
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">{{ __('Additional Information') }}</h3>
+                        <dl class="space-y-3">
+                            @foreach ($customFields as $fieldData)
+                                <x-custom-field-display
+                                    :field="$fieldData['field']"
+                                    :value="$fieldData['value']"
+                                />
+                            @endforeach
+                        </dl>
                     </div>
                 @endif
 

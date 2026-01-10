@@ -12,21 +12,19 @@ class EPUBMetadataExtractor extends AbstractMetadataExtractor
 {
     /**
      * Extract metadata from EPUB file (package.opf).
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     public function extract(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
-        if (!$this->fileExists($filePath)) {
+        if (! $this->fileExists($filePath)) {
             $this->logExtraction('error', 'EPUB file not found', ['file' => $filePath]);
+
             return $metadata;
         }
 
         try {
-            $zip = new ZipArchive();
+            $zip = new ZipArchive;
             if ($zip->open($filePath) !== true) {
                 throw new \Exception('Failed to open EPUB file as ZIP');
             }
@@ -34,9 +32,10 @@ class EPUBMetadataExtractor extends AbstractMetadataExtractor
             // Find package.opf file (usually in META-INF/container.xml)
             $opfPath = $this->findOPFFile($zip);
 
-            if (!$opfPath) {
+            if (! $opfPath) {
                 $this->logExtraction('warning', 'Could not find package.opf in EPUB', ['file' => $filePath]);
                 $zip->close();
+
                 return $metadata;
             }
 
@@ -44,7 +43,7 @@ class EPUBMetadataExtractor extends AbstractMetadataExtractor
             $opfContent = $zip->getFromName($opfPath);
             $zip->close();
 
-            if (!$opfContent) {
+            if (! $opfContent) {
                 throw new \Exception('Failed to read package.opf content');
             }
 
@@ -68,9 +67,6 @@ class EPUBMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Find the path to package.opf file within EPUB.
-     *
-     * @param ZipArchive $zip
-     * @return string|null
      */
     private function findOPFFile(ZipArchive $zip): ?string
     {
@@ -111,13 +107,10 @@ class EPUBMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Parse OPF (Open Packaging Format) XML file.
-     *
-     * @param string $opfContent
-     * @return ExtractedMetadata
      */
     private function parseOPF(string $opfContent): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         try {
             $opfContent = $this->normalizeEncoding($opfContent);

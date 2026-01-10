@@ -32,8 +32,6 @@ class MetadataReviewFormTest extends TestCase
             ],
             'publication_year' => ['value' => 2023, 'confidence' => 0.8],
             'publisher' => ['value' => 'Test Publisher', 'confidence' => 0.7],
-            'isbn' => ['value' => '978-3-16-148410-0', 'confidence' => 0.9],
-            'doi' => ['value' => '10.1234/example', 'confidence' => 0.8],
         ];
 
         $metadata = FileMetadata::factory()->create([
@@ -44,8 +42,6 @@ class MetadataReviewFormTest extends TestCase
                 'authors' => 0.875,
                 'publication_year' => 0.8,
                 'publisher' => 0.7,
-                'isbn' => 0.9,
-                'doi' => 0.8,
             ],
         ]);
 
@@ -54,9 +50,7 @@ class MetadataReviewFormTest extends TestCase
             ->assertSet('authors.0', 'Author One')
             ->assertSet('authors.1', 'Author Two')
             ->assertSet('publicationYear', 2023)
-            ->assertSet('publisher', 'Test Publisher')
-            ->assertSet('isbn', '978-3-16-148410-0')
-            ->assertSet('doi', '10.1234/example');
+            ->assertSet('publisher', 'Test Publisher');
     }
 
     public function test_can_confirm_extraction(): void
