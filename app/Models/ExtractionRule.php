@@ -38,8 +38,6 @@ class ExtractionRule extends Model
 
     /**
      * Relationship: Belongs to ContentType.
-     *
-     * @return BelongsTo
      */
     public function contentType(): BelongsTo
     {
@@ -48,8 +46,6 @@ class ExtractionRule extends Model
 
     /**
      * Relationship: Belongs to User (creator).
-     *
-     * @return BelongsTo
      */
     public function createdBy(): BelongsTo
     {
@@ -58,8 +54,6 @@ class ExtractionRule extends Model
 
     /**
      * Relationship: Belongs to User (updater).
-     *
-     * @return BelongsTo
      */
     public function updatedBy(): BelongsTo
     {
@@ -69,8 +63,8 @@ class ExtractionRule extends Model
     /**
      * Scope: Get rules for a specific format.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $format File format (pdf, epub, docx, etc.)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $format  File format (pdf, epub, docx, etc.)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByFormat($query, string $format)
@@ -81,8 +75,7 @@ class ExtractionRule extends Model
     /**
      * Scope: Get rules for a specific content type.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $contentTypeId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByContentType($query, int $contentTypeId)
@@ -93,7 +86,7 @@ class ExtractionRule extends Model
     /**
      * Scope: Get enabled rules only.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeEnabled($query)
@@ -104,7 +97,7 @@ class ExtractionRule extends Model
     /**
      * Scope: Order by priority.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrderedByPriority($query)

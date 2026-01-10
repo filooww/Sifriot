@@ -12,21 +12,19 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
 {
     /**
      * Extract metadata from DOCX file.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     public function extract(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
-        if (!$this->fileExists($filePath)) {
+        if (! $this->fileExists($filePath)) {
             $this->logExtraction('error', 'DOCX file not found', ['file' => $filePath]);
+
             return $metadata;
         }
 
         try {
-            $zip = new ZipArchive();
+            $zip = new ZipArchive;
             if ($zip->open($filePath) !== true) {
                 throw new \Exception('Failed to open DOCX file as ZIP');
             }
@@ -35,7 +33,7 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
             $metadata = $this->extractFromCoreProperties($zip);
 
             // Extract from document.xml if title not found
-            if (!$metadata->getTitle()) {
+            if (! $metadata->getTitle()) {
                 $metadata = $this->extractFromDocumentBody($zip, $metadata);
             }
 
@@ -44,7 +42,7 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
             $this->logExtraction('info', 'DOCX extraction completed', [
                 'file' => $filePath,
                 'has_title' => (bool) $metadata->getTitle(),
-                'has_authors' => !empty($metadata->getAuthors()),
+                'has_authors' => ! empty($metadata->getAuthors()),
             ]);
         } catch (\Exception $e) {
             $this->logExtraction('error', 'DOCX extraction failed', [
@@ -58,17 +56,14 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata from docProps/core.xml.
-     *
-     * @param ZipArchive $zip
-     * @return ExtractedMetadata
      */
     private function extractFromCoreProperties(ZipArchive $zip): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         try {
             $coreContent = $zip->getFromName('docProps/core.xml');
-            if (!$coreContent) {
+            if (! $coreContent) {
                 return $metadata;
             }
 
@@ -103,7 +98,7 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
             foreach ($xml->children() as $element) {
                 if ($element->getName() === 'lastModifiedBy') {
                     $modifier = $this->cleanText((string) $element);
-                    if ($modifier && !empty($metadata->getAuthors())) {
+                    if ($modifier && ! empty($metadata->getAuthors())) {
                         // Only add if we don't have author already
                     }
                 }
@@ -119,16 +114,12 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata from document body (document.xml).
-     *
-     * @param ZipArchive $zip
-     * @param ExtractedMetadata $metadata
-     * @return ExtractedMetadata
      */
     private function extractFromDocumentBody(ZipArchive $zip, ExtractedMetadata $metadata): ExtractedMetadata
     {
         try {
             $docContent = $zip->getFromName('word/document.xml');
-            if (!$docContent) {
+            if (! $docContent) {
                 return $metadata;
             }
 
@@ -151,7 +142,7 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
             }
 
             // Use first paragraph as title if it's short and looks like a title
-            if (!empty($paragraphs)) {
+            if (! empty($paragraphs)) {
                 $firstPara = $paragraphs[0];
                 if (strlen($firstPara) < 200) {
                     $metadata->setTitle($firstPara, 0.5);
@@ -168,10 +159,6 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract text from a paragraph element.
-     *
-     * @param \SimpleXMLElement $paragraph
-     * @param array $namespaces
-     * @return string|null
      */
     private function extractTextFromParagraph(\SimpleXMLElement $paragraph, array $namespaces): ?string
     {

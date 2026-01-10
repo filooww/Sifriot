@@ -363,39 +363,6 @@ Build a complete, modern library management system for Seferium that enables adm
 - IV3: Re-linking file immediately updates publication status and clears warning
 - IV4: Watch folders detect new files within configured interval (e.g., 1 hour)
 
----
-
-## Story 1.6C: Folder Structure Metadata Mapping Rules
-
-**As an** administrator,
-**I want** to define rules that extract metadata from folder paths automatically,
-**so that** the system can suggest categories and metadata based on file location.
-
-**Acceptance Criteria:**
-1. Admin interface for creating/editing folder metadata mapping rules
-2. Rule definition includes: Path Pattern (regex or glob), Target Metadata Fields, Values
-3. Example rule: Pattern: `/books/sci-fi/**/*.pdf` → Type: "Book", Category: "Science Fiction", Genre: "Sci-Fi"
-4. Supported metadata targets: Content Type, Category, Genre, Publication Status, Custom Fields
-5. Pattern syntax supports wildcards: `*` (any file), `**` (recursive folders), `{term1,term2}` (alternatives)
-6. Admin can test rule against existing files to preview matches
-7. Rule test shows: "This rule matches 1,247 files" with sample file list
-8. Multiple rules can be defined with priority ordering (drag-to-reorder)
-9. Rules evaluated in priority order (first match wins)
-10. During file registration/scan, matching rules auto-populate metadata suggestions
-11. Admin can always override auto-suggested metadata
-12. Rules can be enabled/disabled without deletion
-13. Rule edit history tracked (created by, modified by, timestamps)
-14. Bulk apply rules: "Apply Rule #3 to all unprocessed files in /books/sci-fi"
-15. Rule validation prevents invalid patterns or circular logic
-
-**Integration Verification:**
-- IV1: Rules apply correctly during single file registration (Story 1.6)
-- IV2: Rules apply correctly during bulk folder scanning (Story 1.7)
-- IV3: Rule changes don't retroactively affect already-processed publications
-- IV4: Complex path patterns (nested folders, multiple wildcards) match correctly
-- IV5: Rule priority ordering works as expected (higher priority rules override lower)
-
----
 
 ## Story 1.9: Custom Content Types and Dynamic Fields
 

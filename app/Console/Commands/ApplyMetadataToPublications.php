@@ -88,8 +88,6 @@ class ApplyMetadataToPublications extends Command
                     'author_names' => $publication->extracted_author_names,
                     'publication_year' => $publication->extracted_publication_year,
                     'publisher' => $publication->extracted_publisher,
-                    'isbn' => $publication->extracted_isbn,
-                    'doi' => $publication->extracted_doi,
                 ];
 
                 // Apply only high-confidence fields
@@ -119,24 +117,6 @@ class ApplyMetadataToPublications extends Command
                     if ($publisherConfidence >= $threshold) {
                         $publication->extracted_publisher = $extractedData['publisher'];
                         $appliedFields[] = 'publisher';
-                    }
-                }
-
-                // ISBN
-                if (isset($extractedData['isbn'])) {
-                    $isbnConfidence = $confidenceScores['isbn'] ?? 0;
-                    if ($isbnConfidence >= $threshold) {
-                        $publication->extracted_isbn = $extractedData['isbn'];
-                        $appliedFields[] = 'isbn';
-                    }
-                }
-
-                // DOI
-                if (isset($extractedData['doi'])) {
-                    $doiConfidence = $confidenceScores['doi'] ?? 0;
-                    if ($doiConfidence >= $threshold) {
-                        $publication->extracted_doi = $extractedData['doi'];
-                        $appliedFields[] = 'doi';
                     }
                 }
 
@@ -209,7 +189,7 @@ class ApplyMetadataToPublications extends Command
         if ($failed > 0) {
             $this->error("❌ Failed: {$failed} publications");
         }
-        $this->info("🎯 Confidence Threshold: " . ($threshold * 100) . '%');
+        $this->info('🎯 Confidence Threshold: '.($threshold * 100).'%');
         $this->info('═══════════════════════════════════════════');
 
         return $applied > 0 ? self::SUCCESS : self::FAILURE;

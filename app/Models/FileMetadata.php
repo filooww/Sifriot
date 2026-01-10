@@ -6,9 +6,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 
 class FileMetadata extends Model
 {
@@ -46,7 +43,7 @@ class FileMetadata extends Model
     public function file(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         // Extract publication ID from file_id (format: "123-filename.pdf")
-        if (!$this->file_id) {
+        if (! $this->file_id) {
             return $this->hasMany(File::class, 'id_publication', 'id_publication')->whereRaw('1=0');
         }
 
@@ -72,7 +69,7 @@ class FileMetadata extends Model
     public function getPublication()
     {
         // Extract publication ID from file_id (format: "123-filename.pdf")
-        if (!$this->file_id) {
+        if (! $this->file_id) {
             return null;
         }
 
@@ -101,8 +98,6 @@ class FileMetadata extends Model
 
     /**
      * Get title from extracted data.
-     *
-     * @return string|null
      */
     public function getTitle(): ?string
     {
@@ -116,7 +111,7 @@ class FileMetadata extends Model
      */
     public function getAuthors(): array
     {
-        if (!isset($this->extracted_data['authors']) || !is_array($this->extracted_data['authors'])) {
+        if (! isset($this->extracted_data['authors']) || ! is_array($this->extracted_data['authors'])) {
             return [];
         }
 
@@ -125,8 +120,6 @@ class FileMetadata extends Model
 
     /**
      * Get publication year from extracted data.
-     *
-     * @return int|null
      */
     public function getPublicationYear(): ?int
     {
@@ -137,32 +130,10 @@ class FileMetadata extends Model
 
     /**
      * Get publisher from extracted data.
-     *
-     * @return string|null
      */
     public function getPublisher(): ?string
     {
         return $this->extracted_data['publisher']['value'] ?? null;
-    }
-
-    /**
-     * Get ISBN from extracted data.
-     *
-     * @return string|null
-     */
-    public function getIsbn(): ?string
-    {
-        return $this->extracted_data['isbn']['value'] ?? null;
-    }
-
-    /**
-     * Get DOI from extracted data.
-     *
-     * @return string|null
-     */
-    public function getDoi(): ?string
-    {
-        return $this->extracted_data['doi']['value'] ?? null;
     }
 
     /**
@@ -172,7 +143,7 @@ class FileMetadata extends Model
      */
     public function getGenres(): array
     {
-        if (!isset($this->extracted_data['genres']) || !is_array($this->extracted_data['genres'])) {
+        if (! isset($this->extracted_data['genres']) || ! is_array($this->extracted_data['genres'])) {
             return [];
         }
 
@@ -182,7 +153,7 @@ class FileMetadata extends Model
     /**
      * Get fields above confidence threshold.
      *
-     * @param float $threshold Minimum confidence (0.0-1.0)
+     * @param  float  $threshold  Minimum confidence (0.0-1.0)
      * @return array<string, mixed>
      */
     public function getHighestConfidenceFields(float $threshold = 0.6): array
@@ -217,20 +188,6 @@ class FileMetadata extends Model
             }
         }
 
-        if (isset($this->extracted_data['isbn'])) {
-            $confidence = $this->extracted_data['isbn']['confidence'] ?? 0;
-            if ($confidence >= $threshold) {
-                $result['isbn'] = $this->extracted_data['isbn'];
-            }
-        }
-
-        if (isset($this->extracted_data['doi'])) {
-            $confidence = $this->extracted_data['doi']['confidence'] ?? 0;
-            if ($confidence >= $threshold) {
-                $result['doi'] = $this->extracted_data['doi'];
-            }
-        }
-
         if (isset($this->extracted_data['genres'])) {
             $result['genres'] = array_filter(
                 $this->extracted_data['genres'],
@@ -243,8 +200,6 @@ class FileMetadata extends Model
 
     /**
      * Mark extraction as rejected.
-     *
-     * @return bool
      */
     public function reject(): bool
     {
@@ -256,8 +211,6 @@ class FileMetadata extends Model
 
     /**
      * Mark extraction as confirmed.
-     *
-     * @return bool
      */
     public function confirm(): bool
     {
@@ -270,7 +223,7 @@ class FileMetadata extends Model
     /**
      * Scope: Get pending extractions.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePending($query)
@@ -281,7 +234,7 @@ class FileMetadata extends Model
     /**
      * Scope: Get processed extractions (ready for review).
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeProcessed($query)
@@ -292,7 +245,7 @@ class FileMetadata extends Model
     /**
      * Scope: Get confirmed extractions.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeConfirmed($query)
@@ -303,7 +256,7 @@ class FileMetadata extends Model
     /**
      * Scope: Get failed extractions.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
@@ -314,8 +267,8 @@ class FileMetadata extends Model
     /**
      * Scope: Get by status.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string|array $status
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string|array  $status
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByStatus($query, $status)
@@ -323,14 +276,14 @@ class FileMetadata extends Model
         if (is_array($status)) {
             return $query->whereIn('status', $status);
         }
+
         return $query->where('status', $status);
     }
 
     /**
      * Scope: Get by extraction method.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $method
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByMethod($query, string $method)

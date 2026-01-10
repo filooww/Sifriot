@@ -95,6 +95,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::get('/admin/settings/library-paths', AdminLibrarySettings::class)
         ->name('admin.settings.library-paths');
+
+    // Content Types and Custom Fields management
+    Route::get('/admin/content-types', \App\Livewire\Admin\ContentTypeManager::class)
+        ->name('admin.content-types');
+
+    Route::get('/admin/content-types/{contentTypeId}/fields', \App\Livewire\Admin\CustomFieldManager::class)
+        ->name('admin.content-types.fields');
 });
 
 require __DIR__.'/auth.php';

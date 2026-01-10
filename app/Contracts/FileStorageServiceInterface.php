@@ -16,8 +16,8 @@ interface FileStorageServiceInterface
     /**
      * Get file content from storage
      *
-     * @param string $disk The storage disk name (local, library, etc.)
-     * @param string $path The path to the file
+     * @param  string  $disk  The storage disk name (local, library, etc.)
+     * @param  string  $path  The path to the file
      * @return string The file content
      *
      * @throws \Exception If file doesn't exist or cannot be read
@@ -32,9 +32,9 @@ interface FileStorageServiceInterface
     /**
      * Download file from storage
      *
-     * @param string $disk The storage disk name
-     * @param string $path The path to the file
-     * @param string $filename The filename to download as
+     * @param  string  $disk  The storage disk name
+     * @param  string  $path  The path to the file
+     * @param  string  $filename  The filename to download as
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function download(string $disk, string $path, string $filename);
@@ -47,7 +47,7 @@ interface FileStorageServiceInterface
     /**
      * Get all files from a disk recursively
      *
-     * @param string $disk The storage disk name
+     * @param  string  $disk  The storage disk name
      * @return array<int, string> Array of file paths
      */
     public function allFiles(string $disk): array;

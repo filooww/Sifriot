@@ -26,7 +26,7 @@ class ExtractMetadataFromFileTest extends TestCase
     public function test_job_creates_file_metadata_record(): void
     {
         // Create a test file
-        $tmpFile = tempnam(sys_get_temp_dir(), 'test_') . '.txt';
+        $tmpFile = tempnam(sys_get_temp_dir(), 'test_').'.txt';
         file_put_contents($tmpFile, 'Test content');
 
         try {

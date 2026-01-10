@@ -12,14 +12,10 @@ class NotifyAdminOfMetadataReady
     /**
      * Create the event listener.
      */
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     /**
      * Handle the event.
-     *
-     * @param MetadataExtracted $event
      */
     public function handle(MetadataExtracted $event): void
     {

@@ -135,7 +135,7 @@ class FileRegistrationForm extends Component
 
             // Dispatch metadata extraction job if enabled
             if (config('library.extraction.enabled', true)) {
-                $fileId = "{$publication->id_publication}-" . basename($this->selectedFilePath);
+                $fileId = "{$publication->id_publication}-".basename($this->selectedFilePath);
                 ExtractMetadataFromFile::dispatch(
                     $fileId,
                     $fullPath,

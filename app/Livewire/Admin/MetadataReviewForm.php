@@ -7,6 +7,7 @@ namespace App\Livewire\Admin;
 use App\Events\MetadataConfirmed;
 use App\Models\Author;
 use App\Models\ContentType;
+use App\Models\CustomField;
 use App\Models\File;
 use App\Models\FileMetadata;
 use App\Models\Genre;
@@ -14,7 +15,6 @@ use App\Models\Publication;
 use App\Models\Publishing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -32,10 +32,6 @@ class MetadataReviewForm extends Component
     public ?int $publicationYear = null;
 
     public string $publisher = '';
-
-    public string $isbn = '';
-
-    public string $doi = '';
 
     public array $genres = [''];
 
@@ -63,6 +59,10 @@ class MetadataReviewForm extends Component
 
     public bool $showFilePreview = false;
 
+    public array $customFieldValues = [];
+
+    public $customFields = [];
+
     /**
      * Updated hook: Auto-save cover image when uploaded
      * This ensures the image is persisted even if user closes modal without clicking save button
@@ -77,14 +77,14 @@ class MetadataReviewForm extends Component
 
                 // Get publication
                 $publication = Publication::with('files')->find($this->fileMetadata->file_id);
-                if (!$publication) {
+                if (! $publication) {
                     throw new \Exception('Publication not found');
                 }
 
                 // Generate unique filename
                 $originalName = $this->coverImage->getClientOriginalName();
                 $extension = pathinfo($originalName, PATHINFO_EXTENSION);
-                $uniqueName = uniqid() . '_' . time() . '.' . $extension;
+                $uniqueName = uniqid().'_'.time().'.'.$extension;
 
                 // Store the file
                 $filePath = $this->coverImage->storeAs('covers', $uniqueName, 'public');
@@ -99,7 +99,7 @@ class MetadataReviewForm extends Component
                     'ord_num' => $nextOrdNum,
                     'file_name' => $originalName,
                     'file_name_low' => mb_strtolower($originalName),
-                    'file_size' => (string)$this->coverImage->getSize(),
+                    'file_size' => (string) $this->coverImage->getSize(),
                     'file_size_bytes' => $this->coverImage->getSize(),
                     'mime_type' => $this->coverImage->getMimeType(),
                     'file_type' => 'cover',
@@ -111,7 +111,7 @@ class MetadataReviewForm extends Component
                 $this->dispatch('notify', message: 'Cover image saved successfully!', type: 'success')->to('admin.metadata-review-dashboard');
             } catch (\Exception $e) {
                 Log::error('Failed to auto-save cover image', ['error' => $e->getMessage()]);
-                $this->dispatch('notify', message: 'Failed to save cover image: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+                $this->dispatch('notify', message: 'Failed to save cover image: '.$e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
             }
         }
     }
@@ -122,8 +122,6 @@ class MetadataReviewForm extends Component
         'authors.*' => 'string|max:255',
         'publicationYear' => 'nullable|integer|min:1000|max:2100',
         'publisher' => 'nullable|string|max:255',
-        'isbn' => 'nullable|string|regex:/^(?:ISBN(?:-1[03])?:?\s?)?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[X0-9]$/',
-        'doi' => 'nullable|string|regex:/^10\.\d{4,}\/\S+$/',
         'genres' => 'array',
         'genres.*' => 'string|max:255',
         'theme' => 'nullable|string|max:255',
@@ -134,8 +132,6 @@ class MetadataReviewForm extends Component
 
     /**
      * Mount the component with FileMetadata.
-     *
-     * @param FileMetadata $fileMetadata
      */
     public function mount(FileMetadata $fileMetadata): void
     {
@@ -148,7 +144,7 @@ class MetadataReviewForm extends Component
      */
     private function loadMetadata(): void
     {
-        if (!$this->fileMetadata) {
+        if (! $this->fileMetadata) {
             return;
         }
 
@@ -160,14 +156,12 @@ class MetadataReviewForm extends Component
         // Load extracted data (for processed, confirmed, and rejected statuses)
         if ($this->fileMetadata->status === 'processed' || $this->fileMetadata->status === 'confirmed' || $this->fileMetadata->status === 'rejected') {
             $this->title = $this->fileMetadata->getTitle() ?? '';
-            $this->authors = !empty($this->fileMetadata->getAuthors())
+            $this->authors = ! empty($this->fileMetadata->getAuthors())
                 ? $this->fileMetadata->getAuthors()
                 : [''];
             $this->publicationYear = $this->fileMetadata->getPublicationYear();
             $this->publisher = $this->fileMetadata->getPublisher() ?? '';
-            $this->isbn = $this->fileMetadata->getIsbn() ?? '';
-            $this->doi = $this->fileMetadata->getDoi() ?? '';
-            $this->genres = !empty($this->fileMetadata->getGenres())
+            $this->genres = ! empty($this->fileMetadata->getGenres())
                 ? $this->fileMetadata->getGenres()
                 : [''];
             $this->useExtracted = true;
@@ -179,8 +173,51 @@ class MetadataReviewForm extends Component
             $publication = Publication::with('files')->find($this->fileMetadata->file_id);
             if ($publication) {
                 $this->description = $publication->description ?? '';
+                $this->contentTypeId = $publication->content_type_id;
             }
         }
+
+        // Load custom fields if content type is selected
+        $this->loadCustomFields();
+    }
+
+    /**
+     * Load custom fields based on selected content type.
+     */
+    public function loadCustomFields(): void
+    {
+        if (!$this->contentTypeId) {
+            $this->customFields = [];
+            return;
+        }
+
+        $this->customFields = CustomField::where('content_type_id', $this->contentTypeId)
+            ->orderedBySortOrder()
+            ->get();
+
+        // Load existing values if publication exists
+        if ($this->fileMetadata && $this->fileMetadata->file_id) {
+            $publication = Publication::find($this->fileMetadata->file_id);
+            if ($publication) {
+                foreach ($this->customFields as $field) {
+                    $value = $publication->customFieldValues()
+                        ->where('custom_field_id', $field->id)
+                        ->first();
+
+                    if ($value) {
+                        $this->customFieldValues[$field->field_name] = $value->getTypedValue();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Listen for content type changes and reload custom fields.
+     */
+    public function updatedContentTypeId(): void
+    {
+        $this->loadCustomFields();
     }
 
     /**
@@ -188,12 +225,12 @@ class MetadataReviewForm extends Component
      */
     public function getCurrentCoverImageUrl(): ?string
     {
-        if (!$this->fileMetadata) {
+        if (! $this->fileMetadata) {
             return null;
         }
 
         $publication = Publication::with('files')->find($this->fileMetadata->file_id);
-        if (!$publication) {
+        if (! $publication) {
             return null;
         }
 
@@ -204,6 +241,7 @@ class MetadataReviewForm extends Component
         if ($coverFile && $coverFile->file_name) {
             // Generate public URL for cover image (no auth required)
             $encodedFilename = rtrim(strtr(base64_encode($coverFile->file_name), '+/', '-_'), '=');
+
             return route('covers.serve', [
                 'publication' => $publication->id_publication,
                 'filename' => $encodedFilename,
@@ -223,8 +261,6 @@ class MetadataReviewForm extends Component
 
     /**
      * Remove an author field.
-     *
-     * @param int $index
      */
     public function removeAuthor(int $index): void
     {
@@ -242,8 +278,6 @@ class MetadataReviewForm extends Component
 
     /**
      * Remove a genre field.
-     *
-     * @param int $index
      */
     public function removeGenre(int $index): void
     {
@@ -261,14 +295,14 @@ class MetadataReviewForm extends Component
         DB::beginTransaction();
         try {
             // Clean empty values
-            $cleanedAuthors = array_filter($this->authors, fn ($author) => !empty(trim($author)));
-            $cleanedGenres = array_filter($this->genres, fn ($genre) => !empty(trim($genre)));
+            $cleanedAuthors = array_filter($this->authors, fn ($author) => ! empty(trim($author)));
+            $cleanedGenres = array_filter($this->genres, fn ($genre) => ! empty(trim($genre)));
 
             // Get or create Publication (from FileMetadata's relationship)
             $publication = $this->fileMetadata->file()->first()?->publication
                 ?? Publication::find($this->fileMetadata->file_id);
 
-            if (!$publication) {
+            if (! $publication) {
                 throw new \Exception('Publication not found for this file metadata');
             }
 
@@ -282,7 +316,7 @@ class MetadataReviewForm extends Component
             }
 
             // Save publisher if provided
-            if (!empty($this->publisher)) {
+            if (! empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
                 $publisher = Publishing::firstOrCreate(
                     ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
@@ -306,11 +340,18 @@ class MetadataReviewForm extends Component
             $publication->update([
                 'title' => $this->title,
                 'title_low' => mb_strtolower($this->title),
-                'issue_year' => $this->publicationYear ? (string)$this->publicationYear : null,
+                'issue_year' => $this->publicationYear ? (string) $this->publicationYear : null,
                 'content_type_id' => $this->contentTypeId,
                 'description' => $this->description ?: null,
                 'status' => 'pending',
             ]);
+
+            // Save custom field values
+            foreach ($this->customFieldValues as $fieldName => $value) {
+                if ($value !== null && $value !== '') {
+                    $publication->setCustomFieldValue($fieldName, $value);
+                }
+            }
 
             // Update FileMetadata to confirmed state
             $this->fileMetadata->update([
@@ -335,14 +376,6 @@ class MetadataReviewForm extends Component
                     'publisher' => $this->publisher ? [
                         'value' => $this->publisher,
                         'confidence' => $this->confidenceScores['publisher'] ?? 0.8,
-                    ] : null,
-                    'isbn' => $this->isbn ? [
-                        'value' => $this->isbn,
-                        'confidence' => $this->confidenceScores['isbn'] ?? 0.8,
-                    ] : null,
-                    'doi' => $this->doi ? [
-                        'value' => $this->doi,
-                        'confidence' => $this->confidenceScores['doi'] ?? 0.8,
                     ] : null,
                     'genres' => array_map(
                         fn ($genre) => [
@@ -388,8 +421,8 @@ class MetadataReviewForm extends Component
                 'trace' => $e->getTraceAsString(),
                 'file_metadata_id' => $this->fileMetadata->id ?? null,
             ]);
-            \Log::channel('folder_scan')->error('Metadata confirmation failed: ' . $e->getMessage());
-            $this->dispatch('notify', message: 'Failed to confirm metadata: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+            \Log::channel('folder_scan')->error('Metadata confirmation failed: '.$e->getMessage());
+            $this->dispatch('notify', message: 'Failed to confirm metadata: '.$e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
         }
     }
 
@@ -416,7 +449,7 @@ class MetadataReviewForm extends Component
             $this->dispatch('notify', message: 'Extraction rejected. Enter metadata manually.', type: 'info');
         } catch (\Exception $e) {
             Log::error('Failed to reject metadata extraction', ['error' => $e->getMessage()]);
-            $this->dispatch('notify', message: 'Failed to reject extraction: ' . $e->getMessage(), type: 'error');
+            $this->dispatch('notify', message: 'Failed to reject extraction: '.$e->getMessage(), type: 'error');
         }
     }
 
@@ -430,14 +463,14 @@ class MetadataReviewForm extends Component
 
         DB::beginTransaction();
         try {
-            $cleanedAuthors = array_filter($this->authors, fn ($author) => !empty(trim($author)));
-            $cleanedGenres = array_filter($this->genres, fn ($genre) => !empty(trim($genre)));
+            $cleanedAuthors = array_filter($this->authors, fn ($author) => ! empty(trim($author)));
+            $cleanedGenres = array_filter($this->genres, fn ($genre) => ! empty(trim($genre)));
 
             // Get or create Publication
             $publication = $this->fileMetadata->file()->first()?->publication
                 ?? Publication::find($this->fileMetadata->file_id);
 
-            if (!$publication) {
+            if (! $publication) {
                 throw new \Exception('Publication not found for this file metadata');
             }
 
@@ -451,7 +484,7 @@ class MetadataReviewForm extends Component
             }
 
             // Save publisher if provided
-            if (!empty($this->publisher)) {
+            if (! empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
                 $publisher = Publishing::firstOrCreate(
                     ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
@@ -475,7 +508,7 @@ class MetadataReviewForm extends Component
             $publication->update([
                 'title' => $this->title,
                 'title_low' => mb_strtolower($this->title),
-                'issue_year' => $this->publicationYear ? (string)$this->publicationYear : null,
+                'issue_year' => $this->publicationYear ? (string) $this->publicationYear : null,
                 'content_type_id' => $this->contentTypeId,
                 'description' => $this->description ?: null,
             ]);
@@ -491,8 +524,6 @@ class MetadataReviewForm extends Component
                     ),
                     'publication_year' => $this->publicationYear ? ['value' => $this->publicationYear, 'confidence' => 1.0] : null,
                     'publisher' => $this->publisher ? ['value' => $this->publisher, 'confidence' => 1.0] : null,
-                    'isbn' => $this->isbn ? ['value' => $this->isbn, 'confidence' => 1.0] : null,
-                    'doi' => $this->doi ? ['value' => $this->doi, 'confidence' => 1.0] : null,
                     'genres' => array_map(
                         fn ($genre) => ['value' => trim($genre), 'confidence' => 1.0],
                         $cleanedGenres
@@ -514,7 +545,7 @@ class MetadataReviewForm extends Component
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to update metadata', ['error' => $e->getMessage()]);
-            $this->dispatch('notify', message: 'Failed to update metadata: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+            $this->dispatch('notify', message: 'Failed to update metadata: '.$e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
         }
     }
 
@@ -527,14 +558,14 @@ class MetadataReviewForm extends Component
 
         DB::beginTransaction();
         try {
-            $cleanedAuthors = array_filter($this->authors, fn ($author) => !empty(trim($author)));
-            $cleanedGenres = array_filter($this->genres, fn ($genre) => !empty(trim($genre)));
+            $cleanedAuthors = array_filter($this->authors, fn ($author) => ! empty(trim($author)));
+            $cleanedGenres = array_filter($this->genres, fn ($genre) => ! empty(trim($genre)));
 
             // Get or create Publication (from FileMetadata's relationship)
             $publication = $this->fileMetadata->file()->first()?->publication
                 ?? Publication::find($this->fileMetadata->file_id);
 
-            if (!$publication) {
+            if (! $publication) {
                 throw new \Exception('Publication not found for this file metadata');
             }
 
@@ -548,7 +579,7 @@ class MetadataReviewForm extends Component
             }
 
             // Save publisher if provided
-            if (!empty($this->publisher)) {
+            if (! empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
                 $publisher = Publishing::firstOrCreate(
                     ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
@@ -572,7 +603,7 @@ class MetadataReviewForm extends Component
             $publication->update([
                 'title' => $this->title,
                 'title_low' => mb_strtolower($this->title),
-                'issue_year' => $this->publicationYear ? (string)$this->publicationYear : null,
+                'issue_year' => $this->publicationYear ? (string) $this->publicationYear : null,
                 'content_type_id' => $this->contentTypeId,
                 'description' => $this->description ?: null,
             ]);
@@ -599,14 +630,6 @@ class MetadataReviewForm extends Component
                     ] : null,
                     'publisher' => $this->publisher ? [
                         'value' => $this->publisher,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'isbn' => $this->isbn ? [
-                        'value' => $this->isbn,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'doi' => $this->doi ? [
-                        'value' => $this->doi,
                         'confidence' => 1.0,
                     ] : null,
                     'genres' => array_map(
@@ -653,7 +676,7 @@ class MetadataReviewForm extends Component
                 'error' => $e->getMessage(),
                 'file_metadata_id' => $this->fileMetadata->id ?? null,
             ]);
-            $this->dispatch('notify', message: 'Failed to save metadata: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+            $this->dispatch('notify', message: 'Failed to save metadata: '.$e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
         }
     }
 
@@ -662,7 +685,7 @@ class MetadataReviewForm extends Component
      */
     public function toggleDetails(): void
     {
-        $this->showDetails = !$this->showDetails;
+        $this->showDetails = ! $this->showDetails;
     }
 
     /**
@@ -674,8 +697,6 @@ class MetadataReviewForm extends Component
         $this->authors = [''];
         $this->publicationYear = null;
         $this->publisher = '';
-        $this->isbn = '';
-        $this->doi = '';
         $this->genres = [''];
         $this->theme = '';
         $this->contentTypeId = null;
@@ -684,21 +705,16 @@ class MetadataReviewForm extends Component
 
     /**
      * Get confidence percentage for a field.
-     *
-     * @param string $field
-     * @return int
      */
     public function getConfidencePercent(string $field): int
     {
         $confidence = $this->confidenceScores[$field] ?? 0;
+
         return (int) ($confidence * 100);
     }
 
     /**
      * Get confidence badge color.
-     *
-     * @param float $confidence
-     * @return string
      */
     public function getConfidenceColor(float $confidence): string
     {
@@ -711,14 +727,12 @@ class MetadataReviewForm extends Component
         if ($confidence >= 0.5) {
             return 'yellow';
         }
+
         return 'red';
     }
 
     /**
      * Search authors by name (autocomplete).
-     *
-     * @param string $query
-     * @return array
      */
     public function searchAuthors(string $query): array
     {
@@ -729,7 +743,7 @@ class MetadataReviewForm extends Component
         return Author::query()
             ->where(function ($q) use ($query) {
                 $q->where('author', 'like', "%{$query}%")
-                    ->orWhere('author_low', 'like', '%' . mb_strtolower($query) . '%');
+                    ->orWhere('author_low', 'like', '%'.mb_strtolower($query).'%');
             })
             ->limit(10)
             ->get()
@@ -742,9 +756,6 @@ class MetadataReviewForm extends Component
 
     /**
      * Search publishers by name (autocomplete).
-     *
-     * @param string $query
-     * @return array
      */
     public function searchPublishers(string $query): array
     {
@@ -755,7 +766,7 @@ class MetadataReviewForm extends Component
         return Publishing::query()
             ->where(function ($q) use ($query) {
                 $q->where('publishing', 'like', "%{$query}%")
-                    ->orWhere('publishing_low', 'like', '%' . mb_strtolower($query) . '%');
+                    ->orWhere('publishing_low', 'like', '%'.mb_strtolower($query).'%');
             })
             ->limit(10)
             ->get()
@@ -768,9 +779,6 @@ class MetadataReviewForm extends Component
 
     /**
      * Search genres by name (autocomplete, multilingual).
-     *
-     * @param string $query
-     * @return array
      */
     public function searchGenres(string $query): array
     {
@@ -795,9 +803,6 @@ class MetadataReviewForm extends Component
 
     /**
      * Search themes by name (autocomplete).
-     *
-     * @param string $query
-     * @return array
      */
     public function searchThemes(string $query): array
     {
@@ -808,7 +813,7 @@ class MetadataReviewForm extends Component
         return \App\Models\Theme::query()
             ->where(function ($q) use ($query) {
                 $q->where('theme', 'like', "%{$query}%")
-                    ->orWhere('theme_low', 'like', '%' . mb_strtolower($query) . '%');
+                    ->orWhere('theme_low', 'like', '%'.mb_strtolower($query).'%');
             })
             ->limit(10)
             ->get()
@@ -821,13 +826,10 @@ class MetadataReviewForm extends Component
 
     /**
      * Create new author (admin only).
-     *
-     * @param string $name
-     * @return array
      */
     public function createNewAuthors(string $name): array
     {
-        abort_if (!auth()->user() || !auth()->user()->role === 'admin', 403, 'Unauthorized');
+        abort_if(! auth()->user() || ! auth()->user()->role === 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $author = Author::firstOrCreate(
@@ -842,13 +844,10 @@ class MetadataReviewForm extends Component
 
     /**
      * Create new publisher (admin only).
-     *
-     * @param string $name
-     * @return array
      */
     public function createNewPublishers(string $name): array
     {
-        abort_if (!auth()->user() || !auth()->user()->role === 'admin', 403, 'Unauthorized');
+        abort_if(! auth()->user() || ! auth()->user()->role === 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $publisher = Publishing::firstOrCreate(
@@ -864,13 +863,10 @@ class MetadataReviewForm extends Component
 
     /**
      * Create new genre (admin only).
-     *
-     * @param string $name
-     * @return array
      */
     public function createNewGenres(string $name): array
     {
-        abort_if (!auth()->user() || !auth()->user()->role === 'admin', 403, 'Unauthorized');
+        abort_if(! auth()->user() || ! auth()->user()->role === 'admin', 403, 'Unauthorized');
 
         $genre = Genre::firstOrCreate(
             ['slug' => Str::slug($name)],
@@ -885,13 +881,10 @@ class MetadataReviewForm extends Component
 
     /**
      * Create new theme (admin only).
-     *
-     * @param string $name
-     * @return array
      */
     public function createNewThemes(string $name): array
     {
-        abort_if (!auth()->user() || !auth()->user()->role === 'admin', 403, 'Unauthorized');
+        abort_if(! auth()->user() || ! auth()->user()->role === 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $theme = \App\Models\Theme::firstOrCreate(

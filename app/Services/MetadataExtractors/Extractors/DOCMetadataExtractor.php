@@ -14,16 +14,14 @@ class DOCMetadataExtractor extends AbstractMetadataExtractor
      *
      * Note: DOC format support is limited. This extractor attempts to extract
      * from metadata but falls back to filename and text patterns.
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     public function extract(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
-        if (!$this->fileExists($filePath)) {
+        if (! $this->fileExists($filePath)) {
             $this->logExtraction('error', 'DOC file not found', ['file' => $filePath]);
+
             return $metadata;
         }
 
@@ -58,13 +56,10 @@ class DOCMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata using PHPOffice/PHPWord (if available).
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function extractWithPhpOffice(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         try {
             $phpWord = \PhpOffice\PhpWord\IOFactory::load($filePath);
@@ -100,13 +95,10 @@ class DOCMetadataExtractor extends AbstractMetadataExtractor
 
     /**
      * Extract metadata from filename (fallback).
-     *
-     * @param string $filePath
-     * @return ExtractedMetadata
      */
     private function extractFromFilename(string $filePath): ExtractedMetadata
     {
-        $metadata = new ExtractedMetadata();
+        $metadata = new ExtractedMetadata;
 
         $filename = pathinfo($filePath, PATHINFO_FILENAME);
         $filename = $this->cleanText($filename);

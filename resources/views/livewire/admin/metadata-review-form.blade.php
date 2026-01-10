@@ -253,7 +253,9 @@
                     >
                         <option value="">-- Select Content Type --</option>
                         @foreach (\App\Models\ContentType::all() as $contentType)
-                            <option value="{{ $contentType->id }}">{{ $contentType->name_en }}</option>
+                            <option value="{{ $contentType->id }}">
+                                {{ $contentType->icon ? $contentType->icon . ' ' : '' }}{{ $contentType->name_en }}
+                            </option>
                         @endforeach
                     </select>
                     @error('contentTypeId')
@@ -280,48 +282,6 @@
                 createNewLabel="Create new publisher"
             />
                     @error('publisher')
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- ISBN Field -->
-                <div>
-                    <label for="isbn" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ISBN
-                        @if ($useExtracted && isset($confidenceScores['isbn']))
-                            <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['isbn']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['isbn']) }}-800">
-                                {{ $this->getConfidencePercent('isbn') }}% confident
-                            </span>
-                        @endif
-                    </label>
-                    <input
-                        type="text"
-                        id="isbn"
-                        wire:model="isbn"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                    />
-                    @error('isbn')
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- DOI Field -->
-                <div>
-                    <label for="doi" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        DOI
-                        @if ($useExtracted && isset($confidenceScores['doi']))
-                            <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['doi']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['doi']) }}-800">
-                                {{ $this->getConfidencePercent('doi') }}% confident
-                            </span>
-                        @endif
-                    </label>
-                    <input
-                        type="text"
-                        id="doi"
-                        wire:model="doi"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                    />
-                    @error('doi')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
@@ -414,6 +374,24 @@
                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
             @enderror
         </div>
+
+        <!-- Custom Fields Section -->
+        @if($contentTypeId && count($customFields) > 0)
+            <div class="border-t pt-4 mt-4 border-gray-200 dark:border-gray-700">
+                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
+                    ⚙️ {{ __('Custom Fields') }}
+                </h4>
+                <div class="space-y-4">
+                    @foreach($customFields as $field)
+                        <x-custom-field-input
+                            :field="$field"
+                            :value="$customFieldValues[$field->field_name] ?? null"
+                            wire-model="customFieldValues.{{ $field->field_name }}"
+                        />
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         <!-- Cover Image Field -->
         <div>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Publications;
 
+use App\Models\CustomField;
 use App\Models\Publication;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -20,9 +21,6 @@ class PublicationPreview extends Component
 
     /**
      * Mount the component with publication ID.
-     *
-     * @param  int $id
-     * @return void
      */
     public function mount(int $id): void
     {
@@ -33,10 +31,46 @@ class PublicationPreview extends Component
             'themeSet',
             'files',
             'contentType',
+            'customFieldValues.customField',
         ])->findOrFail($id);
 
         $this->isAuthenticated = Auth::check();
         $this->isAdmin = Auth::check() && Auth::user()->role === 'admin';
+    }
+
+    /**
+     * Get custom fields with values that are visible to current user.
+     */
+    public function getVisibleCustomFields(): array
+    {
+        if (!$this->publication->content_type_id) {
+            return [];
+        }
+
+        $visibilityFilter = $this->isAdmin ? ['public', 'admin_only'] : ['public'];
+
+        $customFields = CustomField::where('content_type_id', $this->publication->content_type_id)
+            ->whereIn('visibility', $visibilityFilter)
+            ->orderedBySortOrder()
+            ->get();
+
+        $values = $this->publication->customFieldValues()
+            ->with('customField')
+            ->get()
+            ->keyBy('custom_field_id');
+
+        return $customFields->map(function ($field) use ($values) {
+            $value = $values->has($field->id) ? $values->get($field->id)->getTypedValue() : null;
+
+            // Only return fields that have values
+            if ($value !== null && $value !== '') {
+                return [
+                    'field' => $field,
+                    'value' => $value,
+                ];
+            }
+            return null;
+        })->filter()->values()->toArray();
     }
 
     /**
@@ -51,6 +85,7 @@ class PublicationPreview extends Component
         if ($coverFile && $coverFile->file_name) {
             // Generate public URL for cover image (no auth required)
             $encodedFilename = rtrim(strtr(base64_encode($coverFile->file_name), '+/', '-_'), '=');
+
             return route('covers.serve', [
                 'publication' => $this->publication->id_publication,
                 'filename' => $encodedFilename,
@@ -88,7 +123,7 @@ class PublicationPreview extends Component
         $pow = min($pow, count($units) - 1);
         $bytes /= (1 << (10 * $pow));
 
-        return round($bytes, 2) . ' ' . $units[$pow];
+        return round($bytes, 2).' '.$units[$pow];
     }
 
     /**
@@ -97,7 +132,7 @@ class PublicationPreview extends Component
     public function getFileExtension(): string
     {
         $file = $this->getPrimaryFile();
-        if (!$file) {
+        if (! $file) {
             return 'Unknown';
         }
 
@@ -120,7 +155,7 @@ class PublicationPreview extends Component
         $description = $this->publication->description ?? '';
 
         if (strlen($description) > 500) {
-            return substr($description, 0, 500) . '...';
+            return substr($description, 0, 500).'...';
         }
 
         return $description;

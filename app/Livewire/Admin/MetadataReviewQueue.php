@@ -144,8 +144,6 @@ class MetadataReviewQueue extends Component
 
     /**
      * Change sort column.
-     *
-     * @param string $column
      */
     public function sort(string $column): void
     {
@@ -176,8 +174,6 @@ class MetadataReviewQueue extends Component
 
     /**
      * Toggle item selection.
-     *
-     * @param int $id
      */
     public function toggleItem(int $id): void
     {
@@ -212,7 +208,7 @@ class MetadataReviewQueue extends Component
 
         $this->selectedItems = [];
         $this->selectAll = false;
-        $this->dispatch('notify', message: count($this->selectedItems) . ' items confirmed', type: 'success');
+        $this->dispatch('notify', message: count($this->selectedItems).' items confirmed', type: 'success');
     }
 
     /**
@@ -232,7 +228,7 @@ class MetadataReviewQueue extends Component
 
         $this->selectedItems = [];
         $this->selectAll = false;
-        $this->dispatch('notify', message: count($this->selectedItems) . ' items rejected', type: 'success');
+        $this->dispatch('notify', message: count($this->selectedItems).' items rejected', type: 'success');
     }
 
     /**
@@ -260,8 +256,6 @@ class MetadataReviewQueue extends Component
 
     /**
      * Re-extract a single metadata record.
-     *
-     * @param int $id
      */
     public function reExtractSingle(int $id): void
     {
@@ -274,7 +268,7 @@ class MetadataReviewQueue extends Component
                 ->first();
 
             if ($file) {
-                $filePath = $file->file_source . '/' . $file->file_name;
+                $filePath = $file->file_source.'/'.$file->file_name;
                 $fullPath = \Storage::disk('library')->path($filePath);
 
                 ExtractMetadataFromFile::dispatch(
@@ -291,8 +285,6 @@ class MetadataReviewQueue extends Component
 
     /**
      * Delete a metadata record.
-     *
-     * @param int $id
      */
     public function deleteMetadata(int $id): void
     {
@@ -302,9 +294,6 @@ class MetadataReviewQueue extends Component
 
     /**
      * Get status badge info.
-     *
-     * @param string $status
-     * @return array
      */
     public function getStatusBadge(string $status): array
     {
@@ -321,9 +310,6 @@ class MetadataReviewQueue extends Component
 
     /**
      * Get file extension from filename.
-     *
-     * @param string $filename
-     * @return string
      */
     public function getFileExtension(string $filename): string
     {

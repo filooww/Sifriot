@@ -25,7 +25,7 @@ class PublicCatalog extends Component
     public $isGuest = true;
 
     // Filter properties
-    public array $filterCategories = [];
+    public array $filterContentTypes = [];
 
     public array $filterAuthors = [];
 
@@ -59,7 +59,7 @@ class PublicCatalog extends Component
     #[On('filtersChanged')]
     public function applyFilters(array $filters): void
     {
-        $this->filterCategories = $filters['categories'] ?? [];
+        $this->filterContentTypes = $filters['contentTypes'] ?? [];
         $this->filterAuthors = $filters['authors'] ?? [];
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
         $this->filterDateTo = $filters['dateTo'] ?? null;
@@ -93,9 +93,9 @@ class PublicCatalog extends Component
                     });
                 }
             })
-            // Apply category filter
-            ->when(! empty($this->filterCategories), function ($query) {
-                $query->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $this->filterCategories));
+            // Apply content type filter
+            ->when(! empty($this->filterContentTypes), function ($query) {
+                $query->whereIn('content_type_id', $this->filterContentTypes);
             })
             // Apply author filter
             ->when(! empty($this->filterAuthors), function ($query) {
@@ -124,7 +124,7 @@ class PublicCatalog extends Component
         $query->whereNull('deleted_at');
 
         // Eager load basic relationships (including files for cover image display)
-        $query->with(['publishing', 'authorGroup', 'issueType', 'categories', 'authors', 'files']);
+        $query->with(['publishing', 'authorGroup', 'issueType', 'contentType', 'authors', 'files']);
 
         // Apply alphabetical sort if set
         if ($this->filterAlphabeticalSort) {

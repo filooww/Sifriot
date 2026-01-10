@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Jobs\ExtractMetadataFromFile;
 use App\Models\File;
 use App\Models\FileRegistrationLog;
 use App\Models\FolderScanJob;
@@ -93,7 +92,7 @@ class ProcessFileRegistrationJob implements ShouldQueue
 
                 // Trigger metadata extraction for bulk scanned files
                 if (config('library.extraction.enabled', true)) {
-                    $fileId = "{$publication->id_publication}-" . basename($this->filePath);
+                    $fileId = "{$publication->id_publication}-".basename($this->filePath);
                     $fullPath = Storage::disk('library')->path($this->filePath);
 
                     ExtractMetadataFromFile::dispatch(

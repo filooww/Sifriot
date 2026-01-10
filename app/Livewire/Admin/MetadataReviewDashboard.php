@@ -347,7 +347,7 @@ class MetadataReviewDashboard extends Component
         // Note: file_id format is "publication_id-filename.ext", so we extract the ID
 
         // Helper to extract publication ID from file_id
-        $extractPubId = fn($fileId) => (int) (explode('-', $fileId)[0] ?? 0);
+        $extractPubId = fn ($fileId) => (int) (explode('-', $fileId)[0] ?? 0);
 
         // Publication category filter
         if (! empty($this->filterCategories)) {
@@ -498,6 +498,7 @@ class MetadataReviewDashboard extends Component
     {
         if (empty($this->selectedItems)) {
             $this->dispatch('notify', message: 'No items selected', type: 'warning');
+
             return;
         }
 
@@ -521,6 +522,7 @@ class MetadataReviewDashboard extends Component
     {
         if (empty($this->selectedItems)) {
             $this->dispatch('notify', message: 'No items selected', type: 'warning');
+
             return;
         }
 
@@ -544,6 +546,7 @@ class MetadataReviewDashboard extends Component
     {
         if (empty($this->selectedItems)) {
             $this->dispatch('notify', message: 'No items selected', type: 'warning');
+
             return;
         }
 
@@ -552,8 +555,9 @@ class MetadataReviewDashboard extends Component
 
         foreach ($this->selectedItems as $id) {
             $metadata = FileMetadata::find($id);
-            if (!$metadata || !$metadata->file_id) {
+            if (! $metadata || ! $metadata->file_id) {
                 $failed++;
+
                 continue;
             }
 
@@ -563,17 +567,18 @@ class MetadataReviewDashboard extends Component
 
             if ($publicationId === 0) {
                 $failed++;
+
                 continue;
             }
 
             // Get the file path from file_registration_logs (files table doesn't have file_path)
             $fileLog = DB::table('file_registration_logs')
                 ->where('publication_id', $publicationId)
-                ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%')
+                ->where('file_path', 'like', '%'.addcslashes($metadata->file_name, '%_').'%')
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-            if (!$fileLog || !$fileLog->file_path) {
+            if (! $fileLog || ! $fileLog->file_path) {
                 Log::warning('File path not found for bulk re-extraction', [
                     'id' => $id,
                     'file_id' => $metadata->file_id,
@@ -581,6 +586,7 @@ class MetadataReviewDashboard extends Component
                     'publication_id' => $publicationId,
                 ]);
                 $failed++;
+
                 continue;
             }
 
@@ -607,8 +613,9 @@ class MetadataReviewDashboard extends Component
     public function reExtractSingle(int $id): void
     {
         $metadata = FileMetadata::find($id);
-        if (!$metadata || !$metadata->file_id) {
+        if (! $metadata || ! $metadata->file_id) {
             $this->dispatch('notify', message: 'Metadata not found', type: 'error');
+
             return;
         }
 
@@ -621,28 +628,30 @@ class MetadataReviewDashboard extends Component
                 'file_id' => $metadata->file_id,
             ]);
             $this->dispatch('notify', message: 'Invalid publication ID', type: 'error');
+
             return;
         }
 
         // Get the file path from file_registration_logs (files table doesn't have file_path)
         $fileLog = DB::table('file_registration_logs')
             ->where('publication_id', $publicationId)
-            ->where('file_path', 'like', '%' . DB::raw('CONCAT(\'%-\', ?)') . '%', [$metadata->file_name])
+            ->where('file_path', 'like', '%'.DB::raw('CONCAT(\'%-\', ?)').'%', [$metadata->file_name])
             ->orWhere(function ($query) use ($publicationId, $metadata) {
                 // Alternative: match by publication_id and filename pattern
                 $query->where('publication_id', $publicationId)
-                      ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%');
+                    ->where('file_path', 'like', '%'.addcslashes($metadata->file_name, '%_').'%');
             })
             ->orderBy('created_at', 'desc')
             ->first();
 
-        if (!$fileLog || !$fileLog->file_path) {
+        if (! $fileLog || ! $fileLog->file_path) {
             Log::warning('File path not found in file_registration_logs', [
                 'publication_id' => $publicationId,
                 'file_name' => $metadata->file_name,
                 'file_id' => $metadata->file_id,
             ]);
             $this->dispatch('notify', message: 'File path not found', type: 'error');
+
             return;
         }
 
@@ -684,6 +693,7 @@ class MetadataReviewDashboard extends Component
     {
         if (! in_array($newStatus, ['published', 'hidden', 'pending'])) {
             $this->dispatch('notify', message: 'Invalid status', type: 'error');
+
             return;
         }
 
@@ -714,6 +724,7 @@ class MetadataReviewDashboard extends Component
     {
         if (empty($publicationIds) || ! in_array($newStatus, ['published', 'hidden', 'pending'])) {
             $this->dispatch('notify', message: 'Invalid request', type: 'error');
+
             return;
         }
 

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Publication extends Model
@@ -205,12 +206,13 @@ class Publication extends Model
         return Attribute::make(
             get: function () {
                 $cover = $this->coverImage()->first();
-                if (!$cover || !$cover->file_name) {
+                if (! $cover || ! $cover->file_name) {
                     return null;
                 }
 
                 // Generate public URL for cover image (no auth required)
                 $encodedFilename = rtrim(strtr(base64_encode($cover->file_name), '+/', '-_'), '=');
+
                 return route('covers.serve', [
                     'publication' => $this->id_publication,
                     'filename' => $encodedFilename,
@@ -227,18 +229,19 @@ class Publication extends Model
         return Attribute::make(
             get: function () {
                 // Check if files relationship is already loaded, otherwise load it
-                if (!$this->relationLoaded('files')) {
+                if (! $this->relationLoaded('files')) {
                     $cover = $this->coverImage()->first();
                 } else {
                     $cover = $this->files->where('file_type', 'cover')->first();
                 }
 
-                if (!$cover || !$cover->file_name) {
+                if (! $cover || ! $cover->file_name) {
                     return null;
                 }
 
                 // Generate public URL for cover image (no auth required)
                 $encodedFilename = rtrim(strtr(base64_encode($cover->file_name), '+/', '-_'), '=');
+
                 return route('covers.serve', [
                     'publication' => $this->id_publication,
                     'filename' => $encodedFilename,
@@ -258,5 +261,74 @@ class Publication extends Model
                     ->toArray();
             }
         );
+    }
+
+    // Custom Field Relationships and Methods
+    public function customFieldValues(): MorphMany
+    {
+        return $this->morphMany(CustomFieldValue::class, 'fieldable');
+    }
+
+    /**
+     * Get the value of a specific custom field by field name.
+     */
+    public function getCustomFieldValue(string $fieldName): mixed
+    {
+        $value = $this->customFieldValues()
+            ->whereHas('customField', function ($query) use ($fieldName) {
+                $query->where('field_name', $fieldName);
+            })
+            ->with('customField')
+            ->first();
+
+        return $value ? $value->getTypedValue() : null;
+    }
+
+    /**
+     * Set the value of a specific custom field by field name.
+     */
+    public function setCustomFieldValue(string $fieldName, mixed $value): void
+    {
+        $customField = CustomField::where('field_name', $fieldName)
+            ->where('content_type_id', $this->content_type_id)
+            ->first();
+
+        if (!$customField) {
+            return;
+        }
+
+        $this->customFieldValues()->updateOrCreate(
+            [
+                'custom_field_id' => $customField->id,
+                'fieldable_type' => self::class,
+                'fieldable_id' => $this->id_publication,
+            ],
+            [
+                'value' => is_array($value) ? $value : [$value],
+            ]
+        );
+    }
+
+    /**
+     * Get all custom fields with their values for this publication.
+     */
+    public function getAllCustomFieldsWithValues(): array
+    {
+        if (!$this->content_type_id) {
+            return [];
+        }
+
+        $customFields = CustomField::where('content_type_id', $this->content_type_id)
+            ->orderedBySortOrder()
+            ->get();
+
+        $values = $this->customFieldValues()->with('customField')->get()->keyBy('custom_field_id');
+
+        return $customFields->map(function ($field) use ($values) {
+            return [
+                'field' => $field,
+                'value' => $values->has($field->id) ? $values->get($field->id)->getTypedValue() : null,
+            ];
+        })->toArray();
     }
 }

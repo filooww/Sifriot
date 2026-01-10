@@ -7,8 +7,6 @@ namespace Tests\Unit;
 use App\Contracts\FileStorageServiceInterface;
 use App\Contracts\LoggerServiceInterface;
 use App\Http\Controllers\DownloadController;
-use App\Models\File;
-use App\Models\Publication;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 
@@ -83,7 +81,7 @@ class DownloadControllerTest extends TestCase
             ->once()
             ->with(
                 'Bulk scanned file not found in library for download',
-                Mockery::on(function(array $context) {
+                Mockery::on(function (array $context) {
                     return isset($context['publication_id']) &&
                            isset($context['filename']);
                 })

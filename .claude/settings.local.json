@@ -23,7 +23,8 @@
       "Bash(git config:*)",
       "Bash(git push:*)",
       "Bash(docker ps:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(DB_PASSWORD=rootpass php artisan:*)"
     ],
     "deny": [],
     "ask": []
