@@ -24,7 +24,8 @@
       "Bash(git push:*)",
       "Bash(docker ps:*)",
       "Bash(curl:*)",
-      "Bash(DB_PASSWORD=rootpass php artisan:*)"
+      "Bash(DB_PASSWORD=rootpass php artisan:*)",
+      "Bash(dir /s /b c:sdocsprd*.md)"
     ],
     "deny": [],
     "ask": []
