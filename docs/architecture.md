@@ -1,4 +1,4 @@
-# Seferium - Library Management System - Brownfield Enhancement Architecture
+# Sifriot - Library Management System - Brownfield Enhancement Architecture
 
 **Version:** 1.0
 **Date:** 2025-10-15
@@ -34,7 +34,7 @@ This document supplements the existing Laravel project architecture by defining 
 
 #### Current Project State
 
-- **Primary Purpose:** Seferium (Library Management System) for managing books, magazines, articles, and publications with hierarchical organization
+- **Primary Purpose:** Sifriot (Library Management System) for managing books, magazines, articles, and publications with hierarchical organization
 - **Current Tech Stack:**
   - Backend: Laravel 12, PHP 8.2+, MySQL 8.0
   - Frontend: Livewire 3, Tailwind CSS 3, Alpine.js 3

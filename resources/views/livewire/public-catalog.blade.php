@@ -3,7 +3,7 @@
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-6">
         <div class="text-center">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                {{ __('Welcome to Seferium Library') }}
+                {{ __('Welcome to Sifriot Library') }}
             </h1>
             <p class="mt-2 text-gray-600 dark:text-gray-400">
                 {{ __('Explore our collection') }}

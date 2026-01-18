@@ -1,6 +1,6 @@
 # 1. Introduction
 
-This document outlines the architectural approach for enhancing Seferium (Library Management System) with a comprehensive modern library management platform featuring advanced search, bulk upload, metadata extraction, engagement features, and multilingual support. Its primary goal is to serve as the guiding architectural blueprint for AI-driven development of new features while ensuring seamless integration with the existing Laravel 12 foundation.
+This document outlines the architectural approach for enhancing Sifriot (Library Management System) with a comprehensive modern library management platform featuring advanced search, bulk upload, metadata extraction, engagement features, and multilingual support. Its primary goal is to serve as the guiding architectural blueprint for AI-driven development of new features while ensuring seamless integration with the existing Laravel 12 foundation.
 
 **Relationship to Existing Architecture:**
 This document supplements the existing Laravel project architecture by defining how new components will integrate with current models, migrations, and Livewire components. Where conflicts arise between new and existing patterns, this document provides guidance on maintaining consistency while implementing enhancements.
@@ -9,7 +9,7 @@ This document supplements the existing Laravel project architecture by defining 
 
 ### Current Project State
 
-- **Primary Purpose:** Seferium (Library Management System) for managing books, magazines, articles, and publications with hierarchical organization
+- **Primary Purpose:** Sifriot (Library Management System) for managing books, magazines, articles, and publications with hierarchical organization
 - **Current Tech Stack:**
   - Backend: Laravel 12, PHP 8.2+, MySQL 8.0
   - Frontend: Livewire 3, Tailwind CSS 3, Alpine.js 3

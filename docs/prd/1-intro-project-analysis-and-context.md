@@ -6,7 +6,7 @@
 
 ## 1.2 Current Project State
 
-**Project:** Seferium (Library Management System)
+**Project:** Sifriot (Library Management System)
 **Current Status:** Fresh Laravel 12 setup with foundational models and migrations
 
 **What exists:**

@@ -114,7 +114,7 @@ class PublicationPreview extends Component
         $bytes = $bytes ?? $this->getPrimaryFile()?->file_size_bytes ?? 0;
 
         if ($bytes === 0) {
-            return 'Unknown';
+            return __('Unknown');
         }
 
         $units = ['B', 'KB', 'MB', 'GB'];
@@ -133,7 +133,7 @@ class PublicationPreview extends Component
     {
         $file = $this->getPrimaryFile();
         if (! $file) {
-            return 'Unknown';
+            return __('Unknown');
         }
 
         return strtoupper(pathinfo($file->file_name, PATHINFO_EXTENSION));

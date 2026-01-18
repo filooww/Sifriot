@@ -1,9 +1,9 @@
-# 5. Epic 1: Modern Seferium Library Management System
+# 5. Epic 1: Modern Sifriot Library Management System
 
 > **Sprint Change Applied (2025-10-24)**: Stories 1.6, 1.7, and 1.8 updated to explicitly support external server path scanning (e.g., `/mnt/library/`) with admin UI configuration and embedded folder tree navigation. Story 1.8 clarified to work on both external server files (registered) and internal storage files (uploaded). See Story 1.6 AC16-20, Story 1.7 AC1a-1d, and Story 1.8 AC1/IV4 for details.
 
 **Epic Goal**:
-Build a complete, modern library management system for Seferium that enables administrators to efficiently manage and organize a large-scale content library (1.1TB, 100k+ items) while providing users with powerful search, filtering, and engagement features across books, magazines, articles, and custom content types, with full trilingual support (English, Russian, Hebrew).
+Build a complete, modern library management system for Sifriot that enables administrators to efficiently manage and organize a large-scale content library (1.1TB, 100k+ items) while providing users with powerful search, filtering, and engagement features across books, magazines, articles, and custom content types, with full trilingual support (English, Russian, Hebrew).
 
 **Integration Requirements**:
 - Extend existing Laravel 12 foundation without breaking existing models or migrations
@@ -175,7 +175,7 @@ Build a complete, modern library management system for Seferium that enables adm
   - [ ] Verify middleware protection works (guests → login, non-admins → 403 on dashboard)
 
 - [ ] **Task 6: Add translation keys for new pages** (AC: 9)
-  - [ ] Update `lang/en.json`: "Dashboard", "Public Catalog", "Profile", "Welcome to Seferium Library", "Explore our collection", "Admin Management", "Statistics"
+  - [ ] Update `lang/en.json`: "Dashboard", "Public Catalog", "Profile", "Welcome to Sifriot Library", "Explore our collection", "Admin Management", "Statistics"
   - [ ] Update `lang/ru.json`: Same keys translated to Russian
   - [ ] Update `lang/he.json`: Same keys translated to Hebrew
   - [ ] Verify RTL layout works correctly on all new pages
