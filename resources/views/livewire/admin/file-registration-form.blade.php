@@ -70,7 +70,7 @@
         <!-- Content Type Selection -->
         <div>
             <label class="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">{{ __('Content Type') }}</label>
-            <select wire:model.live="contentTypeId" class="block w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            <select wire:model="contentTypeId" class="block w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="">{{ __('Select Content Type') }}</option>
                 @foreach($contentTypes as $type)
                     <option value="{{ $type->id }}">
@@ -80,33 +80,6 @@
             </select>
             @error('contentTypeId') <span class="text-red-500 dark:text-red-400 text-sm">{{ $message }}</span> @enderror
         </div>
-
-        <!-- Custom Fields Section -->
-        @if(!empty($customFields))
-            <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{{ __('Custom Fields') }}</h3>
-
-                @foreach($customFields as $field)
-                    <div class="mb-4">
-                        @php
-                            $locale = app()->getLocale();
-                            $labelKey = "label_{$locale}";
-                            $label = $field[$labelKey] ?? $field['label_en'];
-                        @endphp
-
-                        <x-custom-field-input
-                            :field="$field"
-                            :value="$customFieldValues[$field['field_name']] ?? null"
-                            wire:model="customFieldValues.{{ $field['field_name'] }}"
-                        />
-
-                        @error("customFieldValues.{$field['field_name']}")
-                            <span class="text-red-500 dark:text-red-400 text-sm">{{ $message }}</span>
-                        @enderror
-                    </div>
-                @endforeach
-            </div>
-        @endif
 
         <!-- Submit Buttons -->
         <div class="flex gap-4">
