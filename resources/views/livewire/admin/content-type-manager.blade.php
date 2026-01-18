@@ -73,9 +73,6 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                                 <div class="flex items-center gap-2">
-                                    @if($contentType->icon)
-                                        <span class="text-xl">{{ $contentType->icon }}</span>
-                                    @endif
                                     <span>{{ $contentType->name_en }}</span>
                                 </div>
                             </td>
