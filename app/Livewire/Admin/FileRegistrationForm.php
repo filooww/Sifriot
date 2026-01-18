@@ -6,6 +6,7 @@ namespace App\Livewire\Admin;
 
 use App\Jobs\ExtractMetadataFromFile;
 use App\Models\ContentType;
+use App\Models\CustomField;
 use App\Models\File;
 use App\Models\FileRegistrationLog;
 use App\Models\Publication;
@@ -30,6 +31,10 @@ class FileRegistrationForm extends Component
     public ?int $contentTypeId = null;
 
     public string $status = 'pending';
+
+    public array $customFieldValues = [];
+
+    public array $customFields = [];
 
     protected FileStorageService $fileStorage;
 
@@ -62,6 +67,39 @@ class FileRegistrationForm extends Component
         }
     }
 
+    public function updatedContentTypeId(?int $value): void
+    {
+        if (! $value) {
+            $this->customFields = [];
+            $this->customFieldValues = [];
+
+            return;
+        }
+
+        $this->loadCustomFields();
+    }
+
+    protected function loadCustomFields(): void
+    {
+        if (! $this->contentTypeId) {
+            $this->customFields = [];
+
+            return;
+        }
+
+        $this->customFields = CustomField::where('content_type_id', $this->contentTypeId)
+            ->orderBy('sort_order')
+            ->get()
+            ->toArray();
+
+        // Initialize custom field values array
+        foreach ($this->customFields as $field) {
+            if (! isset($this->customFieldValues[$field['field_name']])) {
+                $this->customFieldValues[$field['field_name']] = null;
+            }
+        }
+    }
+
     public function updatedUploadedFile(): void
     {
         if (! $this->uploadedFile) {
@@ -89,6 +127,70 @@ class FileRegistrationForm extends Component
         }
     }
 
+    protected function validateCustomFields(): void
+    {
+        $rules = [];
+
+        foreach ($this->customFields as $field) {
+            $fieldRules = [];
+
+            if ($field['is_required']) {
+                $fieldRules[] = 'required';
+            } else {
+                $fieldRules[] = 'nullable';
+            }
+
+            // Add type-specific validation
+            switch ($field['field_type']) {
+                case 'text':
+                    $fieldRules[] = 'string';
+                    $fieldRules[] = 'max:255';
+                    break;
+                case 'long_text':
+                    $fieldRules[] = 'string';
+                    $fieldRules[] = 'max:10000';
+                    break;
+                case 'number':
+                    $fieldRules[] = 'numeric';
+                    break;
+                case 'date':
+                    $fieldRules[] = 'date';
+                    break;
+                case 'boolean':
+                    $fieldRules[] = 'boolean';
+                    break;
+                case 'dropdown':
+                    if (isset($field['field_config']['options'])) {
+                        $validOptions = array_column($field['field_config']['options'], 'value');
+                        $fieldRules[] = 'in:'.implode(',', $validOptions);
+                    }
+                    break;
+                case 'multiselect':
+                    $fieldRules[] = 'array';
+                    break;
+            }
+
+            $rules["customFieldValues.{$field['field_name']}"] = implode('|', $fieldRules);
+        }
+
+        if (! empty($rules)) {
+            $this->validate($rules);
+        }
+    }
+
+    protected function saveCustomFieldValues(Publication $publication): void
+    {
+        foreach ($this->customFields as $field) {
+            $value = $this->customFieldValues[$field['field_name']] ?? null;
+
+            if ($value === null && ! $field['is_required']) {
+                continue;
+            }
+
+            $publication->setCustomFieldValue($field['field_name'], $value);
+        }
+    }
+
     public function registerFile(): void
     {
         $this->validate([
@@ -96,6 +198,9 @@ class FileRegistrationForm extends Component
             'publicationTitle' => 'required|max:500',
             'contentTypeId' => 'required|exists:content_types,id',
         ]);
+
+        // Validate custom fields
+        $this->validateCustomFields();
 
         try {
             // Check duplicate file path
@@ -115,13 +220,17 @@ class FileRegistrationForm extends Component
                 'upload_date' => now(),
             ]);
 
-            // Create file record (only path, not contents)
+            // Save custom field values
+            $this->saveCustomFieldValues($publication);
+
+            // Create file record (only path, not contents) - use relative path for file_source
             File::create([
                 'id_publication' => $publication->id_publication,
                 'file_name' => basename($this->selectedFilePath),
-                'file_source' => $fullPath,
+                'file_source' => $this->selectedFilePath,  // Relative path
                 'mime_type' => Storage::disk('local')->mimeType($this->selectedFilePath),
                 'file_size_bytes' => Storage::disk('local')->size($this->selectedFilePath),
+                'ord_num' => 1,
             ]);
 
             // Create registration log
@@ -146,7 +255,7 @@ class FileRegistrationForm extends Component
 
             session()->flash('message', __('File registered successfully. Metadata extraction started...'));
             $this->dispatch('file-registered-successfully');
-            $this->reset(['publicationTitle', 'contentTypeId', 'selectedFilePath']);
+            $this->reset(['publicationTitle', 'contentTypeId', 'selectedFilePath', 'customFields', 'customFieldValues']);
 
         } catch (\Exception $e) {
             Log::error('File registration failed', [
@@ -165,19 +274,32 @@ class FileRegistrationForm extends Component
             'uploadedFile' => 'required|file',
         ]);
 
+        // Validate custom fields
+        $this->validateCustomFields();
+
         try {
             $contentType = ContentType::find($this->contentTypeId);
             $extension = $this->uploadedFile->getClientOriginalExtension();
             $originalName = $this->uploadedFile->getClientOriginalName();
 
-            // Generate unique filename
-            $uniqueFilename = hash('sha256', $originalName.time()).'.'.$extension;
+            // Sanitize the filename - remove path info and normalize
+            $sanitizedName = preg_replace('/[^\p{L}\p{N}\s\.\-_]/u', '', pathinfo($originalName, PATHINFO_FILENAME));
+            $sanitizedName = trim($sanitizedName) ?: 'file';
+            $filename = $sanitizedName.'.'.$extension;
 
             // Determine storage path based on content type
             $storagePath = 'content/'.$contentType->folder_name;
 
+            // Check if file already exists and make unique if necessary
+            $counter = 1;
+            $finalFilename = $filename;
+            while (Storage::disk('local')->exists($storagePath.'/'.$finalFilename)) {
+                $finalFilename = $sanitizedName.'_'.$counter.'.'.$extension;
+                $counter++;
+            }
+
             // Store uploaded file
-            $filePath = $this->uploadedFile->storeAs($storagePath, $uniqueFilename, 'local');
+            $filePath = $this->uploadedFile->storeAs($storagePath, $finalFilename, 'local');
             $fullPath = Storage::disk('local')->path($filePath);
 
             // Create publication record
@@ -189,16 +311,20 @@ class FileRegistrationForm extends Component
                 'upload_date' => now(),
             ]);
 
-            // Create file record
+            // Save custom field values
+            $this->saveCustomFieldValues($publication);
+
+            // Create file record - use relative path for file_source
             File::create([
                 'id_publication' => $publication->id_publication,
-                'file_name' => $uniqueFilename,
-                'file_source' => $fullPath,
+                'file_name' => $finalFilename,
+                'file_source' => $filePath,  // Relative path, e.g., 'content/books/filename.pdf'
                 'mime_type' => $this->uploadedFile->getMimeType(),
                 'file_size_bytes' => $this->uploadedFile->getSize(),
+                'ord_num' => 1,
             ]);
 
-            // Create registration log
+            // Create registration log - use absolute path
             FileRegistrationLog::create([
                 'publication_id' => $publication->id_publication,
                 'file_path' => $fullPath,
@@ -209,7 +335,7 @@ class FileRegistrationForm extends Component
 
             // Dispatch metadata extraction job if enabled
             if (config('library.extraction.enabled', true)) {
-                $fileId = "{$publication->id_publication}-{$uniqueFilename}";
+                $fileId = "{$publication->id_publication}-{$finalFilename}";
                 ExtractMetadataFromFile::dispatch(
                     $fileId,
                     $fullPath,
@@ -220,7 +346,7 @@ class FileRegistrationForm extends Component
 
             session()->flash('message', __('File uploaded successfully. Metadata extraction started...'));
             $this->dispatch('file-uploaded-successfully');
-            $this->reset(['publicationTitle', 'contentTypeId', 'uploadedFile']);
+            $this->reset(['publicationTitle', 'contentTypeId', 'uploadedFile', 'customFields', 'customFieldValues']);
 
         } catch (\Exception $e) {
             Log::error('File upload failed', [

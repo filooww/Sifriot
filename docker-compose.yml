@@ -34,7 +34,7 @@ services:
       - .:/var/www/html:cached
       - ./docker/php/php.ini:/usr/local/etc/php/php.ini
       - ./docker/apache/laravel.conf:/etc/apache2/sites-available/000-default.conf
-      - D:\oldI\LiteraCommon:/library:rw,Z
+      # - D:\oldI\LiteraCommon:/library:rw,Z
       # Named volumes for better performance on Windows
       - vendor_volume:/var/www/html/vendor
       - node_modules_volume:/var/www/html/node_modules
@@ -79,7 +79,7 @@ services:
     volumes:
       - .:/var/www/html:cached
       - ./docker/php/php.ini:/usr/local/etc/php/php.ini
-      - D:\oldI\LiteraCommon:/library:rw,Z
+      # - D:\oldI\LiteraCommon:/library:rw,Z
       - vendor_volume:/var/www/html/vendor
       - laravel_cache:/var/www/html/storage/framework/cache
       - laravel_logs:/var/www/html/storage/logs
