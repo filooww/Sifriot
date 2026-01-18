@@ -4,7 +4,6 @@
         return rtrim(strtr(base64_encode($str), '+/', '-_'), '=');
     };
 @endphp
-
 <div class="w-full h-full">
     @if(! $isAuthorized)
         <!-- Login CTA for non-authenticated users -->
