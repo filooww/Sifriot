@@ -200,6 +200,19 @@ class Publication extends Model
         )->withTimestamps();
     }
 
+    // Publishers Relationship
+    public function publishers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Publisher::class,
+            'publisher_publication',
+            'publication_id',
+            'publisher_id',
+            'id_publication',
+            'id'
+        )->withTimestamps();
+    }
+
     // Accessors for cover image and genres (Task 7)
     protected function coverImageUrl(): Attribute
     {
@@ -293,7 +306,7 @@ class Publication extends Model
             ->where('content_type_id', $this->content_type_id)
             ->first();
 
-        if (!$customField) {
+        if (! $customField) {
             return;
         }
 
@@ -314,7 +327,7 @@ class Publication extends Model
      */
     public function getAllCustomFieldsWithValues(): array
     {
-        if (!$this->content_type_id) {
+        if (! $this->content_type_id) {
             return [];
         }
 

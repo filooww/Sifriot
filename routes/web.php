@@ -6,6 +6,7 @@ use App\Livewire\Admin\AdminLibrarySettings;
 use App\Livewire\Admin\BulkFolderScanner;
 use App\Livewire\Admin\FileManagement;
 use App\Livewire\Admin\FileRegistrationForm;
+use App\Livewire\Admin\FiltrationManagement;
 use App\Livewire\Admin\FolderBrowser;
 use App\Livewire\Admin\MetadataReviewDashboard;
 use App\Livewire\Admin\ScanResultsViewer;
@@ -96,9 +97,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/settings/library-paths', AdminLibrarySettings::class)
         ->name('admin.settings.library-paths');
 
-    // Content Types and Custom Fields management
-    Route::get('/admin/content-types', \App\Livewire\Admin\ContentTypeManager::class)
-        ->name('admin.content-types');
+    // Filtration Management (unified admin interface)
+    Route::get('/admin/filtration', FiltrationManagement::class)
+        ->name('admin.filtration');
+
+    // Redirect legacy content-types route to filtration
+    Route::get('/admin/content-types', function () {
+        return redirect()->route('admin.filtration', ['tab' => 'content-types']);
+    })->name('admin.content-types');
 
     Route::get('/admin/content-types/{contentTypeId}/fields', \App\Livewire\Admin\CustomFieldManager::class)
         ->name('admin.content-types.fields');

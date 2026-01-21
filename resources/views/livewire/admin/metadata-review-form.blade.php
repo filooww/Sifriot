@@ -242,22 +242,81 @@
                 </div>
 
                 <!-- Content Type -->
-                <div>
-                    <label for="contentTypeId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <div x-data="{
+                    open: false,
+                    selectedId: @entangle('contentTypeId'),
+                    contentTypes: {{ \App\Models\ContentType::all()->toJson() }},
+                    get selectedType() {
+                        return this.contentTypes.find(ct => ct.id == this.selectedId);
+                    }
+                }" class="relative">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Content Type
                     </label>
-                    <select
-                        id="contentTypeId"
-                        wire:model="contentTypeId"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white appearance-none cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
+                    <button
+                        type="button"
+                        @click="open = !open"
+                        @click.outside="open = false"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-left flex items-center justify-between"
                     >
-                        <option value="">-- Select Content Type --</option>
+                        <span class="flex items-center gap-2">
+                            <template x-if="selectedType">
+                                <span class="flex items-center gap-2">
+                                    <template x-if="selectedType.icon && /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(selectedType.icon)">
+                                        <span x-text="selectedType.icon"></span>
+                                    </template>
+                                    <template x-if="selectedType.icon && !/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(selectedType.icon)">
+                                        <span class="w-5 h-5 text-blue-600 dark:text-blue-400" x-html="document.querySelector('[data-icon=\'' + selectedType.icon + '\']')?.innerHTML || ''"></span>
+                                    </template>
+                                    <span x-text="selectedType.name_en"></span>
+                                </span>
+                            </template>
+                            <template x-if="!selectedType">
+                                <span class="text-gray-500">-- Select Content Type --</span>
+                            </template>
+                        </span>
+                        <x-heroicon-o-chevron-down class="w-5 h-5 text-gray-400" />
+                    </button>
+
+                    <div
+                        x-show="open"
+                        x-transition:enter="transition ease-out duration-100"
+                        x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-75"
+                        x-transition:leave-start="opacity-100 scale-100"
+                        x-transition:leave-end="opacity-0 scale-95"
+                        class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                    >
+                        <button
+                            type="button"
+                            @click="selectedId = ''; open = false"
+                            class="w-full px-3 py-2 text-left text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                            -- Select Content Type --
+                        </button>
                         @foreach (\App\Models\ContentType::all() as $contentType)
-                            <option value="{{ $contentType->id }}">
-                                {{ $contentType->icon ? $contentType->icon . ' ' : '' }}{{ $contentType->name_en }}
-                            </option>
+                            <button
+                                type="button"
+                                @click="selectedId = {{ $contentType->id }}; open = false"
+                                class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                :class="{ 'bg-blue-50 dark:bg-blue-900/30': selectedId == {{ $contentType->id }} }"
+                            >
+                                @if($contentType->icon)
+                                    @php
+                                        $ctIcon = $contentType->icon;
+                                        $ctIsEmoji = preg_match('/[\x{1F300}-\x{1F9FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]/u', $ctIcon);
+                                    @endphp
+                                    @if($ctIsEmoji)
+                                        <span>{{ $ctIcon }}</span>
+                                    @else
+                                        <x-dynamic-component :component="'heroicon-o-' . $ctIcon" class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                    @endif
+                                @endif
+                                <span class="text-gray-900 dark:text-white">{{ $contentType->name_en }}</span>
+                            </button>
                         @endforeach
-                    </select>
+                    </div>
                     @error('contentTypeId')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror

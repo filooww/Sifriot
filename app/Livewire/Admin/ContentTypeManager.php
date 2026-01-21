@@ -5,22 +5,30 @@ declare(strict_types=1);
 namespace App\Livewire\Admin;
 
 use App\Models\ContentType;
-use Livewire\Component;
 use Livewire\Attributes\On;
+use Livewire\Component;
 
 class ContentTypeManager extends Component
 {
     public $contentTypes;
+
     public $showModal = false;
+
     public $editingContentType = null;
 
     // Form fields
     public $name_en = '';
+
     public $name_ru = '';
+
     public $name_he = '';
+
     public $slug = '';
+
     public $icon = '';
+
     public $folder_name = '';
+
     public $is_system = false;
 
     protected function rules(): array
@@ -99,6 +107,7 @@ class ContentTypeManager extends Component
 
         if ($contentType->is_system) {
             session()->flash('error', 'Cannot delete system content types.');
+
             return;
         }
 

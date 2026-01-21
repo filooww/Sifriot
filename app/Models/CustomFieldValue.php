@@ -45,7 +45,7 @@ class CustomFieldValue extends Model
      */
     public function getTypedValue(): mixed
     {
-        if (!$this->customField) {
+        if (! $this->customField) {
             return $this->value;
         }
 

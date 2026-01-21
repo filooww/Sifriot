@@ -27,7 +27,10 @@
       "Bash(DB_PASSWORD=rootpass php artisan:*)",
       "Bash(dir /s /b c:sdocsprd*.md)",
       "Bash(ls:*)",
-      "Bash(./vendor/bin/pint:*)"
+      "Bash(./vendor/bin/pint:*)",
+      "Bash(composer require:*)",
+      "Bash(composer dump-autoload:*)",
+      "Bash(composer show:*)"
     ],
     "deny": [],
     "ask": []

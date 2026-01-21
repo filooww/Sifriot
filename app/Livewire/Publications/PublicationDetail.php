@@ -33,6 +33,8 @@ class PublicationDetail extends Component
                 'part',
                 'authors',
                 'themes',
+                'categories',
+                'publishers',
             ])
             ->when(! $this->isGuest, function ($query) {
                 $query->with('files');

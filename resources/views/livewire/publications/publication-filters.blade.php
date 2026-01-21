@@ -4,6 +4,8 @@
         author: false,
         date: false,
         genre: false,
+        category: false,
+        publisher: false,
         textSize: false,
         alphabetical: false,
         status: false,
@@ -87,7 +89,20 @@
                         value="{{ $contentType['id'] }}"
                         class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
                     >
-                    <span class="text-sm">{{ $contentType['icon'] ?? '' }} {{ $contentType['name_' . app()->getLocale()] ?? $contentType['name_en'] }}</span>
+                    <span class="flex items-center gap-1.5 text-sm">
+                        @if(!empty($contentType['icon']))
+                            @php
+                                $ctIcon = $contentType['icon'];
+                                $ctIsEmoji = preg_match('/[\x{1F300}-\x{1F9FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]/u', $ctIcon);
+                            @endphp
+                            @if($ctIsEmoji)
+                                <span>{{ $ctIcon }}</span>
+                            @else
+                                <x-dynamic-component :component="'heroicon-o-' . $ctIcon" class="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            @endif
+                        @endif
+                        {{ $contentType['name_' . app()->getLocale()] ?? $contentType['name_en'] }}
+                    </span>
                 </label>
                 @endforeach
             </div>
@@ -220,6 +235,89 @@
                         class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
                     >
                     <span class="text-sm">{{ $genre['theme'] }}</span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+
+        {{-- Category Filter --}}
+        <div class="mb-3">
+            <button
+                @click="openSections.category = !openSections.category"
+                class="w-full flex items-center justify-between text-start font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+            >
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                    <span>{{ __('Category') }}</span>
+                </div>
+                <svg
+                    class="w-5 h-5 transition-transform duration-200"
+                    :class="openSections.category ? 'rotate-180' : ''"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="openSections.category" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                @foreach($this->categories as $category)
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="checkbox"
+                        wire:model.live="selectedCategories"
+                        value="{{ $category['id'] }}"
+                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">
+                        @if($category['parent_name'])
+                            <span class="text-gray-400">{{ $category['parent_name'] }} / </span>
+                        @endif
+                        {{ $category['name'] }}
+                    </span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+
+        {{-- Publisher Filter --}}
+        <div class="mb-3">
+            <button
+                @click="openSections.publisher = !openSections.publisher"
+                class="w-full flex items-center justify-between text-start font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+            >
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    <span>{{ __('Publisher') }}</span>
+                </div>
+                <svg
+                    class="w-5 h-5 transition-transform duration-200"
+                    :class="openSections.publisher ? 'rotate-180' : ''"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="openSections.publisher" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                @foreach($this->publishers as $publisher)
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="checkbox"
+                        wire:model.live="selectedPublishers"
+                        value="{{ $publisher['id'] }}"
+                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">{{ $publisher['name'] }}</span>
                 </label>
                 @endforeach
             </div>

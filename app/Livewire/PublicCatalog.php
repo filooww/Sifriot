@@ -35,6 +35,10 @@ class PublicCatalog extends Component
 
     public array $filterGenres = [];
 
+    public array $filterCategories = [];
+
+    public array $filterPublishers = [];
+
     public array $filterTextSizeRange = [0, 500000];
 
     public ?string $filterAlphabeticalSort = null;
@@ -64,6 +68,8 @@ class PublicCatalog extends Component
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
         $this->filterDateTo = $filters['dateTo'] ?? null;
         $this->filterGenres = $filters['genres'] ?? [];
+        $this->filterCategories = $filters['categories'] ?? [];
+        $this->filterPublishers = $filters['publishers'] ?? [];
         $this->filterTextSizeRange = $filters['textSizeRange'] ?? [0, 500000];
         $this->filterAlphabeticalSort = $filters['alphabeticalSort'] ?? null;
 
@@ -115,6 +121,14 @@ class PublicCatalog extends Component
             ->when(! empty($this->filterGenres), function ($query) {
                 $query->whereHas('themes', fn ($q) => $q->whereIn('themes.id_theme', $this->filterGenres));
             })
+            // Apply category filter
+            ->when(! empty($this->filterCategories), function ($query) {
+                $query->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $this->filterCategories));
+            })
+            // Apply publisher filter
+            ->when(! empty($this->filterPublishers), function ($query) {
+                $query->whereHas('publishers', fn ($q) => $q->whereIn('publishers.id', $this->filterPublishers));
+            })
             // Apply text size filter
             ->when($this->filterTextSizeRange !== [0, 500000], function ($query) {
                 $query->whereBetween('word_count', [$this->filterTextSizeRange[0], $this->filterTextSizeRange[1]]);
@@ -124,7 +138,7 @@ class PublicCatalog extends Component
         $query->whereNull('deleted_at');
 
         // Eager load basic relationships (including files for cover image display)
-        $query->with(['publishing', 'authorGroup', 'issueType', 'contentType', 'authors', 'files']);
+        $query->with(['publishing', 'authorGroup', 'issueType', 'contentType', 'authors', 'files', 'categories', 'publishers']);
 
         // Apply alphabetical sort if set
         if ($this->filterAlphabeticalSort) {

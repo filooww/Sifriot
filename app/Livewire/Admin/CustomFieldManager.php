@@ -6,28 +6,42 @@ namespace App\Livewire\Admin;
 
 use App\Models\ContentType;
 use App\Models\CustomField;
-use Livewire\Component;
 use Livewire\Attributes\On;
+use Livewire\Component;
 
 class CustomFieldManager extends Component
 {
     public $contentTypeId;
+
     public $contentType;
+
     public $customFields;
+
     public $showModal = false;
+
     public $editingField = null;
 
     // Form fields
     public $field_name = '';
+
     public $label_en = '';
+
     public $label_ru = '';
+
     public $label_he = '';
+
     public $field_type = 'text';
+
     public $field_config = [];
+
     public $is_required = false;
+
     public $visibility = 'public';
+
     public $is_searchable = false;
+
     public $is_filterable = false;
+
     public $sort_order = 0;
 
     // For field_config JSON editing
@@ -86,7 +100,7 @@ class CustomFieldManager extends Component
         $this->label_he = $this->editingField->label_he ?? '';
         $this->field_type = $this->editingField->field_type;
         $this->field_config = $this->editingField->field_config ?? [];
-        $this->config_json = !empty($this->field_config) ? json_encode($this->field_config, JSON_PRETTY_PRINT) : '';
+        $this->config_json = ! empty($this->field_config) ? json_encode($this->field_config, JSON_PRETTY_PRINT) : '';
         $this->is_required = $this->editingField->is_required;
         $this->visibility = $this->editingField->visibility;
         $this->is_searchable = $this->editingField->is_searchable;
@@ -103,7 +117,7 @@ class CustomFieldManager extends Component
         $validated = $this->validate();
 
         // Parse field_config from JSON string
-        $fieldConfigArray = !empty($validated['config_json'])
+        $fieldConfigArray = ! empty($validated['config_json'])
             ? json_decode($validated['config_json'], true)
             : [];
 

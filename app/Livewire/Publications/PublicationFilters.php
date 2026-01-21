@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Livewire\Publications;
 
 use App\Models\Author;
+use App\Models\Category;
 use App\Models\ContentType;
+use App\Models\Publisher;
 use App\Models\Theme;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -30,6 +32,10 @@ class PublicationFilters extends Component
 
     public array $publicationStatus = [];
 
+    public array $selectedCategories = [];
+
+    public array $selectedPublishers = [];
+
     public string $authorSearchQuery = '';
 
     // Metadata-specific filters (admin only)
@@ -45,6 +51,8 @@ class PublicationFilters extends Component
         'dateFrom' => ['as' => 'from', 'except' => null],
         'dateTo' => ['as' => 'to', 'except' => null],
         'selectedGenres' => ['as' => 'genre', 'except' => []],
+        'selectedCategories' => ['as' => 'cat', 'except' => []],
+        'selectedPublishers' => ['as' => 'pub', 'except' => []],
         'textSizeRange' => ['as' => 'size', 'except' => [0, 500000]],
         'alphabeticalSort' => ['as' => 'sort', 'except' => null],
         'publicationStatus' => ['as' => 'status', 'except' => []],
@@ -93,6 +101,16 @@ class PublicationFilters extends Component
         $this->emitFilters();
     }
 
+    public function updatedSelectedCategories(): void
+    {
+        $this->emitFilters();
+    }
+
+    public function updatedSelectedPublishers(): void
+    {
+        $this->emitFilters();
+    }
+
     public function updatedStatusFilter(): void
     {
         $this->emitFilters();
@@ -115,6 +133,8 @@ class PublicationFilters extends Component
         $this->dateFrom = null;
         $this->dateTo = null;
         $this->selectedGenres = [];
+        $this->selectedCategories = [];
+        $this->selectedPublishers = [];
         $this->textSizeRange = [0, 500000];
         $this->alphabeticalSort = null;
         $this->publicationStatus = [];
@@ -134,6 +154,8 @@ class PublicationFilters extends Component
             'dateFrom' => $this->dateFrom = null,
             'dateTo' => $this->dateTo = null,
             'genre' => $this->selectedGenres = array_values(array_diff($this->selectedGenres, [$value])),
+            'category' => $this->selectedCategories = array_values(array_diff($this->selectedCategories, [$value])),
+            'publisher' => $this->selectedPublishers = array_values(array_diff($this->selectedPublishers, [$value])),
             'textSize' => $this->textSizeRange = [0, 500000],
             'alphabetical' => $this->alphabeticalSort = null,
             'status' => $this->publicationStatus = array_values(array_diff($this->publicationStatus, [$value])),
@@ -155,11 +177,11 @@ class PublicationFilters extends Component
             $contentType = ContentType::find($contentTypeId);
             if ($contentType) {
                 $locale = app()->getLocale();
-                $nameColumn = 'name_' . $locale;
+                $nameColumn = 'name_'.$locale;
                 $filters[] = [
                     'type' => 'contentType',
                     'value' => $contentTypeId,
-                    'label' => ($contentType->icon ?? '') . ' ' . ($contentType->$nameColumn ?? $contentType->name_en),
+                    'label' => ($contentType->icon ?? '').' '.($contentType->$nameColumn ?? $contentType->name_en),
                 ];
             }
         }
@@ -198,6 +220,28 @@ class PublicationFilters extends Component
                     'type' => 'genre',
                     'value' => $genreId,
                     'label' => $theme->theme,
+                ];
+            }
+        }
+
+        foreach ($this->selectedCategories as $categoryId) {
+            $category = Category::find($categoryId);
+            if ($category) {
+                $filters[] = [
+                    'type' => 'category',
+                    'value' => $categoryId,
+                    'label' => $category->localizedName,
+                ];
+            }
+        }
+
+        foreach ($this->selectedPublishers as $publisherId) {
+            $publisher = Publisher::find($publisherId);
+            if ($publisher) {
+                $filters[] = [
+                    'type' => 'publisher',
+                    'value' => $publisherId,
+                    'label' => $publisher->localizedName,
                 ];
             }
         }
@@ -294,6 +338,33 @@ class PublicationFilters extends Component
             ->toArray();
     }
 
+    #[Computed]
+    public function categories(): array
+    {
+        return Category::with('parent')
+            ->orderBy('sort_order')
+            ->orderBy('name_en')
+            ->get()
+            ->map(fn ($cat) => [
+                'id' => $cat->id,
+                'name' => $cat->localizedName,
+                'parent_name' => $cat->parent?->localizedName,
+            ])
+            ->toArray();
+    }
+
+    #[Computed]
+    public function publishers(): array
+    {
+        return Publisher::orderBy('name_en')
+            ->get()
+            ->map(fn ($pub) => [
+                'id' => $pub->id,
+                'name' => $pub->localizedName,
+            ])
+            ->toArray();
+    }
+
     protected function emitFilters(): void
     {
         $this->dispatch('filtersChanged', filters: [
@@ -302,6 +373,8 @@ class PublicationFilters extends Component
             'dateFrom' => $this->dateFrom,
             'dateTo' => $this->dateTo,
             'genres' => $this->selectedGenres,
+            'categories' => $this->selectedCategories,
+            'publishers' => $this->selectedPublishers,
             'textSizeRange' => $this->textSizeRange,
             'alphabeticalSort' => $this->alphabeticalSort,
             'publicationStatus' => $this->publicationStatus,

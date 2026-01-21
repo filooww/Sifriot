@@ -160,8 +160,19 @@
                                 <!-- Content Type -->
                                 @if($publication->contentType)
                                 <div class="flex flex-wrap gap-1 mb-3">
-                                    <span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
-                                        {{ $publication->contentType->icon ?? '' }} {{ $publication->contentType->{'name_' . app()->getLocale()} ?? $publication->contentType->name_en }}
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                                        @if($publication->contentType->icon)
+                                            @php
+                                                $ctIcon = $publication->contentType->icon;
+                                                $ctIsEmoji = preg_match('/[\x{1F300}-\x{1F9FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]/u', $ctIcon);
+                                            @endphp
+                                            @if($ctIsEmoji)
+                                                <span>{{ $ctIcon }}</span>
+                                            @else
+                                                <x-dynamic-component :component="'heroicon-o-' . $ctIcon" class="h-3.5 w-3.5" />
+                                            @endif
+                                        @endif
+                                        {{ $publication->contentType->{'name_' . app()->getLocale()} ?? $publication->contentType->name_en }}
                                     </span>
                                 </div>
                                 @endif

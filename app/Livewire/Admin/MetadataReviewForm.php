@@ -6,12 +6,13 @@ namespace App\Livewire\Admin;
 
 use App\Events\MetadataConfirmed;
 use App\Models\Author;
-use App\Models\ContentType;
+use App\Models\Category;
 use App\Models\CustomField;
 use App\Models\File;
 use App\Models\FileMetadata;
 use App\Models\Genre;
 use App\Models\Publication;
+use App\Models\Publisher;
 use App\Models\Publishing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -62,6 +63,15 @@ class MetadataReviewForm extends Component
     public array $customFieldValues = [];
 
     public $customFields = [];
+
+    // Categories and Publishers (multi-select)
+    public array $selectedCategories = [];
+
+    public array $selectedPublishers = [];
+
+    public string $categorySearchQuery = '';
+
+    public string $publisherSearchQuery = '';
 
     /**
      * Updated hook: Auto-save cover image when uploaded
@@ -177,6 +187,9 @@ class MetadataReviewForm extends Component
             }
         }
 
+        // Load existing categories and publishers for the publication
+        $this->loadCategoriesAndPublishers();
+
         // Load custom fields if content type is selected
         $this->loadCustomFields();
     }
@@ -186,8 +199,9 @@ class MetadataReviewForm extends Component
      */
     public function loadCustomFields(): void
     {
-        if (!$this->contentTypeId) {
+        if (! $this->contentTypeId) {
             $this->customFields = [];
+
             return;
         }
 
@@ -210,6 +224,27 @@ class MetadataReviewForm extends Component
                 }
             }
         }
+    }
+
+    /**
+     * Load existing categories and publishers for the publication.
+     */
+    private function loadCategoriesAndPublishers(): void
+    {
+        if (! $this->fileMetadata || ! $this->fileMetadata->file_id) {
+            return;
+        }
+
+        $publication = Publication::with(['categories', 'publishers'])->find($this->fileMetadata->file_id);
+        if (! $publication) {
+            return;
+        }
+
+        // Load existing category IDs
+        $this->selectedCategories = $publication->categories->pluck('id')->toArray();
+
+        // Load existing publisher IDs
+        $this->selectedPublishers = $publication->publishers->pluck('id')->toArray();
     }
 
     /**
@@ -331,6 +366,16 @@ class MetadataReviewForm extends Component
                     ['slug' => Str::slug($trimmedGenre), 'name_en' => $trimmedGenre]
                 );
                 $publication->genres()->syncWithoutDetaching([$genre->id]);
+            }
+
+            // Sync categories
+            if (! empty($this->selectedCategories)) {
+                $publication->categories()->sync($this->selectedCategories);
+            }
+
+            // Sync publishers (new Publisher model)
+            if (! empty($this->selectedPublishers)) {
+                $publication->publishers()->sync($this->selectedPublishers);
             }
 
             // Note: Cover image is auto-saved via updatedCoverImage() hook when user selects file
@@ -501,6 +546,12 @@ class MetadataReviewForm extends Component
                 $publication->genres()->syncWithoutDetaching([$genre->id]);
             }
 
+            // Sync categories
+            $publication->categories()->sync($this->selectedCategories);
+
+            // Sync publishers (new Publisher model)
+            $publication->publishers()->sync($this->selectedPublishers);
+
             // Note: Cover image is auto-saved via updatedCoverImage() hook when user selects file
             // No need to save it again here
 
@@ -595,6 +646,12 @@ class MetadataReviewForm extends Component
                 );
                 $publication->genres()->syncWithoutDetaching([$genre->id]);
             }
+
+            // Sync categories
+            $publication->categories()->sync($this->selectedCategories);
+
+            // Sync publishers (new Publisher model)
+            $publication->publishers()->sync($this->selectedPublishers);
 
             // Note: Cover image is auto-saved via updatedCoverImage() hook when user selects file
             // No need to save it again here
@@ -825,6 +882,122 @@ class MetadataReviewForm extends Component
     }
 
     /**
+     * Search categories by name (autocomplete, multilingual).
+     */
+    public function searchCategories(string $query): array
+    {
+        if (strlen($query) < 2) {
+            return [];
+        }
+
+        return Category::query()
+            ->where(function ($q) use ($query) {
+                $q->where('name_en', 'like', "%{$query}%")
+                    ->orWhere('name_ru', 'like', "%{$query}%")
+                    ->orWhere('name_he', 'like', "%{$query}%");
+            })
+            ->whereNotIn('id', $this->selectedCategories)
+            ->limit(10)
+            ->get()
+            ->map(fn ($cat) => [
+                'id' => $cat->id,
+                'name' => $cat->localizedName,
+            ])
+            ->toArray();
+    }
+
+    /**
+     * Search publishers by name (autocomplete, multilingual) - New Publisher model.
+     */
+    public function searchNewPublishers(string $query): array
+    {
+        if (strlen($query) < 2) {
+            return [];
+        }
+
+        return Publisher::query()
+            ->where(function ($q) use ($query) {
+                $q->where('name_en', 'like', "%{$query}%")
+                    ->orWhere('name_ru', 'like', "%{$query}%")
+                    ->orWhere('name_he', 'like', "%{$query}%");
+            })
+            ->whereNotIn('id', $this->selectedPublishers)
+            ->limit(10)
+            ->get()
+            ->map(fn ($pub) => [
+                'id' => $pub->id,
+                'name' => $pub->localizedName,
+            ])
+            ->toArray();
+    }
+
+    /**
+     * Add a category to the selected list.
+     */
+    public function addCategory(int $categoryId): void
+    {
+        if (! in_array($categoryId, $this->selectedCategories)) {
+            $this->selectedCategories[] = $categoryId;
+        }
+        $this->categorySearchQuery = '';
+    }
+
+    /**
+     * Remove a category from the selected list.
+     */
+    public function removeCategory(int $categoryId): void
+    {
+        $this->selectedCategories = array_values(array_diff($this->selectedCategories, [$categoryId]));
+    }
+
+    /**
+     * Add a publisher to the selected list.
+     */
+    public function addPublisher(int $publisherId): void
+    {
+        if (! in_array($publisherId, $this->selectedPublishers)) {
+            $this->selectedPublishers[] = $publisherId;
+        }
+        $this->publisherSearchQuery = '';
+    }
+
+    /**
+     * Remove a publisher from the selected list.
+     */
+    public function removePublisher(int $publisherId): void
+    {
+        $this->selectedPublishers = array_values(array_diff($this->selectedPublishers, [$publisherId]));
+    }
+
+    /**
+     * Get the currently selected categories with names.
+     */
+    public function getSelectedCategoriesWithNames(): array
+    {
+        return Category::whereIn('id', $this->selectedCategories)
+            ->get()
+            ->map(fn ($cat) => [
+                'id' => $cat->id,
+                'name' => $cat->localizedName,
+            ])
+            ->toArray();
+    }
+
+    /**
+     * Get the currently selected publishers with names.
+     */
+    public function getSelectedPublishersWithNames(): array
+    {
+        return Publisher::whereIn('id', $this->selectedPublishers)
+            ->get()
+            ->map(fn ($pub) => [
+                'id' => $pub->id,
+                'name' => $pub->localizedName,
+            ])
+            ->toArray();
+    }
+
+    /**
      * Create new author (admin only).
      */
     public function createNewAuthors(string $name): array
@@ -895,6 +1068,38 @@ class MetadataReviewForm extends Component
             'id' => $theme->id_theme,
             'name' => $theme->theme,
         ];
+    }
+
+    /**
+     * Create new category and add to selection (admin only).
+     */
+    public function createNewCategory(string $name): void
+    {
+        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
+
+        $trimmedName = trim($name);
+        $category = Category::firstOrCreate(
+            ['slug' => \Illuminate\Support\Str::slug($trimmedName)],
+            ['name_en' => $trimmedName]
+        );
+
+        $this->addCategory($category->id);
+    }
+
+    /**
+     * Create new publisher and add to selection (admin only).
+     */
+    public function createNewPublisher(string $name): void
+    {
+        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
+
+        $trimmedName = trim($name);
+        $publisher = Publisher::firstOrCreate(
+            ['slug' => \Illuminate\Support\Str::slug($trimmedName)],
+            ['name_en' => $trimmedName]
+        );
+
+        $this->addPublisher($publisher->id);
     }
 
     public function render()

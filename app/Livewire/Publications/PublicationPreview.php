@@ -32,6 +32,8 @@ class PublicationPreview extends Component
             'files',
             'contentType',
             'customFieldValues.customField',
+            'categories',
+            'publishers',
         ])->findOrFail($id);
 
         $this->isAuthenticated = Auth::check();
@@ -43,7 +45,7 @@ class PublicationPreview extends Component
      */
     public function getVisibleCustomFields(): array
     {
-        if (!$this->publication->content_type_id) {
+        if (! $this->publication->content_type_id) {
             return [];
         }
 
@@ -69,6 +71,7 @@ class PublicationPreview extends Component
                     'value' => $value,
                 ];
             }
+
             return null;
         })->filter()->values()->toArray();
     }

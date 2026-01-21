@@ -68,16 +68,79 @@
         </div>
 
         <!-- Content Type Selection -->
-        <div>
+        <div x-data="{ open: false, selectedId: @entangle('contentTypeId') }" class="relative">
             <label class="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">{{ __('Content Type') }}</label>
-            <select wire:model="contentTypeId" class="block w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                <option value="">{{ __('Select Content Type') }}</option>
+            <button
+                type="button"
+                @click="open = !open"
+                @click.outside="open = false"
+                class="block w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
+            >
+                <span class="flex items-center gap-2">
+                    @foreach($contentTypes as $type)
+                        <template x-if="selectedId == {{ $type->id }}">
+                            <span class="flex items-center gap-2">
+                                @if($type->icon)
+                                    @php
+                                        $ctIcon = $type->icon;
+                                        $ctIsEmoji = preg_match('/[\x{1F300}-\x{1F9FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]/u', $ctIcon);
+                                    @endphp
+                                    @if($ctIsEmoji)
+                                        <span>{{ $ctIcon }}</span>
+                                    @else
+                                        <x-dynamic-component :component="'heroicon-o-' . $ctIcon" class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                    @endif
+                                @endif
+                                <span>{{ app()->getLocale() === 'ru' ? $type->name_ru : (app()->getLocale() === 'he' ? $type->name_he : $type->name_en) }}</span>
+                            </span>
+                        </template>
+                    @endforeach
+                    <template x-if="!selectedId">
+                        <span class="text-gray-500">{{ __('Select Content Type') }}</span>
+                    </template>
+                </span>
+                <x-heroicon-o-chevron-down class="w-5 h-5 text-gray-400" />
+            </button>
+
+            <div
+                x-show="open"
+                x-transition:enter="transition ease-out duration-100"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-75"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+            >
+                <button
+                    type="button"
+                    @click="selectedId = ''; open = false"
+                    class="w-full px-3 py-2 text-left text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600"
+                >
+                    {{ __('Select Content Type') }}
+                </button>
                 @foreach($contentTypes as $type)
-                    <option value="{{ $type->id }}">
-                        {{ app()->getLocale() === 'ru' ? $type->name_ru : (app()->getLocale() === 'he' ? $type->name_he : $type->name_en) }}
-                    </option>
+                    <button
+                        type="button"
+                        @click="selectedId = {{ $type->id }}; open = false"
+                        class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2"
+                        :class="{ 'bg-blue-50 dark:bg-blue-900/30': selectedId == {{ $type->id }} }"
+                    >
+                        @if($type->icon)
+                            @php
+                                $ctIcon = $type->icon;
+                                $ctIsEmoji = preg_match('/[\x{1F300}-\x{1F9FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]/u', $ctIcon);
+                            @endphp
+                            @if($ctIsEmoji)
+                                <span>{{ $ctIcon }}</span>
+                            @else
+                                <x-dynamic-component :component="'heroicon-o-' . $ctIcon" class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            @endif
+                        @endif
+                        <span class="text-gray-900 dark:text-white">{{ app()->getLocale() === 'ru' ? $type->name_ru : (app()->getLocale() === 'he' ? $type->name_he : $type->name_en) }}</span>
+                    </button>
                 @endforeach
-            </select>
+            </div>
             @error('contentTypeId') <span class="text-red-500 dark:text-red-400 text-sm">{{ $message }}</span> @enderror
         </div>
 

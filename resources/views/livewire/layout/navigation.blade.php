@@ -38,8 +38,8 @@ new class extends Component
                     <x-nav-link :href="route('admin.files')" :active="request()->routeIs('admin.files')" wire:navigate>
                         {{ __('Browse') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('admin.content-types')" :active="request()->routeIs('admin.content-types')" wire:navigate>
-                        {{ __('Content Types') }}
+                    <x-nav-link :href="route('admin.filtration')" :active="request()->routeIs('admin.filtration')" wire:navigate>
+                        {{ __('Filtration') }}
                     </x-nav-link>
                     @endif
                     <x-nav-link :href="route('profile')" :active="request()->routeIs('profile')" wire:navigate>

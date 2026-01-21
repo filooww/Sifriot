@@ -184,7 +184,7 @@ class MetadataReviewDashboard extends Component
     private function getStats(): array
     {
         // Helper to build base query with all filters except status
-        $getBaseQuery = function() {
+        $getBaseQuery = function () {
             $query = FileMetadata::query();
 
             // Text search

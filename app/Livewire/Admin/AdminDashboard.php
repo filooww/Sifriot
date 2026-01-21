@@ -26,7 +26,11 @@ class AdminDashboard extends Component
     public $perPage = 15;
 
     // Filter properties
+    public array $filterContentTypes = [];
+
     public array $filterCategories = [];
+
+    public array $filterPublishers = [];
 
     public array $filterAuthors = [];
 
@@ -79,7 +83,9 @@ class AdminDashboard extends Component
     #[On('filtersChanged')]
     public function applyFilters(array $filters): void
     {
+        $this->filterContentTypes = $filters['contentTypes'] ?? [];
         $this->filterCategories = $filters['categories'] ?? [];
+        $this->filterPublishers = $filters['publishers'] ?? [];
         $this->filterAuthors = $filters['authors'] ?? [];
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
         $this->filterDateTo = $filters['dateTo'] ?? null;
@@ -113,9 +119,17 @@ class AdminDashboard extends Component
                     });
                 }
             })
+            // Apply content type filter
+            ->when(! empty($this->filterContentTypes), function ($query) {
+                $query->whereIn('content_type_id', $this->filterContentTypes);
+            })
             // Apply category filter
             ->when(! empty($this->filterCategories), function ($query) {
                 $query->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $this->filterCategories));
+            })
+            // Apply publisher filter
+            ->when(! empty($this->filterPublishers), function ($query) {
+                $query->whereHas('publishers', fn ($q) => $q->whereIn('publishers.id', $this->filterPublishers));
             })
             // Apply author filter
             ->when(! empty($this->filterAuthors), function ($query) {
@@ -150,7 +164,7 @@ class AdminDashboard extends Component
         }
 
         // Eager load all relationships for admin
-        $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files', 'categories', 'authors']);
+        $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files', 'categories', 'authors', 'publishers', 'contentType']);
 
         // Apply alphabetical sort if set
         if ($this->filterAlphabeticalSort) {

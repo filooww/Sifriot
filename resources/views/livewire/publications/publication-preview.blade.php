@@ -40,8 +40,19 @@
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Type') }}</span>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
-                                {{ $publication->contentType->icon ?? '' }} {{ $publication->contentType->{'name_' . app()->getLocale()} ?? $publication->contentType->name_en }}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
+                                @if($publication->contentType->icon)
+                                    @php
+                                        $ctIcon = $publication->contentType->icon;
+                                        $ctIsEmoji = preg_match('/[\x{1F300}-\x{1F9FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]/u', $ctIcon);
+                                    @endphp
+                                    @if($ctIsEmoji)
+                                        <span>{{ $ctIcon }}</span>
+                                    @else
+                                        <x-dynamic-component :component="'heroicon-o-' . $ctIcon" class="h-3.5 w-3.5" />
+                                    @endif
+                                @endif
+                                {{ $publication->contentType->{'name_' . app()->getLocale()} ?? $publication->contentType->name_en }}
                             </span>
                         </div>
                     </div>
@@ -132,7 +143,7 @@
                 @endphp
                 @if ($genreData['genres']->count() > 0 || $publication->themeSet)
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ __('Categories') }}</h3>
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ __('Genres') }}</h3>
                         <div class="flex flex-wrap gap-2">
                             @foreach ($genreData['genres'] as $genre)
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
@@ -151,6 +162,43 @@
                                     🏷️ {{ $publication->themeSet->theme_set_en ?? 'Theme' }}
                                 </span>
                             @endif
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Categories -->
+                @if ($publication->categories->count() > 0)
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ __('Categories') }}</h3>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach ($publication->categories as $category)
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                    {{ $category->{'name_' . app()->getLocale()} ?? $category->name_en }}
+                                </span>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Publishers -->
+                @if ($publication->publishers->count() > 0)
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ __('Publishers') }}</h3>
+                        <div class="space-y-2">
+                            @foreach ($publication->publishers as $publisher)
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-700 dark:text-gray-300">
+                                        {{ $publisher->{'name_' . app()->getLocale()} ?? $publisher->name_en }}
+                                    </span>
+                                    @if ($publisher->website)
+                                        <a href="{{ $publisher->website }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                            </svg>
+                                        </a>
+                                    @endif
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 @endif
