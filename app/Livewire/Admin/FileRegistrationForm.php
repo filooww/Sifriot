@@ -10,6 +10,7 @@ use App\Models\File;
 use App\Models\FileRegistrationLog;
 use App\Models\Publication;
 use App\Services\FileStorageService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
@@ -106,43 +107,51 @@ class FileRegistrationForm extends Component
                 return;
             }
 
-            // Create publication record with pending status
-            $publication = Publication::create([
-                'title' => $this->publicationTitle,
-                'title_low' => strtolower($this->publicationTitle),
-                'content_type_id' => $this->contentTypeId,
-                'status' => 'pending',
-                'upload_date' => now(),
-            ]);
+            // Get file metadata before transaction
+            $fileName = basename($this->selectedFilePath);
+            $mimeType = Storage::disk('local')->mimeType($this->selectedFilePath);
+            $fileSize = Storage::disk('local')->size($this->selectedFilePath);
 
-            // Create file record (only path, not contents)
-            File::create([
-                'id_publication' => $publication->id_publication,
-                'file_name' => basename($this->selectedFilePath),
-                'file_source' => $fullPath,
-                'mime_type' => Storage::disk('local')->mimeType($this->selectedFilePath),
-                'file_size_bytes' => Storage::disk('local')->size($this->selectedFilePath),
-            ]);
+            // Wrap all database operations in a transaction
+            DB::transaction(function () use ($fullPath, $fileName, $mimeType, $fileSize) {
+                // Create publication record with pending status
+                $publication = Publication::create([
+                    'title' => $this->publicationTitle,
+                    'title_low' => strtolower($this->publicationTitle),
+                    'content_type_id' => $this->contentTypeId,
+                    'status' => 'pending',
+                    'upload_date' => now(),
+                ]);
 
-            // Create registration log
-            FileRegistrationLog::create([
-                'publication_id' => $publication->id_publication,
-                'file_path' => $fullPath,
-                'registration_source' => 'manual_registration',
-                'status' => 'processed',
-                'registered_by' => auth()->id(),
-            ]);
+                // Create file record (only path, not contents)
+                File::create([
+                    'id_publication' => $publication->id_publication,
+                    'file_name' => $fileName,
+                    'file_source' => $fullPath,
+                    'mime_type' => $mimeType,
+                    'file_size_bytes' => $fileSize,
+                ]);
 
-            // Dispatch metadata extraction job if enabled
-            if (config('library.extraction.enabled', true)) {
-                $fileId = "{$publication->id_publication}-".basename($this->selectedFilePath);
-                ExtractMetadataFromFile::dispatch(
-                    $fileId,
-                    $fullPath,
-                    $this->contentTypeId,
-                    Storage::disk('local')->mimeType($this->selectedFilePath)
-                );
-            }
+                // Create registration log
+                FileRegistrationLog::create([
+                    'publication_id' => $publication->id_publication,
+                    'file_path' => $fullPath,
+                    'registration_source' => 'manual_registration',
+                    'status' => 'processed',
+                    'registered_by' => auth()->id(),
+                ]);
+
+                // Dispatch metadata extraction job if enabled
+                if (config('library.extraction.enabled', true)) {
+                    $fileId = "{$publication->id_publication}-{$fileName}";
+                    ExtractMetadataFromFile::dispatch(
+                        $fileId,
+                        $fullPath,
+                        $this->contentTypeId,
+                        $mimeType
+                    );
+                }
+            });
 
             session()->flash('message', __('File registered successfully. Metadata extraction started...'));
             $this->dispatch('file-registered-successfully');
@@ -152,6 +161,7 @@ class FileRegistrationForm extends Component
             Log::error('File registration failed', [
                 'error' => $e->getMessage(),
                 'file_path' => $this->selectedFilePath,
+                'trace' => $e->getTraceAsString(),
             ]);
             session()->flash('error', __('Unable to save file. Check server permissions.'));
         }
@@ -165,6 +175,8 @@ class FileRegistrationForm extends Component
             'uploadedFile' => 'required|file',
         ]);
 
+        $filePath = null;
+
         try {
             $contentType = ContentType::find($this->contentTypeId);
             $extension = $this->uploadedFile->getClientOriginalExtension();
@@ -176,55 +188,71 @@ class FileRegistrationForm extends Component
             // Determine storage path based on content type
             $storagePath = 'content/'.$contentType->folder_name;
 
-            // Store uploaded file
+            // Store uploaded file first (outside transaction - filesystem)
             $filePath = $this->uploadedFile->storeAs($storagePath, $uniqueFilename, 'local');
-            $fullPath = Storage::disk('local')->path($filePath);
 
-            // Create publication record
-            $publication = Publication::create([
-                'title' => $this->publicationTitle,
-                'title_low' => strtolower($this->publicationTitle),
-                'content_type_id' => $this->contentTypeId,
-                'status' => 'pending',
-                'upload_date' => now(),
-            ]);
-
-            // Create file record
-            File::create([
-                'id_publication' => $publication->id_publication,
-                'file_name' => $uniqueFilename,
-                'file_source' => $fullPath,
-                'mime_type' => $this->uploadedFile->getMimeType(),
-                'file_size_bytes' => $this->uploadedFile->getSize(),
-            ]);
-
-            // Create registration log
-            FileRegistrationLog::create([
-                'publication_id' => $publication->id_publication,
-                'file_path' => $fullPath,
-                'registration_source' => 'admin_upload',
-                'status' => 'processed',
-                'registered_by' => auth()->id(),
-            ]);
-
-            // Dispatch metadata extraction job if enabled
-            if (config('library.extraction.enabled', true)) {
-                $fileId = "{$publication->id_publication}-{$uniqueFilename}";
-                ExtractMetadataFromFile::dispatch(
-                    $fileId,
-                    $fullPath,
-                    $this->contentTypeId,
-                    $this->uploadedFile->getMimeType()
-                );
+            if (! $filePath) {
+                throw new \RuntimeException('Failed to store uploaded file');
             }
+
+            $fullPath = Storage::disk('local')->path($filePath);
+            $mimeType = $this->uploadedFile->getMimeType();
+            $fileSize = $this->uploadedFile->getSize();
+
+            // Wrap all database operations in a transaction
+            DB::transaction(function () use ($uniqueFilename, $fullPath, $mimeType, $fileSize) {
+                // Create publication record
+                $publication = Publication::create([
+                    'title' => $this->publicationTitle,
+                    'title_low' => strtolower($this->publicationTitle),
+                    'content_type_id' => $this->contentTypeId,
+                    'status' => 'pending',
+                    'upload_date' => now(),
+                ]);
+
+                // Create file record
+                File::create([
+                    'id_publication' => $publication->id_publication,
+                    'file_name' => $uniqueFilename,
+                    'file_source' => $fullPath,
+                    'mime_type' => $mimeType,
+                    'file_size_bytes' => $fileSize,
+                ]);
+
+                // Create registration log
+                FileRegistrationLog::create([
+                    'publication_id' => $publication->id_publication,
+                    'file_path' => $fullPath,
+                    'registration_source' => 'admin_upload',
+                    'status' => 'processed',
+                    'registered_by' => auth()->id(),
+                ]);
+
+                // Dispatch metadata extraction job if enabled
+                if (config('library.extraction.enabled', true)) {
+                    $fileId = "{$publication->id_publication}-{$uniqueFilename}";
+                    ExtractMetadataFromFile::dispatch(
+                        $fileId,
+                        $fullPath,
+                        $this->contentTypeId,
+                        $mimeType
+                    );
+                }
+            });
 
             session()->flash('message', __('File uploaded successfully. Metadata extraction started...'));
             $this->dispatch('file-uploaded-successfully');
             $this->reset(['publicationTitle', 'contentTypeId', 'uploadedFile']);
 
         } catch (\Exception $e) {
+            // Clean up the uploaded file if database operations failed
+            if ($filePath && Storage::disk('local')->exists($filePath)) {
+                Storage::disk('local')->delete($filePath);
+            }
+
             Log::error('File upload failed', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
             session()->flash('error', __('Unable to save file. Check server permissions.'));
         }
