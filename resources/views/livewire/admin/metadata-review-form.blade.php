@@ -28,6 +28,28 @@
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Format: <span class="font-medium">{{ strtoupper(pathinfo($fileMetadata->file_name, PATHINFO_EXTENSION)) }}</span>
                 </p>
+                <!-- Extract with AI Button -->
+                @if ($geminiConfigured)
+                    <button
+                        type="button"
+                        wire:click="extractWithAI"
+                        wire:loading.attr="disabled"
+                        wire:target="extractWithAI"
+                        class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-lg transition"
+                    >
+                        <span wire:loading.remove wire:target="extractWithAI">✨</span>
+                        <svg wire:loading wire:target="extractWithAI" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span wire:loading.remove wire:target="extractWithAI">{{ __('Extract with AI') }}</span>
+                        <span wire:loading wire:target="extractWithAI">{{ __('Extracting...') }}</span>
+                    </button>
+                @else
+                    <p class="mt-3 text-xs text-gray-500 dark:text-gray-400" title="{{ __('Gemini API not configured') }}">
+                        {{ __('AI extraction unavailable') }}
+                    </p>
+                @endif
             </div>
             <div class="text-right">
                 @if ($extractionStatus === 'processed')
@@ -98,7 +120,7 @@
     @endif
 
     <!-- Extraction Details (Collapsible) -->
-    @if ($useExtracted && count($confidenceScores) > 0)
+    @if ($extractionMethod)
         <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
             <button
                 type="button"
@@ -148,11 +170,6 @@
         <div>
             <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Title
-                @if ($useExtracted && isset($confidenceScores['title']))
-                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['title']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['title']) }}-800">
-                        {{ $this->getConfidencePercent('title') }}% confident
-                    </span>
-                @endif
             </label>
             <input
                 type="text"
@@ -170,11 +187,6 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Authors
-                @if ($useExtracted && isset($confidenceScores['authors']))
-                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['authors']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['authors']) }}-800">
-                        {{ $this->getConfidencePercent('authors') }}% confident
-                    </span>
-                @endif
             </label>
             <div class="space-y-2">
                 @foreach ($authors as $index => $author)
@@ -184,6 +196,7 @@
                             searchMethod="searchAuthors"
                             placeholder="Author name"
                             createNewLabel="Create new author"
+                            createNewModel="createNewAuthors.{{ $index }}"
                         />
                         @if (count($authors) > 1)
                             <button
@@ -222,11 +235,6 @@
                 <div>
                     <label for="publicationYear" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Publication Year
-                        @if ($useExtracted && isset($confidenceScores['publication_year']))
-                            <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['publication_year']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['publication_year']) }}-800">
-                                {{ $this->getConfidencePercent('publication_year') }}% confident
-                            </span>
-                        @endif
                     </label>
                     <input
                         type="number"
@@ -328,17 +336,13 @@
                 <div>
                     <label for="publisher" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Publisher
-                        @if ($useExtracted && isset($confidenceScores['publisher']))
-                            <span class="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-{{ $this->getConfidenceColor($confidenceScores['publisher']) }}-100 text-{{ $this->getConfidenceColor($confidenceScores['publisher']) }}-800">
-                                {{ $this->getConfidencePercent('publisher') }}% confident
-                            </span>
-                        @endif
                     </label>
             <x-autocomplete-input
                 wireModel="publisher"
                 searchMethod="searchPublishers"
                 placeholder="Publisher name"
                 createNewLabel="Create new publisher"
+                createNewModel="createNewPublisher"
             />
                     @error('publisher')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -366,6 +370,7 @@
                             searchMethod="searchGenres"
                             placeholder="Genre"
                             createNewLabel="Create new genre"
+                            createNewModel="createNewGenres.{{ $index }}"
                         />
                         @if (count($genres) > 1)
                             <button

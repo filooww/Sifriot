@@ -32,6 +32,16 @@ class ExtractedMetadata
     private array $genres = [];
 
     /**
+     * @var array<string, mixed> Theme with confidence score
+     */
+    private array $theme = [];
+
+    /**
+     * @var array<string, mixed> Description with confidence score
+     */
+    private array $description = [];
+
+    /**
      * @var array<string, float> Overall field confidence scores (0.0-1.0)
      */
     private array $confidence_scores = [];
@@ -125,6 +135,40 @@ class ExtractedMetadata
     }
 
     /**
+     * Set theme with confidence score.
+     *
+     * @param  float  $confidence  (0.0-1.0)
+     */
+    public function setTheme(?string $value, float $confidence = 0.5): self
+    {
+        if ($value !== null) {
+            $this->theme = [
+                'value' => $value,
+                'confidence' => max(0.0, min(1.0, $confidence)),
+            ];
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set description with confidence score.
+     *
+     * @param  float  $confidence  (0.0-1.0)
+     */
+    public function setDescription(?string $value, float $confidence = 0.5): self
+    {
+        if ($value !== null) {
+            $this->description = [
+                'value' => $value,
+                'confidence' => max(0.0, min(1.0, $confidence)),
+            ];
+        }
+
+        return $this;
+    }
+
+    /**
      * Get title value.
      */
     public function getTitle(): ?string
@@ -166,6 +210,22 @@ class ExtractedMetadata
     public function getGenres(): array
     {
         return array_map(fn ($genre) => $genre['value'], $this->genres);
+    }
+
+    /**
+     * Get theme.
+     */
+    public function getTheme(): ?string
+    {
+        return $this->theme['value'] ?? null;
+    }
+
+    /**
+     * Get description.
+     */
+    public function getDescription(): ?string
+    {
+        return $this->description['value'] ?? null;
     }
 
     /**
@@ -216,7 +276,9 @@ class ExtractedMetadata
             && empty($this->authors)
             && empty($this->publication_year)
             && empty($this->publisher)
-            && empty($this->genres);
+            && empty($this->genres)
+            && empty($this->theme)
+            && empty($this->description);
     }
 
     /**
@@ -232,6 +294,8 @@ class ExtractedMetadata
             'publication_year' => $this->publication_year,
             'publisher' => $this->publisher,
             'genres' => $this->genres,
+            'theme' => $this->theme,
+            'description' => $this->description,
         ];
     }
 

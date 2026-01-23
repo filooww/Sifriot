@@ -8,6 +8,8 @@ use App\Jobs\ExtractMetadataFromFile;
 use App\Models\File;
 use App\Models\FileMetadata;
 use App\Models\Publication;
+use App\Services\MetadataExtractors\DocumentTextExtractor;
+use App\Services\MetadataExtractors\GeminiMetadataExtractorService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
@@ -78,6 +80,12 @@ class MetadataReviewDashboard extends Component
     // UI state
     public bool $sidebarCollapsed = false;
 
+    public bool $geminiConfigured = false;
+
+    public bool $isExtractingWithAI = false;
+
+    public bool $showOrphanedPublications = false;
+
     protected $queryString = [
         'search' => ['except' => ''],
         'statusFilter' => ['except' => 'all'],
@@ -94,6 +102,16 @@ class MetadataReviewDashboard extends Component
         'filterAlphabeticalSort' => ['except' => null],
         'filterPublicationStatus' => ['except' => []],
     ];
+
+    public function mount(): void
+    {
+        $this->geminiConfigured = ! empty(config('services.gemini.api_key'));
+        Log::info('MetadataReviewDashboard mounted', [
+            'gemini_configured' => $this->geminiConfigured,
+            'api_key_set' => ! empty(config('services.gemini.api_key')),
+            'user_id' => auth()->id(),
+        ]);
+    }
 
     /**
      * Update search and reset pagination
@@ -608,6 +626,228 @@ class MetadataReviewDashboard extends Component
     }
 
     /**
+     * Get count of confirmed items in current selection
+     */
+    public function getConfirmedCountInSelection(): int
+    {
+        if (empty($this->selectedItems)) {
+            return 0;
+        }
+
+        return FileMetadata::whereIn('id', $this->selectedItems)
+            ->where('status', 'confirmed')
+            ->count();
+    }
+
+    /**
+     * Extract metadata using Gemini AI for all selected items
+     */
+    public function extractWithAISelected(bool $forceOverwrite = false): void
+    {
+        Log::info('extractWithAISelected called', [
+            'selected_count' => count($this->selectedItems),
+            'force' => $forceOverwrite,
+        ]);
+        Log::channel('folder_scan')->info('extractWithAISelected called', [
+            'selected_count' => count($this->selectedItems),
+            'force' => $forceOverwrite,
+        ]);
+        if (! $this->geminiConfigured) {
+            $this->dispatch('notify', message: __('Gemini API not configured'), type: 'error');
+
+            return;
+        }
+
+        if (empty($this->selectedItems)) {
+            $this->dispatch('notify', message: __('No items selected'), type: 'warning');
+
+            return;
+        }
+
+        // Check for confirmed items and warn user if not forced
+        $confirmedCount = $this->getConfirmedCountInSelection();
+        if ($confirmedCount > 0 && ! $forceOverwrite) {
+            $this->dispatch('confirm-ai-extraction', confirmedCount: $confirmedCount);
+
+            return;
+        }
+
+        $this->isExtractingWithAI = true;
+
+        $success = 0;
+        $failed = 0;
+        $textExtractor = app(DocumentTextExtractor::class);
+        $geminiService = app(GeminiMetadataExtractorService::class);
+        $maxChars = config('services.gemini.max_chars', 5000);
+
+        foreach ($this->selectedItems as $id) {
+            try {
+                $metadata = FileMetadata::find($id);
+                if (! $metadata) {
+                    $failed++;
+
+                    continue;
+                }
+
+                // Extract publication ID from file_id format: "123-filename.pdf"
+                $parts = explode('-', $metadata->file_id, 2);
+                $publicationId = (int) ($parts[0] ?? 0);
+
+                if ($publicationId === 0) {
+                    Log::channel('folder_scan')->warning('Invalid publication ID in file_id', [
+                        'id' => $id,
+                        'file_id' => $metadata->file_id,
+                    ]);
+                    $failed++;
+
+                    continue;
+                }
+
+                // Get file path from file_registration_logs (same pattern as reExtractSelected)
+                $fileLog = DB::table('file_registration_logs')
+                    ->where('publication_id', $publicationId)
+                    ->where('file_path', 'like', '%'.addcslashes($metadata->file_name, '%_').'%')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if (! $fileLog || ! $fileLog->file_path) {
+                    Log::channel('folder_scan')->warning('File path not found for AI extraction', [
+                        'id' => $id,
+                        'file_id' => $metadata->file_id,
+                        'file_name' => $metadata->file_name,
+                        'publication_id' => $publicationId,
+                    ]);
+                    $failed++;
+
+                    continue;
+                }
+
+                // Build file path from file_registration_logs
+                $fullPath = $fileLog->file_path;
+
+                // Handle relative paths versus absolute paths
+                if (empty($fullPath)) {
+                    $filePath = '';
+                } elseif (! str_starts_with($fullPath, '/')) {
+                    $filePath = storage_path('app/content/'.$fullPath);
+                    if (! file_exists($filePath)) {
+                        $filePath = storage_path('app/'.$fullPath);
+                    }
+                } else {
+                    $filePath = $fullPath;
+                }
+
+                if (! file_exists($filePath)) {
+                    Log::channel('folder_scan')->warning('File not found for AI extraction', [
+                        'id' => $id,
+                        'file_id' => $metadata->file_id,
+                        'path' => $filePath,
+                    ]);
+                    $failed++;
+
+                    continue;
+                }
+
+                // Extract text
+                $text = $textExtractor->extractText($filePath, $maxChars);
+                if (empty($text)) {
+                    $failed++;
+
+                    continue;
+                }
+
+                // Call Gemini API
+                $extractedMetadata = $geminiService->extract($text);
+                if ($extractedMetadata->isEmpty()) {
+                    $failed++;
+
+                    continue;
+                }
+
+                // Build extracted_data array
+                $extractedData = [];
+
+                if ($extractedMetadata->getTitle()) {
+                    $extractedData['title'] = [
+                        'value' => $extractedMetadata->getTitle(),
+                        'confidence' => $extractedMetadata->getConfidenceScores()['title'] ?? 0.8,
+                    ];
+                }
+
+                $authors = $extractedMetadata->getAuthors();
+                if (! empty($authors)) {
+                    $extractedData['authors'] = array_map(
+                        fn ($author) => [
+                            'value' => $author,
+                            'confidence' => $extractedMetadata->getConfidenceScores()['authors'] ?? 0.8,
+                        ],
+                        $authors
+                    );
+                }
+
+                if ($extractedMetadata->getPublicationYear()) {
+                    $extractedData['publication_year'] = [
+                        'value' => $extractedMetadata->getPublicationYear(),
+                        'confidence' => $extractedMetadata->getConfidenceScores()['publication_year'] ?? 0.8,
+                    ];
+                }
+
+                if ($extractedMetadata->getPublisher()) {
+                    $extractedData['publisher'] = [
+                        'value' => $extractedMetadata->getPublisher(),
+                        'confidence' => $extractedMetadata->getConfidenceScores()['publisher'] ?? 0.8,
+                    ];
+                }
+
+                $genres = $extractedMetadata->getGenres();
+                if (! empty($genres)) {
+                    $extractedData['genres'] = array_map(
+                        fn ($genre) => [
+                            'value' => $genre,
+                            'confidence' => $extractedMetadata->getConfidenceScores()['genres'] ?? 0.8,
+                        ],
+                        $genres
+                    );
+                }
+
+                $extractedData['gemini_model'] = config('services.gemini.model', 'gemini-1.5-flash');
+
+                // Update metadata
+                $metadata->update([
+                    'status' => 'processed',
+                    'extraction_method' => 'gemini_llm',
+                    'extracted_data' => $extractedData,
+                ]);
+
+                $success++;
+
+                Log::channel('folder_scan')->info('Bulk Gemini extraction completed', [
+                    'file_metadata_id' => $metadata->id,
+                    'file_name' => $metadata->file_name,
+                ]);
+
+            } catch (\Exception $e) {
+                Log::channel('folder_scan')->error('Bulk Gemini extraction failed', [
+                    'id' => $id,
+                    'error' => $e->getMessage(),
+                ]);
+                $failed++;
+            }
+        }
+
+        $this->isExtractingWithAI = false;
+        $this->selectedItems = [];
+        $this->selectAll = false;
+        $this->resetPage();
+
+        $message = __(':success items extracted with AI', ['success' => $success]);
+        if ($failed > 0) {
+            $message .= ' ('.__(':failed failed', ['failed' => $failed]).')';
+        }
+        $this->dispatch('notify', message: $message, type: $failed > 0 ? 'warning' : 'success');
+    }
+
+    /**
      * Re-extract a single metadata record
      */
     public function reExtractSingle(int $id): void
@@ -783,11 +1023,62 @@ class MetadataReviewDashboard extends Component
         return strtoupper(pathinfo($filename, PATHINFO_EXTENSION));
     }
 
+    /**
+     * Get orphaned publications (publications without files)
+     */
+    public function getOrphanedPublications()
+    {
+        return Publication::whereDoesntHave('files')
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Get count of orphaned publications
+     */
+    public function getOrphanedCount(): int
+    {
+        return Publication::whereDoesntHave('files')->count();
+    }
+
+    /**
+     * Toggle orphaned publications view
+     */
+    public function toggleOrphanedView(): void
+    {
+        $this->showOrphanedPublications = ! $this->showOrphanedPublications;
+    }
+
+    /**
+     * Delete an orphaned publication
+     */
+    public function deleteOrphanedPublication(int $id): void
+    {
+        $publication = Publication::find($id);
+        if ($publication && $publication->files()->count() === 0) {
+            $publication->forceDelete();
+            $this->dispatch('notify', message: __('Orphaned publication deleted'), type: 'success');
+        }
+    }
+
+    /**
+     * Delete all orphaned publications
+     */
+    public function deleteAllOrphaned(): void
+    {
+        $count = Publication::whereDoesntHave('files')->count();
+        Publication::whereDoesntHave('files')->forceDelete();
+        $this->showOrphanedPublications = false;
+        $this->dispatch('notify', message: __(':count orphaned publications deleted', ['count' => $count]), type: 'success');
+    }
+
     public function render()
     {
         return view('livewire.admin.metadata-review-dashboard', [
             'fileMetadataList' => $this->getFileMetadataList(),
             'stats' => $this->getStats(),
+            'orphanedCount' => $this->getOrphanedCount(),
+            'orphanedPublications' => $this->showOrphanedPublications ? $this->getOrphanedPublications() : collect(),
         ]);
     }
 }

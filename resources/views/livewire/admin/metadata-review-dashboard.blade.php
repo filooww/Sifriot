@@ -43,6 +43,12 @@
                 <button wire:click="$set('statusFilter', 'rejected')" class="px-4 py-2 rounded-lg text-sm font-medium transition {{ $statusFilter === 'rejected' ? 'bg-gray-600 text-white ring-2 ring-gray-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700' }}">
                     🚫 {{ __('Rejected') }} ({{ $stats['rejected'] }})
                 </button>
+
+                @if ($orphanedCount > 0)
+                    <button wire:click="toggleOrphanedView" class="px-4 py-2 rounded-lg text-sm font-medium transition {{ $showOrphanedPublications ? 'bg-orange-600 text-white ring-2 ring-orange-400' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40' }}">
+                        ⚠️ {{ __('Orphaned') }} ({{ $orphanedCount }})
+                    </button>
+                @endif
             </div>
 
             <!-- Search Bar -->
@@ -54,6 +60,56 @@
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
                 />
             </div>
+
+            <!-- Orphaned Publications Panel -->
+            @if ($showOrphanedPublications && $orphanedPublications->count() > 0)
+                <div class="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-semibold text-orange-800 dark:text-orange-200">
+                            ⚠️ {{ __('Orphaned Publications') }} ({{ $orphanedPublications->count() }})
+                        </h3>
+                        <div class="flex gap-2">
+                            <button
+                                type="button"
+                                wire:click="deleteAllOrphaned"
+                                wire:confirm="{{ __('Delete all orphaned publications? This cannot be undone.') }}"
+                                class="px-3 py-1 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition"
+                            >
+                                🗑️ {{ __('Delete All') }}
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="toggleOrphanedView"
+                                class="px-3 py-1 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
+                            >
+                                ✕ {{ __('Close') }}
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-sm text-orange-700 dark:text-orange-300 mb-3">
+                        {{ __('These publications have no associated files and were likely created due to upload errors.') }}
+                    </p>
+                    <div class="space-y-2 max-h-64 overflow-y-auto">
+                        @foreach ($orphanedPublications as $pub)
+                            <div class="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-orange-200 dark:border-orange-600">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ Str::limit($pub->title, 60) }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">ID: {{ $pub->id_publication }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ $pub->created_at->format('M d, Y') }}</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    wire:click="deleteOrphanedPublication({{ $pub->id_publication }})"
+                                    wire:confirm="{{ __('Delete this publication?') }}"
+                                    class="px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
+                                >
+                                    🗑️ {{ __('Delete') }}
+                                </button>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -141,22 +197,118 @@
                     wire:click="confirmAllSelected"
                     class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition"
                 >
-                    ✅ Confirm All
+                    ✅ {{ __('Confirm All') }}
                 </button>
                 <button
                     type="button"
                     wire:click="rejectAllSelected"
                     class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition"
                 >
-                    🚫 Reject All
+                    🚫 {{ __('Reject All') }}
                 </button>
                 <button
                     type="button"
                     wire:click="reExtractSelected"
                     class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition"
                 >
-                    🔄 Re-extract
+                    🔄 {{ __('Re-extract') }}
                 </button>
+                <div x-data="{
+                    showTooltip: false,
+                    showConfirmModal: false,
+                    confirmedCount: 0
+                }"
+                    x-on:confirm-ai-extraction.window="showConfirmModal = true; confirmedCount = $event.detail.confirmedCount"
+                    class="relative"
+                >
+                    <button
+                        type="button"
+                        wire:click="extractWithAISelected"
+                        @if (!$geminiConfigured)
+                            disabled
+                            @mouseenter="showTooltip = true"
+                            @mouseleave="showTooltip = false"
+                        @endif
+                        class="px-4 py-2 text-sm font-medium rounded-lg transition flex items-center gap-2
+                            @if ($geminiConfigured)
+                                bg-purple-600 hover:bg-purple-700 text-white
+                            @else
+                                bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed
+                            @endif
+                        "
+                        type="button"
+                        wire:loading.attr="disabled"
+                        wire:target="extractWithAISelected"
+                    >
+                        <span wire:loading.remove wire:target="extractWithAISelected">✨</span>
+                        <span wire:loading wire:target="extractWithAISelected">
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                        <span wire:loading.remove wire:target="extractWithAISelected">{{ __('Extract with AI') }}</span>
+                        <span wire:loading wire:target="extractWithAISelected">{{ __('Extracting...') }}</span>
+                    </button>
+                    @if (!$geminiConfigured)
+                        <div
+                            x-show="showTooltip"
+                            x-transition
+                            class="absolute left-0 top-full mt-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg whitespace-nowrap z-50"
+                        >
+                            {{ __('Gemini API not configured') }}
+                        </div>
+                    @endif
+
+
+
+                    <!-- Confirmation Modal for Overwriting Confirmed Items -->
+                    <div
+                        x-show="showConfirmModal"
+                        x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100"
+                        x-transition:leave="transition ease-in duration-200"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                        @click.self="showConfirmModal = false"
+                    >
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+                            <div class="flex items-start gap-4">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                        {{ __('Overwrite Confirmed Items?') }}
+                                    </h3>
+                                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                        {{ __('Your selection includes :count confirmed item(s). AI extraction will overwrite their existing metadata. Do you want to continue?', ['count' => '<span x-text="confirmedCount" class="font-semibold text-yellow-600 dark:text-yellow-400"></span>']) }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    @click="showConfirmModal = false"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
+                                >
+                                    {{ __('Cancel') }}
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="showConfirmModal = false; $wire.extractWithAISelected(true)"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition"
+                                >
+                                    {{ __('Yes, Extract with AI') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     @endif

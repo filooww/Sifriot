@@ -14,6 +14,8 @@ use App\Models\Genre;
 use App\Models\Publication;
 use App\Models\Publisher;
 use App\Models\Publishing;
+use App\Services\MetadataExtractors\DocumentTextExtractor;
+use App\Services\MetadataExtractors\GeminiMetadataExtractorService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -72,6 +74,17 @@ class MetadataReviewForm extends Component
     public string $categorySearchQuery = '';
 
     public string $publisherSearchQuery = '';
+
+    public bool $geminiConfigured = false;
+
+    public bool $isExtractingWithAI = false;
+
+    // Track which new entries should be created on save
+    public array $createNewAuthors = [];
+
+    public array $createNewGenres = [];
+
+    public bool $createNewPublisher = false;
 
     /**
      * Updated hook: Auto-save cover image when uploaded
@@ -146,6 +159,7 @@ class MetadataReviewForm extends Component
     public function mount(FileMetadata $fileMetadata): void
     {
         $this->fileMetadata = $fileMetadata;
+        $this->geminiConfigured = ! empty(config('services.gemini.api_key'));
         $this->loadMetadata();
     }
 
@@ -287,11 +301,141 @@ class MetadataReviewForm extends Component
     }
 
     /**
+     * Extract metadata using Gemini AI and populate form fields.
+     */
+    public function extractWithAI(): void
+    {
+        if (! $this->geminiConfigured) {
+            $this->dispatch('notify', message: __('Gemini API not configured'), type: 'error');
+
+            return;
+        }
+
+        if (! $this->fileMetadata) {
+            $this->dispatch('notify', message: __('No file metadata available'), type: 'error');
+
+            return;
+        }
+
+        $this->isExtractingWithAI = true;
+
+        try {
+            // Extract publication ID from file_id format: "123-filename.pdf"
+            $parts = explode('-', $this->fileMetadata->file_id, 2);
+            $publicationId = (int) ($parts[0] ?? 0);
+
+            if ($publicationId === 0) {
+                throw new \Exception('Invalid publication ID');
+            }
+
+            // Get file path from file_registration_logs
+            $fileLog = DB::table('file_registration_logs')
+                ->where('publication_id', $publicationId)
+                ->where('file_path', 'like', '%'.addcslashes($this->fileMetadata->file_name, '%_').'%')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if (! $fileLog || ! $fileLog->file_path) {
+                throw new \Exception('File path not found');
+            }
+
+            // Build absolute file path
+            $fullPath = $fileLog->file_path;
+            if (! str_starts_with($fullPath, '/')) {
+                $filePath = storage_path('app/content/'.$fullPath);
+                if (! file_exists($filePath)) {
+                    $filePath = storage_path('app/'.$fullPath);
+                }
+            } else {
+                $filePath = $fullPath;
+            }
+
+            if (! file_exists($filePath)) {
+                throw new \Exception('File not found: '.$filePath);
+            }
+
+            // Extract text from document
+            $textExtractor = app(DocumentTextExtractor::class);
+            $maxChars = config('services.gemini.max_chars', 5000);
+            $text = $textExtractor->extractText($filePath, $maxChars);
+
+            if (empty($text)) {
+                throw new \Exception('Could not extract text from document');
+            }
+
+            // Call Gemini API
+            $geminiService = app(GeminiMetadataExtractorService::class);
+            $extracted = $geminiService->extract($text);
+
+            // Populate form fields with extracted data
+            if ($extracted->getTitle()) {
+                $this->title = $extracted->getTitle();
+            }
+
+            $authors = $extracted->getAuthors();
+            if (! empty($authors)) {
+                $this->authors = $authors;
+                // Pre-check "create new" for all AI-extracted authors
+                $this->createNewAuthors = array_fill(0, count($authors), true);
+            }
+
+            if ($extracted->getPublicationYear()) {
+                $this->publicationYear = $extracted->getPublicationYear();
+            }
+
+            if ($extracted->getPublisher()) {
+                $this->publisher = $extracted->getPublisher();
+                // Pre-check "create new" for AI-extracted publisher
+                $this->createNewPublisher = true;
+            }
+
+            $genres = $extracted->getGenres();
+            if (! empty($genres)) {
+                $this->genres = $genres;
+                // Pre-check "create new" for all AI-extracted genres
+                $this->createNewGenres = array_fill(0, count($genres), true);
+            }
+
+            if ($extracted->getTheme()) {
+                $this->theme = $extracted->getTheme();
+            }
+
+            if ($extracted->getDescription()) {
+                $this->description = $extracted->getDescription();
+            }
+
+            // Update status and mark as extracted
+            $this->useExtracted = true;
+            $this->extractionMethod = 'gemini_llm';
+
+            Log::channel('folder_scan')->info('AI extraction completed in form', [
+                'file_metadata_id' => $this->fileMetadata->id,
+                'title' => $this->title,
+                'authors_count' => count($this->authors),
+                'genres_count' => count($this->genres),
+            ]);
+
+            $this->dispatch('notify', message: __('AI extraction successful'), type: 'success');
+
+        } catch (\Exception $e) {
+            Log::channel('folder_scan')->error('AI extraction failed in form', [
+                'file_metadata_id' => $this->fileMetadata->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->dispatch('notify', message: __('AI extraction failed').': '.$e->getMessage(), type: 'error');
+        } finally {
+            $this->isExtractingWithAI = false;
+        }
+    }
+
+    /**
      * Add a new author field.
      */
     public function addAuthor(): void
     {
         $this->authors[] = '';
+        $this->createNewAuthors[] = false;
     }
 
     /**
@@ -300,7 +444,9 @@ class MetadataReviewForm extends Component
     public function removeAuthor(int $index): void
     {
         unset($this->authors[$index]);
+        unset($this->createNewAuthors[$index]);
         $this->authors = array_values($this->authors);
+        $this->createNewAuthors = array_values($this->createNewAuthors);
     }
 
     /**
@@ -309,6 +455,7 @@ class MetadataReviewForm extends Component
     public function addGenre(): void
     {
         $this->genres[] = '';
+        $this->createNewGenres[] = false;
     }
 
     /**
@@ -317,7 +464,9 @@ class MetadataReviewForm extends Component
     public function removeGenre(int $index): void
     {
         unset($this->genres[$index]);
+        unset($this->createNewGenres[$index]);
         $this->genres = array_values($this->genres);
+        $this->createNewGenres = array_values($this->createNewGenres);
     }
 
     /**
@@ -399,7 +548,7 @@ class MetadataReviewForm extends Component
             }
 
             // Update FileMetadata to confirmed state
-            $this->fileMetadata->update([
+            $updateData = [
                 'status' => 'confirmed',
                 'confirmed_at' => now(),
                 'extracted_data' => [
@@ -434,7 +583,9 @@ class MetadataReviewForm extends Component
                         'confidence' => 0.95,
                     ] : null,
                 ],
-            ]);
+            ];
+
+            $this->fileMetadata->update($updateData);
 
             DB::commit();
 
