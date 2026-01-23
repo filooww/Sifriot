@@ -12,13 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Check if index exists before entering the Schema closure
-        $indexExists = collect(DB::select('SHOW INDEXES FROM publications WHERE Key_name = ?', ['idx_publications_metadata_status']))->isNotEmpty();
-
-        Schema::table('publications', function (Blueprint $table) use ($indexExists) {
+        Schema::table('publications', function (Blueprint $table) {
             // Drop the index on metadata status FIRST (before dropping columns it depends on)
-            if ($indexExists) {
+            try {
                 $table->dropIndex('idx_publications_metadata_status');
+            } catch (\Exception $e) {
+                // Index might not exist, safe to ignore
             }
 
             // Drop metadata tracking columns if they exist

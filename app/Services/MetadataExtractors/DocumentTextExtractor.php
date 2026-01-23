@@ -12,7 +12,13 @@ class DocumentTextExtractor
     /**
      * Supported file extensions.
      */
-    private const SUPPORTED_EXTENSIONS = ['pdf', 'docx', 'epub', 'fb2', 'txt'];
+    private const SUPPORTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'epub', 'fb2', 'txt'];
+
+    /**
+     * Minimum characters per page threshold for PDF text detection.
+     * PDFs with less text per page are likely image-based/scanned.
+     */
+    private const MIN_CHARS_PER_PAGE = 50;
 
     /**
      * Extract text content from a document file.
@@ -43,6 +49,7 @@ class DocumentTextExtractor
         try {
             $text = match ($extension) {
                 'pdf' => $this->extractFromPdf($filePath),
+                'doc' => $this->extractFromDoc($filePath),
                 'docx' => $this->extractFromDocx($filePath),
                 'epub' => $this->extractFromEpub($filePath),
                 'fb2' => $this->extractFromFb2($filePath),
@@ -62,6 +69,15 @@ class DocumentTextExtractor
             ]);
 
             return $text;
+        } catch (\RuntimeException $e) {
+            // Re-throw runtime exceptions (e.g., image-based PDF detection)
+            // These contain user-friendly messages
+            $this->log('warning', 'Text extraction blocked', [
+                'file' => basename($filePath),
+                'extension' => $extension,
+                'reason' => $e->getMessage(),
+            ]);
+            throw $e;
         } catch (\Exception $e) {
             $this->log('error', 'Text extraction failed', [
                 'file' => $filePath,
@@ -85,6 +101,8 @@ class DocumentTextExtractor
 
     /**
      * Extract text from PDF file.
+     *
+     * @throws \RuntimeException If PDF is image-based and has no extractable text
      */
     private function extractFromPdf(string $filePath): string
     {
@@ -95,16 +113,100 @@ class DocumentTextExtractor
         }
 
         try {
-            $parser = new \Smalot\PdfParser\Parser;
+            // Configure parser to skip image content for memory efficiency
+            $config = new \Smalot\PdfParser\Config;
+            $config->setRetainImageContent(false);
+
+            $parser = new \Smalot\PdfParser\Parser([], $config);
             $pdf = $parser->parseFile($filePath);
 
-            return $pdf->getText();
+            $pageCount = count($pdf->getPages());
+            $text = $pdf->getText();
+            $textLength = strlen(trim($text));
+
+            // Detect image-based PDFs: if text per page is below threshold
+            if ($pageCount > 0 && $textLength / $pageCount < self::MIN_CHARS_PER_PAGE) {
+                $this->log('warning', 'PDF appears to be image-based (scanned)', [
+                    'file' => basename($filePath),
+                    'pages' => $pageCount,
+                    'total_chars' => $textLength,
+                    'chars_per_page' => round($textLength / $pageCount, 2),
+                ]);
+
+                throw new \RuntimeException(
+                    'PDF appears to be image-based or scanned. AI extraction requires text-based PDFs. '.
+                    'Consider using OCR software to convert this document first.'
+                );
+            }
+
+            return $text;
+        } catch (\RuntimeException $e) {
+            // Re-throw our custom exceptions
+            throw $e;
         } catch (\Exception $e) {
             // Handle encrypted or malformed PDFs gracefully
             $this->log('debug', 'PDF text extraction failed', ['error' => $e->getMessage()]);
 
             return '';
         }
+    }
+
+    /**
+     * Extract text from DOC file (legacy Word format).
+     */
+    private function extractFromDoc(string $filePath): string
+    {
+        if (! class_exists('\PhpOffice\PhpWord\IOFactory')) {
+            $this->log('warning', 'PhpWord not available for DOC extraction');
+
+            return '';
+        }
+
+        try {
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($filePath, 'MsDoc');
+            $text = '';
+
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    $text .= $this->extractPhpWordElementText($element);
+                }
+            }
+
+            return $text;
+        } catch (\Exception $e) {
+            $this->log('debug', 'DOC text extraction failed', ['error' => $e->getMessage()]);
+
+            return '';
+        }
+    }
+
+    /**
+     * Recursively extract text from PhpWord elements.
+     */
+    private function extractPhpWordElementText($element): string
+    {
+        $text = '';
+
+        if (method_exists($element, 'getText')) {
+            $elementText = $element->getText();
+            if (is_string($elementText)) {
+                $text .= $elementText;
+            }
+        }
+
+        if (method_exists($element, 'getElements')) {
+            foreach ($element->getElements() as $childElement) {
+                $text .= $this->extractPhpWordElementText($childElement);
+            }
+        }
+
+        // Add newline after paragraph-like elements
+        if ($element instanceof \PhpOffice\PhpWord\Element\TextRun ||
+            $element instanceof \PhpOffice\PhpWord\Element\Text) {
+            $text .= "\n";
+        }
+
+        return $text;
     }
 
     /**

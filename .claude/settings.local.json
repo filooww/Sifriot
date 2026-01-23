@@ -30,7 +30,10 @@
       "Bash(./vendor/bin/pint:*)",
       "Bash(composer require:*)",
       "Bash(composer dump-autoload:*)",
-      "Bash(composer show:*)"
+      "Bash(composer show:*)",
+      "Bash(cmd.exe /c \"composer require blade-ui-kit/blade-heroicons smalot/pdfparser\")",
+      "Bash(powershell.exe -Command \"php artisan migrate\")",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

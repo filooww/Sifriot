@@ -306,6 +306,7 @@
     "No document file found": "Файл документа не найден",
     "Document file not accessible": "Файл документа недоступен",
     "Could not extract text from document": "Не удалось извлечь текст из документа",
+    "PDF appears to be image-based or scanned. AI extraction requires text-based PDFs. Consider using OCR software to convert this document first.": "PDF является отсканированным или содержит только изображения. ИИ-извлечение требует текстовых PDF. Рассмотрите возможность использования OCR-программы для конвертации документа.",
     "No metadata could be extracted": "Не удалось извлечь метаданные",
     "Confirm All": "Подтвердить все",
     "Reject All": "Отклонить все",

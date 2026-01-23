@@ -317,6 +317,7 @@
     "No document file found": "No document file found",
     "Document file not accessible": "Document file not accessible",
     "Could not extract text from document": "Could not extract text from document",
+    "PDF appears to be image-based or scanned. AI extraction requires text-based PDFs. Consider using OCR software to convert this document first.": "PDF appears to be image-based or scanned. AI extraction requires text-based PDFs. Consider using OCR software to convert this document first.",
     "No metadata could be extracted": "No metadata could be extracted",
     "Confirm All": "Confirm All",
     "Reject All": "Reject All",

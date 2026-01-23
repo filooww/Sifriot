@@ -274,6 +274,7 @@
     "No document file found": "קובץ מסמך לא נמצא",
     "Document file not accessible": "קובץ המסמך אינו נגיש",
     "Could not extract text from document": "לא ניתן לחלץ טקסט מהמסמך",
+    "PDF appears to be image-based or scanned. AI extraction requires text-based PDFs. Consider using OCR software to convert this document first.": "נראה ש-PDF זה מבוסס תמונות או סרוק. חילוץ AI דורש קבצי PDF מבוססי טקסט. שקול להשתמש בתוכנת OCR להמרת המסמך תחילה.",
     "No metadata could be extracted": "לא ניתן לחלץ מטא-נתונים",
     "Confirm All": "אשר הכל",
     "Reject All": "דחה הכל",

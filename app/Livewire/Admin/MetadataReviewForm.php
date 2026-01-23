@@ -357,7 +357,13 @@ class MetadataReviewForm extends Component
             // Extract text from document
             $textExtractor = app(DocumentTextExtractor::class);
             $maxChars = config('services.gemini.max_chars', 5000);
-            $text = $textExtractor->extractText($filePath, $maxChars);
+
+            try {
+                $text = $textExtractor->extractText($filePath, $maxChars);
+            } catch (\RuntimeException $e) {
+                // User-friendly error (e.g., image-based PDF)
+                throw $e;
+            }
 
             if (empty($text)) {
                 throw new \Exception('Could not extract text from document');

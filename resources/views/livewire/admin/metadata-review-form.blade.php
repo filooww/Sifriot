@@ -35,7 +35,7 @@
                         wire:click="extractWithAI"
                         wire:loading.attr="disabled"
                         wire:target="extractWithAI"
-                        class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-lg transition"
+                        class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 disabled:bg-purple-50 text-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 dark:disabled:bg-purple-800 dark:text-white text-sm font-medium rounded-lg transition"
                     >
                         <span wire:loading.remove wire:target="extractWithAI">✨</span>
                         <svg wire:loading wire:target="extractWithAI" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

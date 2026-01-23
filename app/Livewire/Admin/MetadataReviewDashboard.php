@@ -749,7 +749,20 @@ class MetadataReviewDashboard extends Component
                 }
 
                 // Extract text
-                $text = $textExtractor->extractText($filePath, $maxChars);
+                try {
+                    $text = $textExtractor->extractText($filePath, $maxChars);
+                } catch (\RuntimeException $e) {
+                    // User-friendly error (e.g., image-based PDF)
+                    Log::channel('folder_scan')->warning('Text extraction blocked', [
+                        'file_metadata_id' => $metadata->id,
+                        'file_name' => $metadata->file_name,
+                        'reason' => $e->getMessage(),
+                    ]);
+                    $failed++;
+
+                    continue;
+                }
+
                 if (empty($text)) {
                     $failed++;
 

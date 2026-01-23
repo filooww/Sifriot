@@ -100,7 +100,7 @@ class FileRegistrationForm extends Component
 
         try {
             // Check duplicate file path
-            $fullPath = Storage::disk('local')->path($this->selectedFilePath);
+            $fullPath = Storage::disk('library')->path($this->selectedFilePath);
             if (FileRegistrationLog::where('file_path', $fullPath)->exists()) {
                 session()->flash('error', __('This file is already registered'));
 
@@ -109,8 +109,8 @@ class FileRegistrationForm extends Component
 
             // Get file metadata before transaction
             $fileName = basename($this->selectedFilePath);
-            $mimeType = Storage::disk('local')->mimeType($this->selectedFilePath);
-            $fileSize = Storage::disk('local')->size($this->selectedFilePath);
+            $mimeType = Storage::disk('library')->mimeType($this->selectedFilePath);
+            $fileSize = Storage::disk('library')->size($this->selectedFilePath);
 
             // Wrap all database operations in a transaction
             DB::transaction(function () use ($fullPath, $fileName, $mimeType, $fileSize) {
