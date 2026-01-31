@@ -33,7 +33,8 @@
       "Bash(composer show:*)",
       "Bash(cmd.exe /c \"composer require blade-ui-kit/blade-heroicons smalot/pdfparser\")",
       "Bash(powershell.exe -Command \"php artisan migrate\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(docker-compose exec:*)"
     ],
     "deny": [],
     "ask": []

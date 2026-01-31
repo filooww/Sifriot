@@ -114,13 +114,13 @@ class Publication extends Model
         )->withTimestamps();
     }
 
-    public function categories(): BelongsToMany
+    public function sections(): BelongsToMany
     {
         return $this->belongsToMany(
-            Category::class,
-            'category_publication',
+            Section::class,
+            'section_publication',
             'publication_id',
-            'category_id',
+            'section_id',
             'id_publication',
             'id'
         )->withTimestamps();

@@ -33,7 +33,7 @@ class PublicationDetail extends Component
                 'part',
                 'authors',
                 'themes',
-                'categories',
+                'sections',
                 'publishers',
             ])
             ->when(! $this->isGuest, function ($query) {

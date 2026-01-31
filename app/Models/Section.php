@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Category extends Model
+class Section extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -29,30 +29,30 @@ class Category extends Model
     ];
 
     /**
-     * Get the parent category.
+     * Get the parent section.
      */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'parent_id');
+        return $this->belongsTo(Section::class, 'parent_id');
     }
 
     /**
-     * Get the child categories.
+     * Get the child sections.
      */
     public function children(): HasMany
     {
-        return $this->hasMany(Category::class, 'parent_id')->orderBy('sort_order');
+        return $this->hasMany(Section::class, 'parent_id')->orderBy('sort_order');
     }
 
     /**
-     * Get the publications for this category.
+     * Get the publications for this section.
      */
     public function publications(): BelongsToMany
     {
         return $this->belongsToMany(
             Publication::class,
-            'category_publication',
-            'category_id',
+            'section_publication',
+            'section_id',
             'publication_id',
             'id',
             'id_publication'
@@ -60,7 +60,7 @@ class Category extends Model
     }
 
     /**
-     * Get the localized category name based on current locale.
+     * Get the localized section name based on current locale.
      */
     public function getLocalizedNameAttribute(): string
     {

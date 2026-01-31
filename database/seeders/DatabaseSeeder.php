@@ -21,8 +21,8 @@ class DatabaseSeeder extends Seeder
             $this->call(ContentTypeSeeder::class);
             $this->command->info('✓ Content types seeded');
 
-            $this->call(CategorySeeder::class);
-            $this->command->info('✓ Categories seeded');
+            $this->call(SectionSeeder::class);
+            $this->command->info('✓ Sections seeded');
 
             // Seed reference data
             $this->call(AuthorSeeder::class);

@@ -29,7 +29,7 @@ class PublicationList extends Component
     public $isGuest = true;
 
     // Filter properties
-    public array $filterCategories = [];
+    public array $filterSections = [];
 
     public array $filterAuthors = [];
 
@@ -80,7 +80,7 @@ class PublicationList extends Component
     #[On('filtersChanged')]
     public function applyFilters(array $filters): void
     {
-        $this->filterCategories = $filters['categories'] ?? [];
+        $this->filterSections = $filters['sections'] ?? [];
         $this->filterAuthors = $filters['authors'] ?? [];
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
         $this->filterDateTo = $filters['dateTo'] ?? null;
@@ -130,9 +130,9 @@ class PublicationList extends Component
                     });
                 }
             })
-            // Apply category filter
-            ->when(! empty($this->filterCategories), function ($query) {
-                $query->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $this->filterCategories));
+            // Apply section filter
+            ->when(! empty($this->filterSections), function ($query) {
+                $query->whereHas('sections', fn ($q) => $q->whereIn('sections.id', $this->filterSections));
             })
             // Apply author filter
             ->when(! empty($this->filterAuthors), function ($query) {
@@ -176,9 +176,9 @@ class PublicationList extends Component
         // For guests, eager load only basic relationships
         // For authenticated users, load all relationships including files
         if ($this->isGuest) {
-            $query->with(['publishing', 'authorGroup', 'issueType', 'categories']);
+            $query->with(['publishing', 'authorGroup', 'issueType', 'sections']);
         } else {
-            $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files', 'categories']);
+            $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files', 'sections']);
         }
 
         // Apply alphabetical sort if set

@@ -6,7 +6,7 @@ namespace App\Livewire\Admin;
 
 use App\Events\MetadataConfirmed;
 use App\Models\Author;
-use App\Models\Category;
+use App\Models\Section;
 use App\Models\CustomField;
 use App\Models\File;
 use App\Models\FileMetadata;
@@ -66,12 +66,12 @@ class MetadataReviewForm extends Component
 
     public $customFields = [];
 
-    // Categories and Publishers (multi-select)
-    public array $selectedCategories = [];
+    // Sections and Publishers (multi-select)
+    public array $selectedSections = [];
 
     public array $selectedPublishers = [];
 
-    public string $categorySearchQuery = '';
+    public string $sectionSearchQuery = '';
 
     public string $publisherSearchQuery = '';
 
@@ -201,8 +201,8 @@ class MetadataReviewForm extends Component
             }
         }
 
-        // Load existing categories and publishers for the publication
-        $this->loadCategoriesAndPublishers();
+        // Load existing sections and publishers for the publication
+        $this->loadSectionsAndPublishers();
 
         // Load custom fields if content type is selected
         $this->loadCustomFields();
@@ -241,21 +241,21 @@ class MetadataReviewForm extends Component
     }
 
     /**
-     * Load existing categories and publishers for the publication.
+     * Load existing sections and publishers for the publication.
      */
-    private function loadCategoriesAndPublishers(): void
+    private function loadSectionsAndPublishers(): void
     {
         if (! $this->fileMetadata || ! $this->fileMetadata->file_id) {
             return;
         }
 
-        $publication = Publication::with(['categories', 'publishers'])->find($this->fileMetadata->file_id);
+        $publication = Publication::with(['sections', 'publishers'])->find($this->fileMetadata->file_id);
         if (! $publication) {
             return;
         }
 
-        // Load existing category IDs
-        $this->selectedCategories = $publication->categories->pluck('id')->toArray();
+        // Load existing section IDs
+        $this->selectedSections = $publication->sections->pluck('id')->toArray();
 
         // Load existing publisher IDs
         $this->selectedPublishers = $publication->publishers->pluck('id')->toArray();
@@ -523,9 +523,9 @@ class MetadataReviewForm extends Component
                 $publication->genres()->syncWithoutDetaching([$genre->id]);
             }
 
-            // Sync categories
-            if (! empty($this->selectedCategories)) {
-                $publication->categories()->sync($this->selectedCategories);
+            // Sync sections
+            if (! empty($this->selectedSections)) {
+                $publication->sections()->sync($this->selectedSections);
             }
 
             // Sync publishers (new Publisher model)
@@ -703,8 +703,8 @@ class MetadataReviewForm extends Component
                 $publication->genres()->syncWithoutDetaching([$genre->id]);
             }
 
-            // Sync categories
-            $publication->categories()->sync($this->selectedCategories);
+            // Sync sections
+            $publication->sections()->sync($this->selectedSections);
 
             // Sync publishers (new Publisher model)
             $publication->publishers()->sync($this->selectedPublishers);
@@ -804,8 +804,8 @@ class MetadataReviewForm extends Component
                 $publication->genres()->syncWithoutDetaching([$genre->id]);
             }
 
-            // Sync categories
-            $publication->categories()->sync($this->selectedCategories);
+            // Sync sections
+            $publication->sections()->sync($this->selectedSections);
 
             // Sync publishers (new Publisher model)
             $publication->publishers()->sync($this->selectedPublishers);
@@ -1039,21 +1039,21 @@ class MetadataReviewForm extends Component
     }
 
     /**
-     * Search categories by name (autocomplete, multilingual).
+     * Search sections by name (autocomplete, multilingual).
      */
-    public function searchCategories(string $query): array
+    public function searchSections(string $query): array
     {
         if (strlen($query) < 2) {
             return [];
         }
 
-        return Category::query()
+        return Section::query()
             ->where(function ($q) use ($query) {
                 $q->where('name_en', 'like', "%{$query}%")
                     ->orWhere('name_ru', 'like', "%{$query}%")
                     ->orWhere('name_he', 'like', "%{$query}%");
             })
-            ->whereNotIn('id', $this->selectedCategories)
+            ->whereNotIn('id', $this->selectedSections)
             ->limit(10)
             ->get()
             ->map(fn ($cat) => [
@@ -1089,22 +1089,22 @@ class MetadataReviewForm extends Component
     }
 
     /**
-     * Add a category to the selected list.
+     * Add a section to the selected list.
      */
-    public function addCategory(int $categoryId): void
+    public function addSection(int $sectionId): void
     {
-        if (! in_array($categoryId, $this->selectedCategories)) {
-            $this->selectedCategories[] = $categoryId;
+        if (! in_array($sectionId, $this->selectedSections)) {
+            $this->selectedSections[] = $sectionId;
         }
-        $this->categorySearchQuery = '';
+        $this->sectionSearchQuery = '';
     }
 
     /**
-     * Remove a category from the selected list.
+     * Remove a section from the selected list.
      */
-    public function removeCategory(int $categoryId): void
+    public function removeSection(int $sectionId): void
     {
-        $this->selectedCategories = array_values(array_diff($this->selectedCategories, [$categoryId]));
+        $this->selectedSections = array_values(array_diff($this->selectedSections, [$sectionId]));
     }
 
     /**
@@ -1127,11 +1127,11 @@ class MetadataReviewForm extends Component
     }
 
     /**
-     * Get the currently selected categories with names.
+     * Get the currently selected sections with names.
      */
-    public function getSelectedCategoriesWithNames(): array
+    public function getSelectedSectionsWithNames(): array
     {
-        return Category::whereIn('id', $this->selectedCategories)
+        return Section::whereIn('id', $this->selectedSections)
             ->get()
             ->map(fn ($cat) => [
                 'id' => $cat->id,
@@ -1228,19 +1228,19 @@ class MetadataReviewForm extends Component
     }
 
     /**
-     * Create new category and add to selection (admin only).
+     * Create new section and add to selection (admin only).
      */
-    public function createNewCategory(string $name): void
+    public function createNewSection(string $name): void
     {
         abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
-        $category = Category::firstOrCreate(
+        $section = Section::firstOrCreate(
             ['slug' => \Illuminate\Support\Str::slug($trimmedName)],
             ['name_en' => $trimmedName]
         );
 
-        $this->addCategory($category->id);
+        $this->addSection($section->id);
     }
 
     /**

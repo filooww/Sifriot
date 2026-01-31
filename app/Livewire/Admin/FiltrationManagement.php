@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Admin;
 
 use App\Models\Author;
-use App\Models\Category;
+use App\Models\Section;
 use App\Models\ContentType;
 use App\Models\Genre;
 use App\Models\Publisher;
@@ -65,26 +65,26 @@ class FiltrationManagement extends Component
 
     public string $theme_name_low = '';
 
-    // Categories
-    public $categories = [];
+    // Sections
+    public $sections = [];
 
-    public $parentCategories = [];
+    public $parentSections = [];
 
-    public bool $showCategoryModal = false;
+    public bool $showSectionModal = false;
 
-    public ?Category $editingCategory = null;
+    public ?Section $editingSection = null;
 
-    public string $category_name_en = '';
+    public string $section_name_en = '';
 
-    public string $category_name_ru = '';
+    public string $section_name_ru = '';
 
-    public string $category_name_he = '';
+    public string $section_name_he = '';
 
-    public string $category_slug = '';
+    public string $section_slug = '';
 
-    public ?int $category_parent_id = null;
+    public ?int $section_parent_id = null;
 
-    public int $category_sort_order = 0;
+    public int $section_sort_order = 0;
 
     // Authors
     public $authors = [];
@@ -137,7 +137,7 @@ class FiltrationManagement extends Component
             'content-types' => $this->loadContentTypes(),
             'genres' => $this->loadGenres(),
             'themes' => $this->loadThemes(),
-            'categories' => $this->loadCategories(),
+            'sections' => $this->loadSections(),
             'authors' => $this->loadAuthors(),
             'publishers' => $this->loadPublishers(),
             default => $this->loadContentTypes(),
@@ -396,105 +396,105 @@ class FiltrationManagement extends Component
         $this->theme_name_low = '';
     }
 
-    // ==================== CATEGORIES ====================
+    // ==================== SECTIONS ====================
 
-    public function loadCategories(): void
+    public function loadSections(): void
     {
-        $this->categories = Category::with('parent')
+        $this->sections = Section::with('parent')
             ->withCount(['children', 'publications'])
             ->orderBy('sort_order')
             ->get();
     }
 
-    public function createCategory(): void
+    public function createSection(): void
     {
-        $this->resetCategoryForm();
-        $this->parentCategories = Category::orderBy('name_en')->get();
-        $this->showCategoryModal = true;
+        $this->resetSectionForm();
+        $this->parentSections = Section::orderBy('name_en')->get();
+        $this->showSectionModal = true;
     }
 
-    public function editCategory(int $id): void
+    public function editSection(int $id): void
     {
-        $this->editingCategory = Category::findOrFail($id);
-        $this->category_name_en = $this->editingCategory->name_en;
-        $this->category_name_ru = $this->editingCategory->name_ru ?? '';
-        $this->category_name_he = $this->editingCategory->name_he ?? '';
-        $this->category_slug = $this->editingCategory->slug;
-        $this->category_parent_id = $this->editingCategory->parent_id;
-        $this->category_sort_order = $this->editingCategory->sort_order ?? 0;
-        $this->parentCategories = Category::where('id', '!=', $id)->orderBy('name_en')->get();
-        $this->showCategoryModal = true;
+        $this->editingSection = Section::findOrFail($id);
+        $this->section_name_en = $this->editingSection->name_en;
+        $this->section_name_ru = $this->editingSection->name_ru ?? '';
+        $this->section_name_he = $this->editingSection->name_he ?? '';
+        $this->section_slug = $this->editingSection->slug;
+        $this->section_parent_id = $this->editingSection->parent_id;
+        $this->section_sort_order = $this->editingSection->sort_order ?? 0;
+        $this->parentSections = Section::where('id', '!=', $id)->orderBy('name_en')->get();
+        $this->showSectionModal = true;
     }
 
-    public function saveCategory(): void
+    public function saveSection(): void
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $categoryId = $this->editingCategory?->id;
+        $sectionId = $this->editingSection?->id;
         $validated = $this->validate([
-            'category_name_en' => 'required|string|max:255',
-            'category_name_ru' => 'nullable|string|max:255',
-            'category_name_he' => 'nullable|string|max:255',
-            'category_slug' => "required|string|max:255|unique:categories,slug,{$categoryId}",
-            'category_parent_id' => 'nullable|exists:categories,id',
-            'category_sort_order' => 'integer|min:0',
+            'section_name_en' => 'required|string|max:255',
+            'section_name_ru' => 'nullable|string|max:255',
+            'section_name_he' => 'nullable|string|max:255',
+            'section_slug' => "required|string|max:255|unique:sections,slug,{$sectionId}",
+            'section_parent_id' => 'nullable|exists:sections,id',
+            'section_sort_order' => 'integer|min:0',
         ]);
 
         $data = [
-            'name_en' => $validated['category_name_en'],
-            'name_ru' => $validated['category_name_ru'],
-            'name_he' => $validated['category_name_he'],
-            'slug' => $validated['category_slug'],
-            'parent_id' => $validated['category_parent_id'],
-            'sort_order' => $validated['category_sort_order'],
+            'name_en' => $validated['section_name_en'],
+            'name_ru' => $validated['section_name_ru'],
+            'name_he' => $validated['section_name_he'],
+            'slug' => $validated['section_slug'],
+            'parent_id' => $validated['section_parent_id'],
+            'sort_order' => $validated['section_sort_order'],
         ];
 
-        if ($this->editingCategory) {
-            $this->editingCategory->update($data);
-            session()->flash('message', __('Category updated successfully.'));
+        if ($this->editingSection) {
+            $this->editingSection->update($data);
+            session()->flash('message', __('Section updated successfully.'));
         } else {
-            Category::create($data);
-            session()->flash('message', __('Category created successfully.'));
+            Section::create($data);
+            session()->flash('message', __('Section created successfully.'));
         }
 
-        $this->showCategoryModal = false;
-        $this->resetCategoryForm();
-        $this->loadCategories();
+        $this->showSectionModal = false;
+        $this->resetSectionForm();
+        $this->loadSections();
     }
 
-    public function deleteCategory(int $id): void
+    public function deleteSection(int $id): void
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $category = Category::withCount(['children', 'publications'])->findOrFail($id);
+        $section = Section::withCount(['children', 'publications'])->findOrFail($id);
 
-        if ($category->children_count > 0) {
-            session()->flash('error', __('Cannot delete category with child categories.'));
-
-            return;
-        }
-
-        if ($category->publications_count > 0) {
-            session()->flash('error', __('Cannot delete category with associated publications.'));
+        if ($section->children_count > 0) {
+            session()->flash('error', __('Cannot delete section with child sections.'));
 
             return;
         }
 
-        $category->delete();
-        session()->flash('message', __('Category deleted successfully.'));
-        $this->loadCategories();
+        if ($section->publications_count > 0) {
+            session()->flash('error', __('Cannot delete section with associated publications.'));
+
+            return;
+        }
+
+        $section->delete();
+        session()->flash('message', __('Section deleted successfully.'));
+        $this->loadSections();
     }
 
-    private function resetCategoryForm(): void
+    private function resetSectionForm(): void
     {
-        $this->editingCategory = null;
-        $this->category_name_en = '';
-        $this->category_name_ru = '';
-        $this->category_name_he = '';
-        $this->category_slug = '';
-        $this->category_parent_id = null;
-        $this->category_sort_order = 0;
-        $this->parentCategories = [];
+        $this->editingSection = null;
+        $this->section_name_en = '';
+        $this->section_name_ru = '';
+        $this->section_name_he = '';
+        $this->section_slug = '';
+        $this->section_parent_id = null;
+        $this->section_sort_order = 0;
+        $this->parentSections = [];
     }
 
     // ==================== AUTHORS ====================
@@ -660,7 +660,7 @@ class FiltrationManagement extends Component
         $this->showContentTypeModal = false;
         $this->showGenreModal = false;
         $this->showThemeModal = false;
-        $this->showCategoryModal = false;
+        $this->showSectionModal = false;
         $this->showAuthorModal = false;
         $this->showPublisherModal = false;
     }

@@ -35,7 +35,7 @@ class PublicCatalog extends Component
 
     public array $filterGenres = [];
 
-    public array $filterCategories = [];
+    public array $filterSections = [];
 
     public array $filterPublishers = [];
 
@@ -68,7 +68,7 @@ class PublicCatalog extends Component
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
         $this->filterDateTo = $filters['dateTo'] ?? null;
         $this->filterGenres = $filters['genres'] ?? [];
-        $this->filterCategories = $filters['categories'] ?? [];
+        $this->filterSections = $filters['sections'] ?? [];
         $this->filterPublishers = $filters['publishers'] ?? [];
         $this->filterTextSizeRange = $filters['textSizeRange'] ?? [0, 500000];
         $this->filterAlphabeticalSort = $filters['alphabeticalSort'] ?? null;
@@ -121,9 +121,9 @@ class PublicCatalog extends Component
             ->when(! empty($this->filterGenres), function ($query) {
                 $query->whereHas('themes', fn ($q) => $q->whereIn('themes.id_theme', $this->filterGenres));
             })
-            // Apply category filter
-            ->when(! empty($this->filterCategories), function ($query) {
-                $query->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $this->filterCategories));
+            // Apply section filter
+            ->when(! empty($this->filterSections), function ($query) {
+                $query->whereHas('sections', fn ($q) => $q->whereIn('sections.id', $this->filterSections));
             })
             // Apply publisher filter
             ->when(! empty($this->filterPublishers), function ($query) {
@@ -138,7 +138,7 @@ class PublicCatalog extends Component
         $query->whereNull('deleted_at');
 
         // Eager load basic relationships (including files for cover image display)
-        $query->with(['publishing', 'authorGroup', 'issueType', 'contentType', 'authors', 'files', 'categories', 'publishers']);
+        $query->with(['publishing', 'authorGroup', 'issueType', 'contentType', 'authors', 'files', 'sections', 'publishers']);
 
         // Apply alphabetical sort if set
         if ($this->filterAlphabeticalSort) {

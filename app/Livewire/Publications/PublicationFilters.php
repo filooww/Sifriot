@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Publications;
 
 use App\Models\Author;
-use App\Models\Category;
+use App\Models\Section;
 use App\Models\ContentType;
 use App\Models\Publisher;
 use App\Models\Theme;
@@ -32,7 +32,7 @@ class PublicationFilters extends Component
 
     public array $publicationStatus = [];
 
-    public array $selectedCategories = [];
+    public array $selectedSections = [];
 
     public array $selectedPublishers = [];
 
@@ -51,7 +51,7 @@ class PublicationFilters extends Component
         'dateFrom' => ['as' => 'from', 'except' => null],
         'dateTo' => ['as' => 'to', 'except' => null],
         'selectedGenres' => ['as' => 'genre', 'except' => []],
-        'selectedCategories' => ['as' => 'cat', 'except' => []],
+        'selectedSections' => ['as' => 'sec', 'except' => []],
         'selectedPublishers' => ['as' => 'pub', 'except' => []],
         'textSizeRange' => ['as' => 'size', 'except' => [0, 500000]],
         'alphabeticalSort' => ['as' => 'sort', 'except' => null],
@@ -101,7 +101,7 @@ class PublicationFilters extends Component
         $this->emitFilters();
     }
 
-    public function updatedSelectedCategories(): void
+    public function updatedSelectedSections(): void
     {
         $this->emitFilters();
     }
@@ -133,7 +133,7 @@ class PublicationFilters extends Component
         $this->dateFrom = null;
         $this->dateTo = null;
         $this->selectedGenres = [];
-        $this->selectedCategories = [];
+        $this->selectedSections = [];
         $this->selectedPublishers = [];
         $this->textSizeRange = [0, 500000];
         $this->alphabeticalSort = null;
@@ -154,7 +154,7 @@ class PublicationFilters extends Component
             'dateFrom' => $this->dateFrom = null,
             'dateTo' => $this->dateTo = null,
             'genre' => $this->selectedGenres = array_values(array_diff($this->selectedGenres, [$value])),
-            'category' => $this->selectedCategories = array_values(array_diff($this->selectedCategories, [$value])),
+            'section' => $this->selectedSections = array_values(array_diff($this->selectedSections, [$value])),
             'publisher' => $this->selectedPublishers = array_values(array_diff($this->selectedPublishers, [$value])),
             'textSize' => $this->textSizeRange = [0, 500000],
             'alphabetical' => $this->alphabeticalSort = null,
@@ -224,13 +224,13 @@ class PublicationFilters extends Component
             }
         }
 
-        foreach ($this->selectedCategories as $categoryId) {
-            $category = Category::find($categoryId);
-            if ($category) {
+        foreach ($this->selectedSections as $sectionId) {
+            $section = Section::find($sectionId);
+            if ($section) {
                 $filters[] = [
-                    'type' => 'category',
-                    'value' => $categoryId,
-                    'label' => $category->localizedName,
+                    'type' => 'section',
+                    'value' => $sectionId,
+                    'label' => $section->localizedName,
                 ];
             }
         }
@@ -339,16 +339,16 @@ class PublicationFilters extends Component
     }
 
     #[Computed]
-    public function categories(): array
+    public function sections(): array
     {
-        return Category::with('parent')
+        return Section::with('parent')
             ->orderBy('sort_order')
             ->orderBy('name_en')
             ->get()
-            ->map(fn ($cat) => [
-                'id' => $cat->id,
-                'name' => $cat->localizedName,
-                'parent_name' => $cat->parent?->localizedName,
+            ->map(fn ($sec) => [
+                'id' => $sec->id,
+                'name' => $sec->localizedName,
+                'parent_name' => $sec->parent?->localizedName,
             ])
             ->toArray();
     }
@@ -373,7 +373,7 @@ class PublicationFilters extends Component
             'dateFrom' => $this->dateFrom,
             'dateTo' => $this->dateTo,
             'genres' => $this->selectedGenres,
-            'categories' => $this->selectedCategories,
+            'sections' => $this->selectedSections,
             'publishers' => $this->selectedPublishers,
             'textSizeRange' => $this->textSizeRange,
             'alphabeticalSort' => $this->alphabeticalSort,

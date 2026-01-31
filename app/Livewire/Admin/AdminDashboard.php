@@ -28,7 +28,7 @@ class AdminDashboard extends Component
     // Filter properties
     public array $filterContentTypes = [];
 
-    public array $filterCategories = [];
+    public array $filterSections = [];
 
     public array $filterPublishers = [];
 
@@ -84,7 +84,7 @@ class AdminDashboard extends Component
     public function applyFilters(array $filters): void
     {
         $this->filterContentTypes = $filters['contentTypes'] ?? [];
-        $this->filterCategories = $filters['categories'] ?? [];
+        $this->filterSections = $filters['sections'] ?? [];
         $this->filterPublishers = $filters['publishers'] ?? [];
         $this->filterAuthors = $filters['authors'] ?? [];
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
@@ -123,9 +123,9 @@ class AdminDashboard extends Component
             ->when(! empty($this->filterContentTypes), function ($query) {
                 $query->whereIn('content_type_id', $this->filterContentTypes);
             })
-            // Apply category filter
-            ->when(! empty($this->filterCategories), function ($query) {
-                $query->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $this->filterCategories));
+            // Apply section filter
+            ->when(! empty($this->filterSections), function ($query) {
+                $query->whereHas('sections', fn ($q) => $q->whereIn('sections.id', $this->filterSections));
             })
             // Apply publisher filter
             ->when(! empty($this->filterPublishers), function ($query) {
@@ -164,7 +164,7 @@ class AdminDashboard extends Component
         }
 
         // Eager load all relationships for admin
-        $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files', 'categories', 'authors', 'publishers', 'contentType']);
+        $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files', 'sections', 'authors', 'publishers', 'contentType']);
 
         // Apply alphabetical sort if set
         if ($this->filterAlphabeticalSort) {

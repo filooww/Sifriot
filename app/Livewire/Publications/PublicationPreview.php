@@ -32,7 +32,7 @@ class PublicationPreview extends Component
             'files',
             'contentType',
             'customFieldValues.customField',
-            'categories',
+            'sections',
             'publishers',
         ])->findOrFail($id);
 
