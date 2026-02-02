@@ -166,14 +166,14 @@
                     </div>
                 @endif
 
-                <!-- Categories -->
-                @if ($publication->categories->count() > 0)
+                <!-- Sections -->
+                @if ($publication->sections->count() > 0)
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ __('Categories') }}</h3>
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ __('Sections') }}</h3>
                         <div class="flex flex-wrap gap-2">
-                            @foreach ($publication->categories as $category)
+                            @foreach ($publication->sections as $section)
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    {{ $category->{'name_' . app()->getLocale()} ?? $category->name_en }}
+                                    {{ $section->{'name_' . app()->getLocale()} ?? $section->name_en }}
                                 </span>
                             @endforeach
                         </div>

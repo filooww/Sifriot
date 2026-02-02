@@ -10,6 +10,7 @@ use App\Models\FileMetadata;
 use App\Models\Publication;
 use App\Services\MetadataExtractors\DocumentTextExtractor;
 use App\Services\MetadataExtractors\GeminiMetadataExtractorService;
+use App\Services\FileMetadataService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
@@ -45,7 +46,7 @@ class MetadataReviewDashboard extends Component
 
     // Publication filtering (from PublicationFilters)
     #[Url]
-    public array $filterCategories = [];
+    public array $filterSections = [];
 
     #[Url]
     public array $filterAuthors = [];
@@ -93,7 +94,7 @@ class MetadataReviewDashboard extends Component
         'dateFilter' => ['except' => 'all'],
         'sortBy' => ['except' => 'created_at'],
         'sortDirection' => ['except' => 'desc'],
-        'filterCategories' => ['except' => []],
+        'filterSections' => ['except' => []],
         'filterAuthors' => ['except' => []],
         'filterDateFrom' => ['except' => null],
         'filterDateTo' => ['except' => null],
@@ -103,14 +104,49 @@ class MetadataReviewDashboard extends Component
         'filterPublicationStatus' => ['except' => []],
     ];
 
-    public function mount(): void
+    public function mount(FileMetadataService $metadataService): void
     {
         $this->geminiConfigured = ! empty(config('services.gemini.api_key'));
+        
+        // Auto-heal: Ensure all visible publications have metadata records
+        // This is a "lazy" check - we could optimize to only check "missing" ones if performance is an issue,
+        // but for now, we'll rely on the service to handle existence checks efficiently.
+        $this->ensureMetadataExists($metadataService);
+
         Log::info('MetadataReviewDashboard mounted', [
             'gemini_configured' => $this->geminiConfigured,
             'api_key_set' => ! empty(config('services.gemini.api_key')),
             'user_id' => auth()->id(),
         ]);
+    }
+
+    /**
+     * Ensure metadata exists for relevant publications
+     */
+    protected function ensureMetadataExists(FileMetadataService $metadataService): void
+    {
+        // Get IDs of publications that match current broad criteria (e.g. not deleted)
+        // We limit this to recent or active ones to avoid scanning the entire DB on every load if it's huge.
+        // For now, let's just check the ones that would be visible.
+        
+        // Optimization: querying ALL might be heavy. Let's query "orphans" directly here.
+        // Queries publications that DO NOT have a corresponding file_metadata record.
+        // Note: This logic assumes file_id starts with "pubID-"
+        $orphans = Publication::whereDoesntHave('fileMetadata')
+            ->where('status', '!=', 'deleted') // Optional: only care about active ones
+            ->get();
+
+        if ($orphans->isNotEmpty()) {
+            $count = $metadataService->syncMetadataForPublications($orphans);
+            if ($count > 0) {
+                // If we created new records, we should probably notify or log
+                Log::info("MetadataReviewDashboard: Auto-generated {$count} missing metadata records.");
+                session()->flash('notify', [
+                    'message' => "Detected and fixed {$count} publications with missing metadata.",
+                    'type' => 'info'
+                ]);
+            }
+        }
     }
 
     /**
@@ -127,7 +163,7 @@ class MetadataReviewDashboard extends Component
     #[On('filtersChanged')]
     public function applyFilters(array $filters): void
     {
-        $this->filterCategories = $filters['categories'] ?? [];
+        $this->filterSections = $filters['sections'] ?? [];
         $this->filterAuthors = $filters['authors'] ?? [];
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
         $this->filterDateTo = $filters['dateTo'] ?? null;
@@ -181,7 +217,7 @@ class MetadataReviewDashboard extends Component
         $this->dateFilter = 'all';
         $this->sortBy = 'created_at';
         $this->sortDirection = 'desc';
-        $this->filterCategories = [];
+        $this->filterSections = [];
         $this->filterAuthors = [];
         $this->filterDateFrom = null;
         $this->filterDateTo = null;
@@ -234,15 +270,15 @@ class MetadataReviewDashboard extends Component
             }
 
             // Apply publication filters
-            if (! empty($this->filterCategories)) {
+            if (! empty($this->filterSections)) {
                 $query->whereRaw("
                     CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                         SELECT DISTINCT p.id_publication
                         FROM publications p
-                        JOIN publication_category pc ON p.id_publication = pc.publication_id
-                        WHERE pc.category_id IN (?)
+                        JOIN section_publication sp ON p.id_publication = sp.publication_id
+                        WHERE sp.section_id IN (?)
                     )
-                ", [$this->filterCategories]);
+                ", [$this->filterSections]);
             }
 
             if (! empty($this->filterAuthors)) {
@@ -367,16 +403,16 @@ class MetadataReviewDashboard extends Component
         // Helper to extract publication ID from file_id
         $extractPubId = fn ($fileId) => (int) (explode('-', $fileId)[0] ?? 0);
 
-        // Publication category filter
-        if (! empty($this->filterCategories)) {
+        // Publication section filter
+        if (! empty($this->filterSections)) {
             $query->whereRaw("
                 CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                     SELECT DISTINCT p.id_publication
                     FROM publications p
-                    JOIN publication_category pc ON p.id_publication = pc.publication_id
-                    WHERE pc.category_id IN (?)
+                    JOIN section_publication sp ON p.id_publication = sp.publication_id
+                    WHERE sp.section_id IN (?)
                 )
-            ", [$this->filterCategories]);
+            ", [$this->filterSections]);
         }
 
         // Publication author filter

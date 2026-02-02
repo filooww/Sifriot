@@ -4,7 +4,7 @@
         author: false,
         date: false,
         genre: false,
-        category: false,
+        section: false,
         publisher: false,
         textSize: false,
         alphabetical: false,
@@ -242,21 +242,21 @@
 
         <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
 
-        {{-- Category Filter --}}
+        {{-- Section Filter --}}
         <div class="mb-3">
             <button
-                @click="openSections.category = !openSections.category"
+                @click="openSections.section = !openSections.section"
                 class="w-full flex items-center justify-between text-start font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
             >
                 <div class="flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
-                    <span>{{ __('Category') }}</span>
+                    <span>{{ __('Section') }}</span>
                 </div>
                 <svg
                     class="w-5 h-5 transition-transform duration-200"
-                    :class="openSections.category ? 'rotate-180' : ''"
+                    :class="openSections.section ? 'rotate-180' : ''"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -264,20 +264,20 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.category" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
-                @foreach($this->categories as $category)
+            <div x-show="openSections.section" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                @foreach($this->sections as $section)
                 <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
                     <input
                         type="checkbox"
-                        wire:model.live="selectedCategories"
-                        value="{{ $category['id'] }}"
+                        wire:model.live="selectedSections"
+                        value="{{ $section['id'] }}"
                         class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
                     >
                     <span class="text-sm">
-                        @if($category['parent_name'])
-                            <span class="text-gray-400">{{ $category['parent_name'] }} / </span>
+                        @if($section['parent_name'])
+                            <span class="text-gray-400">{{ $section['parent_name'] }} / </span>
                         @endif
-                        {{ $category['name'] }}
+                        {{ $section['name'] }}
                     </span>
                 </label>
                 @endforeach

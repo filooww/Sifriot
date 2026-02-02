@@ -399,17 +399,77 @@
                 <!-- Theme Field -->
                 <div>
                     <label for="theme" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Theme/Category
+                        Theme
                     </label>
                     <x-autocomplete-input
                         wireModel="theme"
                         searchMethod="searchThemes"
-                        placeholder="Theme or category"
+                        placeholder="Theme"
                         createNewLabel="Create new theme"
                     />
                     @error('theme')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Section: Sections -->
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                📚 Sections
+            </h3>
+            <div class="space-y-4">
+                <!-- Sections Field -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Sections
+                    </label>
+                    <div class="space-y-2">
+                        {{-- List of selected sections --}}
+                        <div class="flex flex-wrap gap-2">
+                            @foreach ($this->getSelectedSectionsWithNames() as $section)
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                    {{ $section['name'] }}
+                                    <button type="button" wire:click="removeSection({{ $section['id'] }})" class="hover:text-blue-600 dark:hover:text-blue-400">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </span>
+                            @endforeach
+                        </div>
+
+                        {{-- Autocomplete Input --}}
+                        <div x-data="{
+                            open: false,
+                            query: @entangle('sectionSearchQuery').live.debounce.300ms,
+                            results: [],
+                            async search() {
+                                if (this.query.length < 2) { this.results = []; return; }
+                                this.results = await $wire.searchSections(this.query);
+                                this.open = true;
+                            }
+                        }" @click.outside="open = false" class="relative">
+                            <input
+                                type="text"
+                                x-model="query"
+                                @input="search()"
+                                @focus="search()"
+                                placeholder="{{ __('Add section...') }}"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+                            >
+
+                            <div x-show="open && results.length > 0" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                <template x-for="result in results" :key="result.id">
+                                    <button
+                                        type="button"
+                                        @click="$wire.addSection(result.id); query = ''; open = false; results = []"
+                                        class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                        x-text="result.name"
+                                    ></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -543,7 +603,7 @@
                     >
                         <span>💾</span> Save Changes
                     </button>
-                @elseif ($useManual || $extractionStatus === 'failed')
+                @elseif ($useManual || $extractionStatus === 'failed' || $extractionStatus === 'pending')
                     <!-- For manual entry or failed: save and confirm -->
                     <button
                         type="button"

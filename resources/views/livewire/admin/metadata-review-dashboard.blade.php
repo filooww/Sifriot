@@ -9,7 +9,7 @@
                 </div>
                 <div class="flex gap-2">
                     @if ($search || $statusFilter !== 'all' || $formatFilter !== 'all' || $dateFilter !== 'all' ||
-                        !empty($filterCategories) || !empty($filterAuthors) || !empty($filterGenres) ||
+                        !empty($filterSections) || !empty($filterAuthors) || !empty($filterGenres) ||
                         !empty($filterPublicationStatus) || $filterDateFrom || $filterDateTo ||
                         $filterTextSizeRange !== [0, 500000] || $filterAlphabeticalSort)
                         <button
@@ -427,7 +427,7 @@
                                 </td>
                                 <td class="px-6 py-3 text-right">
                                     <div class="flex justify-end gap-2 items-center">
-                                        @if ($metadata->status === 'processed' || $metadata->status === 'rejected')
+                                        @if ($metadata->status === 'processed' || $metadata->status === 'rejected' || $metadata->status === 'pending')
                                             <button
                                                 type="button"
                                                 wire:click="openReview({{ (int)$metadata->id }})"

@@ -218,14 +218,14 @@
                     </div>
                     @endif
 
-                    <!-- Categories -->
-                    @if($publication->categories->isNotEmpty())
+                    <!-- Sections -->
+                    @if($publication->sections->isNotEmpty())
                     <div>
-                        <span class="text-xs uppercase tracking-wider text-gray-500">{{ __('Categories') }}</span>
+                        <span class="text-xs uppercase tracking-wider text-gray-500">{{ __('Sections') }}</span>
                         <div class="flex flex-wrap gap-1.5 mt-2">
-                            @foreach($publication->categories as $category)
+                            @foreach($publication->sections as $section)
                             <span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700/30">
-                                {{ $category->{'name_' . app()->getLocale()} ?? $category->name_en }}
+                                {{ $section->{'name_' . app()->getLocale()} ?? $section->name_en }}
                             </span>
                             @endforeach
                         </div>

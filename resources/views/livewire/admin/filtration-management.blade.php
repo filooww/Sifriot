@@ -31,7 +31,7 @@
                         'content-types' => __('Content Types'),
                         'genres' => __('Genres'),
                         'themes' => __('Themes'),
-                        'categories' => __('Categories'),
+                        'sections' => __('Sections'),
                         'authors' => __('Authors'),
                         'publishers' => __('Publishers'),
                     ];
@@ -68,9 +68,9 @@
                 @include('livewire.admin.filtration-tabs.themes')
             @endif
 
-            {{-- Categories Tab --}}
-            @if($activeTab === 'categories')
-                @include('livewire.admin.filtration-tabs.categories')
+            {{-- Sections Tab --}}
+            @if($activeTab === 'sections')
+                @include('livewire.admin.filtration-tabs.sections')
             @endif
 
             {{-- Authors Tab --}}
@@ -100,9 +100,9 @@
         @include('livewire.admin.filtration-modals.theme-modal')
     @endif
 
-    {{-- Categories Modal --}}
-    @if($showCategoryModal)
-        @include('livewire.admin.filtration-modals.category-modal')
+    {{-- Sections Modal --}}
+    @if($showSectionModal)
+        @include('livewire.admin.filtration-modals.section-modal')
     @endif
 
     {{-- Authors Modal --}}

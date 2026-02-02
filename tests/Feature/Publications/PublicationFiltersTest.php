@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Publications;
 
 use App\Models\Author;
-use App\Models\Category;
+use App\Models\Section;
 use App\Models\Publication;
 use App\Models\Theme;
 use App\Models\User;
@@ -16,15 +16,15 @@ class PublicationFiltersTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_can_apply_category_filter_and_see_filtered_results(): void
+    public function test_user_can_apply_section_filter_and_see_filtered_results(): void
     {
-        $category = Category::factory()->create(['name_en' => 'Science Fiction']);
+        $section = Section::factory()->create(['name_en' => 'Science Fiction']);
         $matchingPub = Publication::factory()->create(['title' => 'Dune']);
         $nonMatchingPub = Publication::factory()->create(['title' => 'Other Book']);
 
-        $matchingPub->categories()->attach($category->id);
+        $matchingPub->sections()->attach($section->id);
 
-        $response = $this->get(route('publications.index', ['cat' => [$category->id]]));
+        $response = $this->get(route('home', ['sec' => [$section->id]]));
 
         $response->assertStatus(200);
         $response->assertSee('Dune');
@@ -33,7 +33,7 @@ class PublicationFiltersTest extends TestCase
 
     public function test_multiple_filters_combine_with_and_logic(): void
     {
-        $category = Category::factory()->create(['name_en' => 'Fiction']);
+        $section = Section::factory()->create(['name_en' => 'Fiction']);
         $author = Author::factory()->create(['author_name' => 'John Doe']);
 
         // Create publication matching both filters
@@ -41,18 +41,18 @@ class PublicationFiltersTest extends TestCase
             'title' => 'Matching Book',
             'upload_date' => '2022-06-15',
         ]);
-        $matchingPub->categories()->attach($category->id);
+        $matchingPub->sections()->attach($section->id);
         $matchingPub->authors()->attach($author->id_author);
 
-        // Create publication matching only category filter
+        // Create publication matching only section filter
         $nonMatchingPub = Publication::factory()->create([
             'title' => 'Non-Matching Book',
             'upload_date' => '2022-06-15',
         ]);
-        $nonMatchingPub->categories()->attach($category->id);
+        $nonMatchingPub->sections()->attach($section->id);
 
-        $response = $this->get(route('publications.index', [
-            'cat' => [$category->id],
+        $response = $this->get(route('home', [
+            'sec' => [$section->id],
             'auth' => [$author->id_author],
         ]));
 
@@ -72,7 +72,7 @@ class PublicationFiltersTest extends TestCase
             'upload_date' => '2023-12-31',
         ]);
 
-        $response = $this->get(route('publications.index', [
+        $response = $this->get(route('home', [
             'from' => '2022-01-01',
             'to' => '2022-12-31',
         ]));
@@ -93,7 +93,7 @@ class PublicationFiltersTest extends TestCase
             'word_count' => 150000,
         ]);
 
-        $response = $this->get(route('publications.index', [
+        $response = $this->get(route('home', [
             'size' => [0, 10000],
         ]));
 
@@ -107,7 +107,7 @@ class PublicationFiltersTest extends TestCase
         Publication::factory()->create(['title' => 'Zebra Book']);
         Publication::factory()->create(['title' => 'Apple Book']);
 
-        $response = $this->get(route('publications.index', ['sort' => 'asc']));
+        $response = $this->get(route('home', ['sort' => 'asc']));
 
         $response->assertStatus(200);
         $content = $response->getContent();
@@ -122,7 +122,7 @@ class PublicationFiltersTest extends TestCase
         Publication::factory()->create(['title' => 'Zebra Book']);
         Publication::factory()->create(['title' => 'Apple Book']);
 
-        $response = $this->get(route('publications.index', ['sort' => 'desc']));
+        $response = $this->get(route('home', ['sort' => 'desc']));
 
         $response->assertStatus(200);
         $content = $response->getContent();
@@ -139,7 +139,7 @@ class PublicationFiltersTest extends TestCase
         Publication::factory()->create(['title' => 'Published Book', 'status' => 'published']);
         Publication::factory()->create(['title' => 'Hidden Book', 'status' => 'hidden']);
 
-        $response = $this->actingAs($admin)->get(route('publications.index', [
+        $response = $this->actingAs($admin)->get(route('home', [
             'status' => ['published'],
         ]));
 
@@ -152,7 +152,7 @@ class PublicationFiltersTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'user']);
 
-        $response = $this->actingAs($user)->get(route('publications.index'));
+        $response = $this->actingAs($user)->get(route('home'));
 
         $response->assertStatus(200);
         $response->assertDontSee('Publication Status');
@@ -160,9 +160,9 @@ class PublicationFiltersTest extends TestCase
 
     public function test_applied_filters_display_as_removable_tags(): void
     {
-        $category = Category::factory()->create(['name_en' => 'Fiction']);
+        $section = Section::factory()->create(['name_en' => 'Fiction']);
 
-        $response = $this->get(route('publications.index', ['cat' => [$category->id]]));
+        $response = $this->get(route('home', ['sec' => [$section->id]]));
 
         $response->assertStatus(200);
         $response->assertSee('Fiction');
@@ -170,27 +170,27 @@ class PublicationFiltersTest extends TestCase
 
     public function test_filter_state_persists_across_pagination(): void
     {
-        $category = Category::factory()->create(['name_en' => 'Fiction']);
+        $section = Section::factory()->create(['name_en' => 'Fiction']);
 
-        // Create 20 publications with category
+        // Create 20 publications with section
         for ($i = 1; $i <= 20; $i++) {
             $pub = Publication::factory()->create(['title' => "Book {$i}"]);
-            $pub->categories()->attach($category->id);
+            $pub->sections()->attach($section->id);
         }
 
-        $response = $this->get(route('publications.index', ['cat' => [$category->id], 'page' => 2]));
+        $response = $this->get(route('home', ['sec' => [$section->id], 'page' => 2]));
 
         $response->assertStatus(200);
-        $this->assertEquals($category->id, request()->query('cat')[0] ?? null);
+        $this->assertEquals($section->id, request()->query('sec')[0] ?? null);
     }
 
     public function test_url_parameters_reflect_active_filters(): void
     {
-        $category = Category::factory()->create();
+        $section = Section::factory()->create();
         $author = Author::factory()->create();
 
-        $response = $this->get(route('publications.index', [
-            'cat' => [$category->id],
+        $response = $this->get(route('home', [
+            'sec' => [$section->id],
             'auth' => [$author->id_author],
             'from' => '2022-01-01',
             'to' => '2022-12-31',
@@ -198,7 +198,7 @@ class PublicationFiltersTest extends TestCase
 
         $response->assertStatus(200);
 
-        $this->assertEquals([$category->id], request()->query('cat'));
+        $this->assertEquals([$section->id], request()->query('sec'));
         $this->assertEquals([$author->id_author], request()->query('auth'));
         $this->assertEquals('2022-01-01', request()->query('from'));
         $this->assertEquals('2022-12-31', request()->query('to'));
@@ -206,17 +206,17 @@ class PublicationFiltersTest extends TestCase
 
     public function test_filters_work_correctly_with_search_query(): void
     {
-        $category = Category::factory()->create(['name_en' => 'Fiction']);
+        $section = Section::factory()->create(['name_en' => 'Fiction']);
 
         $matchingPub = Publication::factory()->create(['title' => 'Dune']);
-        $matchingPub->categories()->attach($category->id);
+        $matchingPub->sections()->attach($section->id);
 
         $nonMatchingPub = Publication::factory()->create(['title' => 'Other Book']);
-        $nonMatchingPub->categories()->attach($category->id);
+        $nonMatchingPub->sections()->attach($section->id);
 
-        $response = $this->get(route('publications.index', [
+        $response = $this->get(route('home', [
             'search' => 'Dune',
-            'cat' => [$category->id],
+            'sec' => [$section->id],
         ]));
 
         $response->assertStatus(200);
@@ -233,7 +233,7 @@ class PublicationFiltersTest extends TestCase
 
         $nonMatchingPub = Publication::factory()->create(['title' => 'Other Book']);
 
-        $response = $this->get(route('publications.index', [
+        $response = $this->get(route('home', [
             'genre' => [$theme->id_theme],
         ]));
 
@@ -242,22 +242,22 @@ class PublicationFiltersTest extends TestCase
         $response->assertDontSee('Other Book');
     }
 
-    public function test_hierarchical_category_filter_works_correctly(): void
+    public function test_hierarchical_section_filter_works_correctly(): void
     {
-        $parent = Category::factory()->create(['name_en' => 'Books']);
-        $child = Category::factory()->create([
+        $parent = Section::factory()->create(['name_en' => 'Books']);
+        $child = Section::factory()->create([
             'name_en' => 'Fiction',
             'parent_id' => $parent->id,
         ]);
 
         $pubWithChild = Publication::factory()->create(['title' => 'Fiction Book']);
-        $pubWithChild->categories()->attach($child->id);
+        $pubWithChild->sections()->attach($child->id);
 
         $pubWithParent = Publication::factory()->create(['title' => 'General Book']);
-        $pubWithParent->categories()->attach($parent->id);
+        $pubWithParent->sections()->attach($parent->id);
 
-        // Filter by child category
-        $response = $this->get(route('publications.index', ['cat' => [$child->id]]));
+        // Filter by child section
+        $response = $this->get(route('home', ['sec' => [$child->id]]));
 
         $response->assertStatus(200);
         $response->assertSee('Fiction Book');
@@ -266,7 +266,7 @@ class PublicationFiltersTest extends TestCase
 
     public function test_filters_work_correctly_in_all_three_languages(): void
     {
-        $category = Category::factory()->create([
+        $section = Section::factory()->create([
             'name_en' => 'Science Fiction',
             'name_ru' => 'Научная фантастика',
             'name_he' => 'מדע בדיוני',
@@ -274,24 +274,24 @@ class PublicationFiltersTest extends TestCase
 
         // Test English
         app()->setLocale('en');
-        $response = $this->get(route('publications.index'));
+        $response = $this->get(route('home'));
         $response->assertStatus(200);
 
         // Test Russian
         app()->setLocale('ru');
-        $response = $this->get(route('publications.index'));
+        $response = $this->get(route('home'));
         $response->assertStatus(200);
 
         // Test Hebrew
         app()->setLocale('he');
-        $response = $this->get(route('publications.index'));
+        $response = $this->get(route('home'));
         $response->assertStatus(200);
     }
 
     public function test_filter_performance_with_large_dataset(): void
     {
         // Create 100 test publications (reduced from 1000 for test speed)
-        $category = Category::factory()->create();
+        $section = Section::factory()->create();
         $author = Author::factory()->create();
 
         for ($i = 0; $i < 100; $i++) {
@@ -300,15 +300,15 @@ class PublicationFiltersTest extends TestCase
                 'word_count' => 50000,
             ]);
             if ($i % 2 === 0) {
-                $pub->categories()->attach($category->id);
+                $pub->sections()->attach($section->id);
                 $pub->authors()->attach($author->id_author);
             }
         }
 
         $startTime = microtime(true);
 
-        $response = $this->get(route('publications.index', [
-            'cat' => [$category->id],
+        $response = $this->get(route('home', [
+            'sec' => [$section->id],
             'auth' => [$author->id_author],
             'from' => '2020-01-01',
             'to' => '2023-12-31',

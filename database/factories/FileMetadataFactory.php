@@ -18,7 +18,7 @@ class FileMetadataFactory extends Factory
     {
         return [
             'file_id' => $this->faker->uuid(),
-            'file_name' => $this->faker->fileName('pdf'),
+            'file_name' => $this->faker->word().'.pdf',
             'status' => 'pending',
             'extracted_data' => [],
             'extraction_method' => null,
