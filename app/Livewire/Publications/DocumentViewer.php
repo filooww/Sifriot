@@ -107,6 +107,11 @@ class DocumentViewer extends Component
         }
     }
 
+    public function encodeFileName(string $fileName): string
+    {
+        return rtrim(strtr(base64_encode($fileName), '+/', '-_'), '=');
+    }
+
     public function render()
     {
         return view('livewire.publications.document-viewer');

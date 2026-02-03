@@ -1073,10 +1073,13 @@ class MetadataReviewForm extends Component
                         ],
                         $cleanedGenres
                     ),
-                    'theme' => $this->theme ? [
-                        'value' => trim($this->theme),
-                        'confidence' => 1.0,
-                    ] : null,
+                    'themes' => array_map(
+                        fn ($theme) => [
+                            'value' => trim($theme),
+                            'confidence' => 1.0,
+                        ],
+                        $cleanedThemes
+                    ),
                 ],
                 'extraction_method' => 'manual_entry',
             ]);
@@ -1382,7 +1385,7 @@ class MetadataReviewForm extends Component
      */
     public function storeAuthor(string $name): array
     {
-        abort_if(! auth()->user() || ! auth()->user()->role === 'admin', 403, 'Unauthorized');
+        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $author = Author::firstOrCreate(
@@ -1400,7 +1403,7 @@ class MetadataReviewForm extends Component
      */
     public function storePublisher(string $name): array
     {
-        abort_if(! auth()->user() || ! auth()->user()->role === 'admin', 403, 'Unauthorized');
+        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $publisher = Publishing::firstOrCreate(
@@ -1419,7 +1422,7 @@ class MetadataReviewForm extends Component
      */
     public function storeGenre(string $name): array
     {
-        abort_if(! auth()->user() || ! auth()->user()->role === 'admin', 403, 'Unauthorized');
+        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $genre = Genre::firstOrCreate(
             ['slug' => Str::slug($name)],
@@ -1437,7 +1440,7 @@ class MetadataReviewForm extends Component
      */
     public function storeTheme(string $name): array
     {
-        abort_if(! auth()->user() || ! auth()->user()->role === 'admin', 403, 'Unauthorized');
+        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $theme = \App\Models\Theme::firstOrCreate(

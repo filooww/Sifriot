@@ -1,9 +1,3 @@
-@php
-    // URL-safe base64 encoding helper
-    $urlSafeBase64 = function($str) {
-        return rtrim(strtr(base64_encode($str), '+/', '-_'), '=');
-    };
-@endphp
 <div class="w-full h-full">
     @if(! $isAuthorized)
         <!-- Login CTA for non-authenticated users -->
@@ -122,7 +116,7 @@
                     <!-- FB2 Viewer using server-side XML-to-HTML conversion -->
                     <iframe
                         id="fb2-viewer-{{ $publicationId }}"
-                        src="{{ route('files.convert-fb2', ['publication' => $publicationId, 'filename' => $urlSafeBase64($fileName)]) }}"
+                        src="{{ route('files.convert-fb2', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}"
                         class="w-full h-full border-0"
                         sandbox="allow-same-origin"
                     ></iframe>
@@ -133,7 +127,7 @@
                                 iframe.style.display = 'none';
                                 const errorDiv = document.createElement('div');
                                 errorDiv.className = 'flex items-center justify-center h-full bg-gray-100 dark:bg-gray-950';
-                                errorDiv.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading FB2 file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $urlSafeBase64($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>';
+                                errorDiv.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading FB2 file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>';
                                 iframe.parentNode.insertBefore(errorDiv, iframe);
                             };
                         })();
@@ -159,8 +153,22 @@
                             (function() {
                                 const viewerId = 'docx-viewer-{{ $publicationId }}';
                                 const viewerEl = document.getElementById(viewerId);
+                                const fileUrl = '{{ $fileUrl }}';
 
-                                fetch('{{ $fileUrl }}')
+                                if (!fileUrl) {
+                                     viewerEl.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-center text-gray-500">{{ __("No file URL available") }}</div></div>';
+                                     return;
+                                }
+
+                                // Timeout wrapper for fetch
+                                const fetchWithTimeout = (url, ms = 15000) => {
+                                    const controller = new AbortController();
+                                    const promise = fetch(url, { signal: controller.signal });
+                                    const timeout = setTimeout(() => controller.abort(), ms);
+                                    return promise.finally(() => clearTimeout(timeout));
+                                };
+
+                                fetchWithTimeout(fileUrl)
                                     .then(response => {
                                         if (!response.ok) {
                                             throw new Error('HTTP ' + response.status + ': ' + response.statusText);
@@ -178,7 +186,8 @@
                                     })
                                     .catch(error => {
                                         console.error('Error loading document:', error);
-                                        viewerEl.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading document") }}</p><p class="text-sm mt-2 text-gray-500">' + error.message + '</p><p class="text-sm mt-4 text-gray-400">{{ __("Try downloading the file instead") }}</p></div></div>';
+                                        let msg = error.name === 'AbortError' ? '{{ __("Loading timed out") }}' : error.message;
+                                        viewerEl.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading document") }}</p><p class="text-sm mt-2 text-gray-500">' + msg + '</p><p class="text-sm mt-4 text-gray-400">{{ __("Try downloading the file instead") }}</p></div></div>';
                                     });
                             })();
                         </script>
@@ -186,7 +195,7 @@
                         <!-- DOC files - HTML viewer using PHPWord conversion with fallback to antiword -->
                         <iframe
                             id="doc-iframe-{{ $publicationId }}"
-                            src="{{ route('files.convert-doc-html', ['publication' => $publicationId, 'filename' => $urlSafeBase64($fileName)]) }}"
+                            src="{{ route('files.convert-doc-html', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}"
                             class="w-full h-full border-0"
                             sandbox="allow-same-origin"
                         ></iframe>
@@ -197,7 +206,7 @@
                                     iframe.style.display = 'none';
                                     const errorDiv = document.createElement('div');
                                     errorDiv.className = 'flex items-center justify-center h-full bg-gray-100 dark:bg-gray-950';
-                                    errorDiv.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error converting DOC file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $urlSafeBase64($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>';
+                                    errorDiv.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error converting DOC file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>';
                                     iframe.parentNode.insertBefore(errorDiv, iframe);
                                 };
                             })();
@@ -291,7 +300,7 @@
                                 {{ __('Please download the file to view it') }}
                             </p>
                             <a
-                                href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $urlSafeBase64($fileName)]) }}"
+                                href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}"
                                 class="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors text-sm font-medium"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
