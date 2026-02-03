@@ -37,13 +37,17 @@
                         wire:target="extractWithAI"
                         class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 disabled:bg-purple-50 text-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 dark:disabled:bg-purple-800 dark:text-white text-sm font-medium rounded-lg transition"
                     >
-                        <span wire:loading.remove wire:target="extractWithAI">✨</span>
-                        <svg wire:loading wire:target="extractWithAI" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span wire:loading.remove wire:target="extractWithAI">{{ __('Extract with AI') }}</span>
-                        <span wire:loading wire:target="extractWithAI">{{ __('Extracting...') }}</span>
+                        <div wire:loading.remove wire:target="extractWithAI" class="flex items-center gap-2">
+                            <span>✨</span>
+                            <span>{{ __('Extract with AI') }}</span>
+                        </div>
+                        <div wire:loading wire:target="extractWithAI" class="flex items-center gap-2">
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>{{ __('Extracting...') }}</span>
+                        </div>
                     </button>
                 @else
                     <p class="mt-3 text-xs text-gray-500 dark:text-gray-400" title="{{ __('Gemini API not configured') }}">
@@ -76,11 +80,9 @@
             </div>
         </div>
 
-        @if ($extractionStatus === 'pending')
-            <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-                <p class="text-sm text-yellow-800 dark:text-yellow-200">Extraction in progress...</p>
-            </div>
-        @endif
+        <div wire:loading wire:target="extractWithAI" class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+            <p class="text-sm text-yellow-800 dark:text-yellow-200">Extraction in progress...</p>
+        </div>
 
         @if ($extractionStatus === 'failed' && $errorMessage)
             <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
@@ -96,23 +98,49 @@
         $publication = \App\Models\Publication::with('files')->find($fileMetadata->file_id);
     @endphp
     @if($publication)
-        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-            <button
-                type="button"
-                wire:click="$toggle('showFilePreview')"
-                class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-            >
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">📄 File Preview</span>
-                <svg class="w-5 h-5 transition transform {{ $showFilePreview ?? false ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                </svg>
-            </button>
+        <div 
+            x-data="{ isFullscreen: false }" 
+            class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 transition-all duration-300"
+            :class="{ 'fixed inset-0 z-50 h-screen w-screen m-0 rounded-none border-0 flex flex-col': isFullscreen }"
+        >
+            <div class="flex-none flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                <button
+                    type="button"
+                    wire:click="$toggle('showFilePreview')"
+                    class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                    <svg class="w-5 h-5 transition transform {{ $showFilePreview ?? false ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
+                    <span>📄 File Preview</span>
+                </button>
+                
+                <div class="flex items-center gap-2" x-show="$wire.showFilePreview">
+                     <button 
+                        @click="isFullscreen = !isFullscreen" 
+                        type="button"
+                        class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        title="Toggle Fullscreen"
+                    >
+                        <svg x-show="!isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M20 8V4m0 0h-4M4 16v4m0 0h4M20 16v4m0 0h-4"></path>
+                        </svg>
+                        <svg x-show="isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
 
             @if($showFilePreview ?? false)
-                <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <div 
+                    class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden transition-all" 
+                    :class="{ 'flex-1': isFullscreen, 'h-[600px]': !isFullscreen }"
+                >
                     <livewire:publications.document-viewer
                         :publicationId="$publication->id_publication"
                         :key="'metadata-viewer-' . $fileMetadata->id"
+                        class="h-full w-full"
                     />
                 </div>
             @endif
@@ -190,13 +218,14 @@
             </label>
             <div class="space-y-2">
                 @foreach ($authors as $index => $author)
-                    <div class="flex gap-2">
+                    <div class="flex gap-2" wire:key="author-field-{{ $author['id'] }}">
                         <x-autocomplete-input
-                            wireModel="authors.{{ $index }}"
+                            wireModel="authors.{{ $index }}.value"
                             searchMethod="searchAuthors"
                             placeholder="Author name"
                             createNewLabel="Create new author"
                             createNewModel="createNewAuthors.{{ $index }}"
+                            createMethod="storeAuthor"
                         />
                         @if (count($authors) > 1)
                             <button
@@ -324,11 +353,21 @@
                                 <span class="text-gray-900 dark:text-white">{{ $contentType->name_en }}</span>
                             </button>
                         @endforeach
+
                     </div>
                     @error('contentTypeId')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
+                
+                @if(isset($aiSuggestions['content_type']))
+                    <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                        <span>✨ AI Suggestion: </span>
+                        <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                            {{ $aiSuggestions['content_type'] }}
+                        </span>
+                    </div>
+                @endif
             </div>
 
             <div class="space-y-4 mt-4">
@@ -343,8 +382,42 @@
                 placeholder="Publisher name"
                 createNewLabel="Create new publisher"
                 createNewModel="createNewPublisher"
+                createMethod="storePublisher"
             />
+                    @if(isset($aiSuggestions['publisher']))
+                        <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                             <span>✨ AI Suggestion: </span>
+                             <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                                 {{ $aiSuggestions['publisher'] }}
+                             </span>
+                        </div>
+                    @endif
                     @error('publisher')
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Issuer Field -->
+                <div>
+                    <label for="issuer" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Issuer
+                    </label>
+                    <x-autocomplete-input
+                        wireModel="issuer"
+                        searchMethod="searchPublishers"
+                        placeholder="Issuer name (Organization)"
+                        createNewLabel="Create new issuer"
+                        createMethod="storePublisher"
+                    />
+                    @if(isset($aiSuggestions['issuer']))
+                        <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                             <span>✨ AI Suggestion: </span>
+                             <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                                 {{ $aiSuggestions['issuer'] }}
+                             </span>
+                        </div>
+                    @endif
+                    @error('issuer')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
@@ -364,13 +437,14 @@
                     </label>
             <div class="space-y-2">
                 @foreach ($genres as $index => $genre)
-                    <div class="flex gap-2">
+                    <div class="flex gap-2" wire:key="genre-field-{{ $genre['id'] }}">
                         <x-autocomplete-input
-                            wireModel="genres.{{ $index }}"
+                            wireModel="genres.{{ $index }}.value"
                             searchMethod="searchGenres"
                             placeholder="Genre"
                             createNewLabel="Create new genre"
                             createNewModel="createNewGenres.{{ $index }}"
+                            createMethod="storeGenre"
                         />
                         @if (count($genres) > 1)
                             <button
@@ -396,18 +470,39 @@
                     @enderror
                 </div>
 
-                <!-- Theme Field -->
+                <!-- Themes Field -->
                 <div>
-                    <label for="theme" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Theme
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Themes
                     </label>
-                    <x-autocomplete-input
-                        wireModel="theme"
-                        searchMethod="searchThemes"
-                        placeholder="Theme"
-                        createNewLabel="Create new theme"
-                    />
-                    @error('theme')
+                    <div class="space-y-2">
+                        @foreach ($themes as $index => $theme)
+                            <div class="flex gap-2" wire:key="theme-field-{{ $theme['id'] }}">
+                                <x-autocomplete-input
+                                    wireModel="themes.{{ $index }}.value"
+                                    searchMethod="searchThemes"
+                                    placeholder="Theme"
+                                    createNewLabel="Create new theme"
+                                    createMethod="storeTheme"
+                                />
+                                <button
+                                    type="button"
+                                    wire:click="removeTheme({{ $index }})"
+                                    class="px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        @endforeach
+                        <button
+                            type="button"
+                            wire:click="addTheme"
+                            class="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition text-sm font-medium"
+                        >
+                            + Add Theme
+                        </button>
+                    </div>
+                    @error('themes')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
@@ -470,6 +565,14 @@
                             </div>
                         </div>
                     </div>
+                    @if(isset($aiSuggestions['section']))
+                        <div class="mt-2 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                            <span>✨ AI Suggestion: </span>
+                            <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                                {{ $aiSuggestions['section'] }}
+                            </span>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

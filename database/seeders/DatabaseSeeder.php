@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             // Seed reference data
             $this->call(AuthorSeeder::class);
             $this->call(ThemeSeeder::class);
+            $this->call(PublisherSeeder::class);
 
             // Seed test users
             $this->seedDefaultUsers();

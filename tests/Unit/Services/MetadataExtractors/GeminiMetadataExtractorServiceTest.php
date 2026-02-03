@@ -70,14 +70,12 @@ class GeminiMetadataExtractorServiceTest extends TestCase
                                         'authors' => ['John Doe', 'Jane Smith'],
                                         'publication_year' => 2024,
                                         'publisher' => 'Test Publisher',
+                                        'issuer' => 'Test Org',
                                         'genres' => ['Fiction', 'Drama'],
-                                        'confidence' => [
-                                            'title' => 0.95,
-                                            'authors' => 0.9,
-                                            'publication_year' => 0.85,
-                                            'publisher' => 0.8,
-                                            'genres' => 0.75,
-                                        ],
+                                        'themes' => ['Adventure'],
+                                        'content_type' => 'Books',
+                                        'section' => 'New Arrivals',
+                                        'description' => 'A test description',
                                     ]),
                                 ],
                             ],
@@ -94,7 +92,12 @@ class GeminiMetadataExtractorServiceTest extends TestCase
         $this->assertEquals(['John Doe', 'Jane Smith'], $metadata->getAuthors());
         $this->assertEquals(2024, $metadata->getPublicationYear());
         $this->assertEquals('Test Publisher', $metadata->getPublisher());
+        $this->assertEquals('Test Org', $metadata->getIssuer());
         $this->assertEquals(['Fiction', 'Drama'], $metadata->getGenres());
+        $this->assertEquals(['Adventure'], $metadata->getThemes());
+        $this->assertEquals('Books', $metadata->getContentType());
+        $this->assertEquals('New Arrivals', $metadata->getSection());
+        $this->assertEquals('A test description', $metadata->getDescription());
     }
 
     public function test_extract_handles_json_in_markdown_code_block(): void
@@ -112,7 +115,6 @@ class GeminiMetadataExtractorServiceTest extends TestCase
                                         'publication_year' => 2023,
                                         'publisher' => null,
                                         'genres' => [],
-                                        'confidence' => [],
                                     ]) . "\n```",
                                 ],
                             ],
@@ -180,7 +182,6 @@ class GeminiMetadataExtractorServiceTest extends TestCase
                                         'publication_year' => 999, // Invalid year
                                         'publisher' => null,
                                         'genres' => [],
-                                        'confidence' => [],
                                     ]),
                                 ],
                             ],
@@ -212,7 +213,6 @@ class GeminiMetadataExtractorServiceTest extends TestCase
                                         'publication_year' => 3000, // Future year
                                         'publisher' => null,
                                         'genres' => [],
-                                        'confidence' => [],
                                     ]),
                                 ],
                             ],
@@ -243,10 +243,6 @@ class GeminiMetadataExtractorServiceTest extends TestCase
                                         'publication_year' => 2020,
                                         'publisher' => 'Издательство',
                                         'genres' => ['Художественная литература'],
-                                        'confidence' => [
-                                            'title' => 0.9,
-                                            'authors' => 0.85,
-                                        ],
                                     ]),
                                 ],
                             ],

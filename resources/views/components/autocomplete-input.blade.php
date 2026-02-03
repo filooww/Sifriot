@@ -6,6 +6,7 @@
     'readonly' => false,
     'value' => null,
     'createNewModel' => null,
+    'createMethod' => null,
 ])
 
 @php
@@ -74,11 +75,10 @@
             }
         },
         async createNew() {
-            const methodName = '{{ $searchMethod }}'.replace('search', 'createNew');
+            const methodName = '{{ $createMethod ?? str_replace('search', 'createNew', $searchMethod) }}';
             try {
                 const newItem = await $wire.call(methodName, this.search);
                 this.selectItem(newItem);
-                this.search = '';
             } catch (error) {
                 console.error('Failed to create new item:', error);
             }

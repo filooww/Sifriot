@@ -125,15 +125,35 @@ class MetadataReviewDashboard extends Component
      */
     protected function ensureMetadataExists(FileMetadataService $metadataService): void
     {
+        // 1. Cleanup zombies (metadata pointing to deleted publications)
+        // This ensures that if a publication was deleted, its metadata is also removed
+        $deletedCount = FileMetadata::whereNotExists(function ($subQuery) {
+            $subQuery->select(DB::raw(1))
+                ->from('publications')
+                ->whereRaw('publications.id_publication = CAST(SUBSTRING_INDEX(file_metadatas.file_id, "-", 1) AS UNSIGNED)')
+                ->whereNull('deleted_at');
+        })->delete();
+
+        if ($deletedCount > 0) {
+            Log::info("MetadataReviewDashboard: Cleaned up {$deletedCount} zombie metadata records.");
+        }
+
         // Get IDs of publications that match current broad criteria (e.g. not deleted)
         // We limit this to recent or active ones to avoid scanning the entire DB on every load if it's huge.
         // For now, let's just check the ones that would be visible.
         
         // Optimization: querying ALL might be heavy. Let's query "orphans" directly here.
-        // Queries publications that DO NOT have a corresponding file_metadata record.
-        // Note: This logic assumes file_id starts with "pubID-"
-        $orphans = Publication::whereDoesntHave('fileMetadata')
-            ->where('status', '!=', 'deleted') // Optional: only care about active ones
+        // The FileMetadata.file_id is formatted as "pubID-filename".
+        // The relation whereDoesntHave('fileMetadata') fails because keys don't match directly.
+        // So we manually find publications IDs that are NOT present as prefixes in file_metadatas.
+        
+        $orphans = Publication::query()
+            ->whereNull('deleted_at') // Explicitly exclude soft-deleted
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('file_metadatas')
+                    ->whereRaw('file_metadatas.file_id LIKE CONCAT(publications.id_publication, "-%")');
+            })
             ->get();
 
         if ($orphans->isNotEmpty()) {
@@ -240,6 +260,14 @@ class MetadataReviewDashboard extends Component
         // Helper to build base query with all filters except status
         $getBaseQuery = function () {
             $query = FileMetadata::query();
+
+            // Ensure we only count metadata for non-deleted publications
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('publications')
+                    ->whereRaw('publications.id_publication = CAST(SUBSTRING_INDEX(file_metadatas.file_id, "-", 1) AS UNSIGNED)')
+                    ->whereNull('deleted_at');
+            });
 
             // Text search
             if ($this->search) {
@@ -402,6 +430,14 @@ class MetadataReviewDashboard extends Component
 
         // Helper to extract publication ID from file_id
         $extractPubId = fn ($fileId) => (int) (explode('-', $fileId)[0] ?? 0);
+
+        // Ensure we only show metadata for non-deleted publications
+        $query->whereExists(function ($subQuery) {
+            $subQuery->select(DB::raw(1))
+                ->from('publications')
+                ->whereRaw('publications.id_publication = CAST(SUBSTRING_INDEX(file_metadatas.file_id, "-", 1) AS UNSIGNED)')
+                ->whereNull('deleted_at');
+        });
 
         // Publication section filter
         if (! empty($this->filterSections)) {
@@ -819,7 +855,7 @@ class MetadataReviewDashboard extends Component
                 if ($extractedMetadata->getTitle()) {
                     $extractedData['title'] = [
                         'value' => $extractedMetadata->getTitle(),
-                        'confidence' => $extractedMetadata->getConfidenceScores()['title'] ?? 0.8,
+                        'confidence' => 1.0,
                     ];
                 }
 
@@ -828,7 +864,7 @@ class MetadataReviewDashboard extends Component
                     $extractedData['authors'] = array_map(
                         fn ($author) => [
                             'value' => $author,
-                            'confidence' => $extractedMetadata->getConfidenceScores()['authors'] ?? 0.8,
+                            'confidence' => 1.0,
                         ],
                         $authors
                     );
@@ -837,14 +873,21 @@ class MetadataReviewDashboard extends Component
                 if ($extractedMetadata->getPublicationYear()) {
                     $extractedData['publication_year'] = [
                         'value' => $extractedMetadata->getPublicationYear(),
-                        'confidence' => $extractedMetadata->getConfidenceScores()['publication_year'] ?? 0.8,
+                        'confidence' => 1.0,
                     ];
                 }
 
                 if ($extractedMetadata->getPublisher()) {
                     $extractedData['publisher'] = [
                         'value' => $extractedMetadata->getPublisher(),
-                        'confidence' => $extractedMetadata->getConfidenceScores()['publisher'] ?? 0.8,
+                        'confidence' => 1.0,
+                    ];
+                }
+
+                if ($extractedMetadata->getIssuer()) {
+                    $extractedData['issuer'] = [
+                        'value' => $extractedMetadata->getIssuer(),
+                        'confidence' => 1.0,
                     ];
                 }
 
@@ -853,10 +896,36 @@ class MetadataReviewDashboard extends Component
                     $extractedData['genres'] = array_map(
                         fn ($genre) => [
                             'value' => $genre,
-                            'confidence' => $extractedMetadata->getConfidenceScores()['genres'] ?? 0.8,
+                            'confidence' => 1.0,
                         ],
                         $genres
                     );
+                }
+
+                $themes = $extractedMetadata->getThemes();
+                if (! empty($themes)) {
+                    $extractedData['themes'] = array_map(
+                        fn ($theme) => [
+                            'value' => $theme,
+                            'confidence' => 1.0,
+                        ],
+                        $themes
+                    );
+                }
+
+                if ($extractedMetadata->getContentType()) {
+                    $extractedData['content_type'] = [
+                        'value' => $extractedMetadata->getContentType(),
+                        'confidence' => 1.0,
+                    ];
+                    // attempt to resolve ID if possible, but simpler to just store value and let form handle it
+                }
+
+                if ($extractedMetadata->getSection()) {
+                    $extractedData['section'] = [
+                        'value' => $extractedMetadata->getSection(),
+                        'confidence' => 1.0,
+                    ];
                 }
 
                 $extractedData['gemini_model'] = config('services.gemini.model', 'gemini-1.5-flash');
@@ -951,12 +1020,22 @@ class MetadataReviewDashboard extends Component
     }
 
     /**
-     * Delete a metadata record
+     * Delete a metadata record and its associated publication
      */
     public function deleteMetadata(int $id): void
     {
-        FileMetadata::find($id)?->delete();
-        $this->dispatch('notify', message: 'Metadata deleted', type: 'success');
+        $metadata = FileMetadata::find($id);
+        
+        if ($metadata) {
+            // Also delete the associated publication to prevent it from being "auto-healed"
+            // and reappearing as a new metadata record
+            if ($metadata->publication) {
+                $metadata->publication->delete();
+            }
+            
+            $metadata->delete();
+            $this->dispatch('notify', message: 'Publication deleted', type: 'success');
+        }
     }
 
     /**

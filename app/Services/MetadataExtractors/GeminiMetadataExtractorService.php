@@ -87,15 +87,38 @@ class GeminiMetadataExtractorService
     /**
      * Build the extraction prompt.
      */
+    /**
+     * Build the extraction prompt.
+     */
     private function buildPrompt(string $textContent): string
     {
         return <<<PROMPT
 Extract bibliographic metadata from this document. If title/author not explicit, INFER from content.
+Prioritize returning values in **Russian** where applicable (content_type, themes, section, genres).
 
-Return JSON:
-{"title":"string (required)","authors":["strings"],"publication_year":int|null,"publisher":"string|null","genres":["strings"],"theme":"string|null (main subject/topic)","description":"string (2-3 sentence summary of the document)","confidence":{"title":0.0-1.0,"authors":0.0-1.0,"publication_year":0.0-1.0,"publisher":0.0-1.0,"genres":0.0-1.0,"theme":0.0-1.0,"description":0.0-1.0}}
+Return JSON matching this schema:
+{
+  "title": "string (required)",
+  "authors": ["strings"],
+  "publication_year": int|null,
+  "publisher": "string|null",
+  "issuer": "string|null (issuing organization if different from publisher)",
+  "content_type": "string (must be one of: Книги, Журналы, Статьи, Другое)",
+  "genres": ["strings"],
+  "themes": ["strings (abstract content themes/topics)"],
+  "section": "string (best match from list below)",
+  "description": "string (2-3 sentence summary)"
+}
 
-Document (English/Russian/Hebrew):
+Valid Sections (pick one best fit):
+- Избранное > Выбор редакции
+- Избранное > Новые поступления
+- Коллекции > По теме
+- Коллекции > По автору
+- Обзор > Недавние
+- Обзор > Популярные
+
+Document content:
 ---
 {$textContent}
 ---
@@ -232,72 +255,78 @@ PROMPT;
             if (! is_array($data)) {
                 $this->log('warning', 'Invalid JSON structure from Gemini');
 
-                return $metadata;
+                return new ExtractedMetadata;
             }
 
-            // Extract confidence scores
-            $confidence = $data['confidence'] ?? [];
-
-            // Set title
+            // Set basic fields
             if (! empty($data['title'])) {
-                $titleConfidence = (float) ($confidence['title'] ?? 0.7);
-                $metadata->setTitle($data['title'], $titleConfidence);
+                $metadata->setTitle($data['title']);
             }
 
-            // Set authors
             if (! empty($data['authors']) && is_array($data['authors'])) {
-                $authorConfidence = (float) ($confidence['authors'] ?? 0.7);
                 foreach ($data['authors'] as $author) {
                     if (is_string($author) && ! empty(trim($author))) {
-                        $metadata->addAuthor(trim($author), $authorConfidence);
+                        $metadata->addAuthor(trim($author));
                     }
                 }
             }
 
-            // Set publication year
             if (! empty($data['publication_year'])) {
-                $year = (int) $data['publication_year'];
-                if ($year >= 1000 && $year <= (int) date('Y')) {
-                    $yearConfidence = (float) ($confidence['publication_year'] ?? 0.7);
-                    $metadata->setPublicationYear($year, $yearConfidence);
-                }
+                $metadata->setPublicationYear((int) $data['publication_year']);
             }
 
-            // Set publisher
             if (! empty($data['publisher'])) {
-                $publisherConfidence = (float) ($confidence['publisher'] ?? 0.7);
-                $metadata->setPublisher($data['publisher'], $publisherConfidence);
+                $metadata->setPublisher($data['publisher']);
+            }
+
+            // Set issuer
+            if (! empty($data['issuer'])) {
+                $metadata->setIssuer($data['issuer']);
+            }
+
+            // Set content type
+            if (! empty($data['content_type'])) {
+                $metadata->setContentType($data['content_type']);
             }
 
             // Set genres
             if (! empty($data['genres']) && is_array($data['genres'])) {
-                $genreConfidence = (float) ($confidence['genres'] ?? 0.7);
                 foreach ($data['genres'] as $genre) {
                     if (is_string($genre) && ! empty(trim($genre))) {
-                        $metadata->addGenre(trim($genre), $genreConfidence);
+                        $metadata->addGenre(trim($genre));
                     }
                 }
             }
 
-            // Set theme
-            if (! empty($data['theme'])) {
-                $themeConfidence = (float) ($confidence['theme'] ?? 0.7);
-                $metadata->setTheme($data['theme'], $themeConfidence);
+            // Set themes
+            if (! empty($data['themes']) && is_array($data['themes'])) {
+                foreach ($data['themes'] as $theme) {
+                    if (is_string($theme) && ! empty(trim($theme))) {
+                        $metadata->addTheme(trim($theme));
+                    }
+                }
+            }
+
+            // Set section
+            if (! empty($data['section'])) {
+                $metadata->setSection($data['section']);
             }
 
             // Set description
             if (! empty($data['description'])) {
-                $descriptionConfidence = (float) ($confidence['description'] ?? 0.7);
-                $metadata->setDescription($data['description'], $descriptionConfidence);
+                $metadata->setDescription($data['description']);
             }
 
             $this->log('debug', 'Parsed Gemini response', [
                 'fields' => array_keys($data),
-                'has_confidence' => ! empty($confidence),
             ]);
 
         } catch (\JsonException $e) {
             $this->log('warning', 'Failed to parse Gemini JSON response', [
+                'error' => $e->getMessage(),
+            ]);
+        } catch (\Exception $e) {
+            $this->log('warning', 'Unexpected error parsing response', [
                 'error' => $e->getMessage(),
             ]);
         }

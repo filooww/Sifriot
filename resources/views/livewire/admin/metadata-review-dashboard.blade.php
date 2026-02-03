@@ -459,7 +459,7 @@
                                         <button
                                             type="button"
                                             wire:click="deleteMetadata({{ $metadata->id }})"
-                                            onclick="confirm('{{ __('Delete this metadata?') }}') || event.stopImmediatePropagation()"
+                                            onclick="confirm('{{ __('Delete this publication?') }}') || event.stopImmediatePropagation()"
                                             class="px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
                                         >
                                             {{ __('Delete') }}
