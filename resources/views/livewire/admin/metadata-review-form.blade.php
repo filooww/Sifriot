@@ -534,33 +534,58 @@
                         </div>
 
                         {{-- Autocomplete Input --}}
+                        {{-- Section Dropdown --}}
                         <div x-data="{
                             open: false,
-                            query: @entangle('sectionSearchQuery').live.debounce.300ms,
-                            results: [],
-                            async search() {
-                                if (this.query.length < 2) { this.results = []; return; }
-                                this.results = await $wire.searchSections(this.query);
-                                this.open = true;
+                            sections: {{ \App\Models\Section::all()->map(fn($s) => ['id' => $s->id, 'name' => $s->localizedName])->values()->toJson() }},
+                            filter: '',
+                            get filteredSections() {
+                                if (this.filter === '') return this.sections;
+                                return this.sections.filter(s => s.name.toLowerCase().includes(this.filter.toLowerCase()));
                             }
-                        }" @click.outside="open = false" class="relative">
-                            <input
-                                type="text"
-                                x-model="query"
-                                @input="search()"
-                                @focus="search()"
-                                placeholder="{{ __('Add section...') }}"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+                        }" class="relative">
+                            <button
+                                type="button"
+                                @click="open = !open; if(open) $nextTick(() => $refs.searchInput.focus())"
+                                @click.outside="open = false"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-left flex items-center justify-between"
                             >
+                                <span class="text-gray-500 dark:text-gray-400">{{ __('Add section...') }}</span>
+                                <x-heroicon-o-chevron-down class="w-5 h-5 text-gray-400" />
+                            </button>
 
-                            <div x-show="open && results.length > 0" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                <template x-for="result in results" :key="result.id">
+                            <div
+                                x-show="open"
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                            >
+                                <div class="sticky top-0 p-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                                    <input
+                                        x-ref="searchInput"
+                                        type="text"
+                                        x-model="filter"
+                                        placeholder="Filter sections..."
+                                        class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                        @click.stop
+                                    >
+                                </div>
+                                <template x-for="section in filteredSections" :key="section.id">
                                     <button
                                         type="button"
-                                        @click="$wire.addSection(result.id); query = ''; open = false; results = []"
+                                        @click="$wire.addSection(section.id); open = false; filter = ''"
                                         class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                                        x-text="result.name"
+                                        x-text="section.name"
                                     ></button>
+                                </template>
+                                <template x-if="filteredSections.length === 0">
+                                    <div class="px-4 py-2 text-gray-500 dark:text-gray-400 text-sm italic">
+                                        No sections found
+                                    </div>
                                 </template>
                             </div>
                         </div>
