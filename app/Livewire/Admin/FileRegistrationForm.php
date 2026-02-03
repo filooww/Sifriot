@@ -185,17 +185,23 @@ class FileRegistrationForm extends Component
             // Generate unique filename
             $uniqueFilename = hash('sha256', $originalName.time()).'.'.$extension;
 
-            // Determine storage path based on content type
-            $storagePath = 'content/'.$contentType->folder_name;
+            // Determine storage path: month-year/content_type (e.g., 02-2026/books)
+            $monthYear = now()->format('m-Y'); // e.g., 02-2026
+            $storagePath = $monthYear.'/'.$contentType->folder_name;
 
-            // Store uploaded file first (outside transaction - filesystem)
-            $filePath = $this->uploadedFile->storeAs($storagePath, $uniqueFilename, 'local');
+            // Ensure the directory exists before storing the file
+            if (! Storage::disk('library')->exists($storagePath)) {
+                Storage::disk('library')->makeDirectory($storagePath, 0755, true);
+            }
+
+            // Store uploaded file in library disk (D:\oldI\LiteraCommon)
+            $filePath = $this->uploadedFile->storeAs($storagePath, $uniqueFilename, 'library');
 
             if (! $filePath) {
                 throw new \RuntimeException('Failed to store uploaded file');
             }
 
-            $fullPath = Storage::disk('local')->path($filePath);
+            $fullPath = Storage::disk('library')->path($filePath);
             $mimeType = $this->uploadedFile->getMimeType();
             $fileSize = $this->uploadedFile->getSize();
 
@@ -246,8 +252,8 @@ class FileRegistrationForm extends Component
 
         } catch (\Exception $e) {
             // Clean up the uploaded file if database operations failed
-            if ($filePath && Storage::disk('local')->exists($filePath)) {
-                Storage::disk('local')->delete($filePath);
+            if ($filePath && Storage::disk('library')->exists($filePath)) {
+                Storage::disk('library')->delete($filePath);
             }
 
             Log::error('File upload failed', [
