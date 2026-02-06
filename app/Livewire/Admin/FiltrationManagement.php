@@ -114,6 +114,27 @@ class FiltrationManagement extends Component
 
     public string $publisher_website = '';
 
+    // Delete Confirmation Modal
+    public bool $showDeleteModal = false;
+
+    public string $deleteType = '';
+
+    public ?int $deleteId = null;
+
+    public string $deleteName = '';
+
+    public array $deletePublications = [];
+
+    public ?int $replaceWithId = null;
+
+    public array $replacementOptions = [];
+
+    public int $deleteChildrenCount = 0;
+
+    public array $publicationReplacements = [];
+
+    public bool $applyToAll = true;
+
     public function mount(): void
     {
         abort_unless(auth()->user()->isAdmin(), 403, 'Unauthorized');
@@ -651,6 +672,339 @@ class FiltrationManagement extends Component
         $this->publisher_name_he = '';
         $this->publisher_slug = '';
         $this->publisher_website = '';
+    }
+
+    // ==================== DELETE CONFIRMATION ====================
+
+    public function confirmDelete(string $type, int $id): void
+    {
+        $this->deleteType = $type;
+        $this->deleteId = $id;
+        $this->replaceWithId = null;
+        $this->deleteChildrenCount = 0;
+
+        // Load entity details based on type
+        switch ($type) {
+            case 'content-type':
+                $entity = ContentType::with('publications:id_publication,title')->findOrFail($id);
+                $this->deleteName = $entity->name_en;
+                $this->deletePublications = $entity->publications->map(fn($p) => [
+                    'id' => $p->id_publication,
+                    'title' => $p->title ?? __('Untitled'),
+                ])->toArray();
+                $this->replacementOptions = ContentType::where('id', '!=', $id)
+                    ->orderBy('name_en')
+                    ->get(['id', 'name_en'])
+                    ->map(fn($c) => ['id' => $c->id, 'name' => $c->name_en])
+                    ->toArray();
+                break;
+
+            case 'genre':
+                $entity = Genre::with('publications:id_publication,title')->findOrFail($id);
+                $this->deleteName = $entity->name_en;
+                $this->deletePublications = $entity->publications->map(fn($p) => [
+                    'id' => $p->id_publication,
+                    'title' => $p->title ?? __('Untitled'),
+                ])->toArray();
+                $this->replacementOptions = Genre::where('id', '!=', $id)
+                    ->orderBy('name_en')
+                    ->get(['id', 'name_en'])
+                    ->map(fn($g) => ['id' => $g->id, 'name' => $g->name_en])
+                    ->toArray();
+                break;
+
+            case 'theme':
+                $entity = Theme::with('publications:id_publication,title')->findOrFail($id);
+                $this->deleteName = $entity->theme;
+                $this->deletePublications = $entity->publications->map(fn($p) => [
+                    'id' => $p->id_publication,
+                    'title' => $p->title ?? __('Untitled'),
+                ])->toArray();
+                $this->replacementOptions = Theme::where('id_theme', '!=', $id)
+                    ->orderBy('theme')
+                    ->get(['id_theme', 'theme'])
+                    ->map(fn($t) => ['id' => $t->id_theme, 'name' => $t->theme])
+                    ->toArray();
+                break;
+
+            case 'section':
+                $entity = Section::with(['publications:id_publication,title', 'children'])->findOrFail($id);
+                $this->deleteName = $entity->name_en;
+                $this->deleteChildrenCount = $entity->children->count();
+                $this->deletePublications = $entity->publications->map(fn($p) => [
+                    'id' => $p->id_publication,
+                    'title' => $p->title ?? __('Untitled'),
+                ])->toArray();
+                $this->replacementOptions = Section::where('id', '!=', $id)
+                    ->orderBy('name_en')
+                    ->get(['id', 'name_en'])
+                    ->map(fn($s) => ['id' => $s->id, 'name' => $s->name_en])
+                    ->toArray();
+                break;
+
+            case 'author':
+                $entity = Author::with('publications:id_publication,title')->findOrFail($id);
+                $this->deleteName = $entity->author;
+                $this->deletePublications = $entity->publications->map(fn($p) => [
+                    'id' => $p->id_publication,
+                    'title' => $p->title ?? __('Untitled'),
+                ])->toArray();
+                $this->replacementOptions = Author::where('id_author', '!=', $id)
+                    ->orderBy('author')
+                    ->get(['id_author', 'author'])
+                    ->map(fn($a) => ['id' => $a->id_author, 'name' => $a->author])
+                    ->toArray();
+                break;
+
+            case 'publisher':
+                $entity = Publisher::with('publications:id_publication,title')->findOrFail($id);
+                $this->deleteName = $entity->name_en;
+                $this->deletePublications = $entity->publications->map(fn($p) => [
+                    'id' => $p->id_publication,
+                    'title' => $p->title ?? __('Untitled'),
+                ])->toArray();
+                $this->replacementOptions = Publisher::where('id', '!=', $id)
+                    ->orderBy('name_en')
+                    ->get(['id', 'name_en'])
+                    ->map(fn($p) => ['id' => $p->id, 'name' => $p->name_en])
+                    ->toArray();
+                break;
+        }
+
+        // Initialize per-publication replacements
+        $this->publicationReplacements = [];
+        foreach ($this->deletePublications as $pub) {
+            $this->publicationReplacements[$pub['id']] = null;
+        }
+
+        $this->showDeleteModal = true;
+    }
+
+    public function executeDelete(): void
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        if (count($this->deletePublications) > 0 || $this->deleteChildrenCount > 0) {
+            session()->flash('error', __('Невозможно удалить элемент с привязанными данными.'));
+            $this->cancelDelete();
+            return;
+        }
+
+        switch ($this->deleteType) {
+            case 'content-type':
+                ContentType::findOrFail($this->deleteId)->delete();
+                session()->flash('message', __('Тип контента успешно удалён.'));
+                $this->loadContentTypes();
+                break;
+            case 'genre':
+                Genre::findOrFail($this->deleteId)->delete();
+                session()->flash('message', __('Жанр успешно удалён.'));
+                $this->loadGenres();
+                break;
+            case 'theme':
+                Theme::findOrFail($this->deleteId)->delete();
+                session()->flash('message', __('Тема успешно удалена.'));
+                $this->loadThemes();
+                break;
+            case 'section':
+                Section::findOrFail($this->deleteId)->delete();
+                session()->flash('message', __('Раздел успешно удалён.'));
+                $this->loadSections();
+                break;
+            case 'author':
+                Author::findOrFail($this->deleteId)->delete();
+                session()->flash('message', __('Автор успешно удалён.'));
+                $this->loadAuthors();
+                break;
+            case 'publisher':
+                Publisher::findOrFail($this->deleteId)->delete();
+                session()->flash('message', __('Издатель успешно удалён.'));
+                $this->loadPublishers();
+                break;
+        }
+
+        $this->cancelDelete();
+    }
+
+    public function replaceAndDelete(): void
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        // Validate: either global replacement or all per-publication replacements must be set
+        if ($this->applyToAll) {
+            if (!$this->replaceWithId) {
+                session()->flash('error', __('Пожалуйста, выберите замену.'));
+                return;
+            }
+        } else {
+            $missingReplacements = array_filter($this->publicationReplacements, fn($v) => !$v);
+            if (count($missingReplacements) > 0) {
+                session()->flash('error', __('Пожалуйста, выберите замену для всех публикаций.'));
+                return;
+            }
+        }
+
+        switch ($this->deleteType) {
+            case 'content-type':
+                // ContentType uses HasMany, update FK directly
+                if ($this->applyToAll) {
+                    \App\Models\Publication::where('content_type_id', $this->deleteId)
+                        ->update(['content_type_id' => $this->replaceWithId]);
+                } else {
+                    foreach ($this->publicationReplacements as $pubId => $newTypeId) {
+                        \App\Models\Publication::where('id_publication', $pubId)
+                            ->update(['content_type_id' => $newTypeId]);
+                    }
+                }
+                ContentType::findOrFail($this->deleteId)->delete();
+                session()->flash('message', __('Тип контента заменён и удалён.'));
+                $this->loadContentTypes();
+                break;
+
+            case 'genre':
+                $old = Genre::findOrFail($this->deleteId);
+                foreach ($old->publications as $pub) {
+                    $replaceId = $this->applyToAll ? $this->replaceWithId : ($this->publicationReplacements[$pub->id_publication] ?? null);
+                    if ($replaceId && !$pub->genres()->where('genre_id', $replaceId)->exists()) {
+                        $pub->genres()->attach($replaceId);
+                    }
+                }
+                $old->publications()->detach();
+                $old->delete();
+                session()->flash('message', __('Жанр заменён и удалён.'));
+                $this->loadGenres();
+                break;
+
+            case 'theme':
+                $old = Theme::findOrFail($this->deleteId);
+                foreach ($old->publications as $pub) {
+                    $replaceId = $this->applyToAll ? $this->replaceWithId : ($this->publicationReplacements[$pub->id_publication] ?? null);
+                    if ($replaceId && !$pub->themes()->where('id_theme', $replaceId)->exists()) {
+                        $pub->themes()->attach($replaceId);
+                    }
+                }
+                $old->publications()->detach();
+                $old->delete();
+                session()->flash('message', __('Тема заменена и удалена.'));
+                $this->loadThemes();
+                break;
+
+            case 'section':
+                $old = Section::findOrFail($this->deleteId);
+                foreach ($old->publications as $pub) {
+                    $replaceId = $this->applyToAll ? $this->replaceWithId : ($this->publicationReplacements[$pub->id_publication] ?? null);
+                    if ($replaceId && !$pub->sections()->where('section_id', $replaceId)->exists()) {
+                        $pub->sections()->attach($replaceId);
+                    }
+                }
+                $old->publications()->detach();
+                $old->delete();
+                session()->flash('message', __('Раздел заменён и удалён.'));
+                $this->loadSections();
+                break;
+
+            case 'author':
+                $old = Author::findOrFail($this->deleteId);
+                foreach ($old->publications as $pub) {
+                    $replaceId = $this->applyToAll ? $this->replaceWithId : ($this->publicationReplacements[$pub->id_publication] ?? null);
+                    if ($replaceId && !$pub->authors()->where('id_author', $replaceId)->exists()) {
+                        $pub->authors()->attach($replaceId);
+                    }
+                }
+                $old->publications()->detach();
+                $old->delete();
+                session()->flash('message', __('Автор заменён и удалён.'));
+                $this->loadAuthors();
+                break;
+
+            case 'publisher':
+                $old = Publisher::findOrFail($this->deleteId);
+                foreach ($old->publications as $pub) {
+                    $replaceId = $this->applyToAll ? $this->replaceWithId : ($this->publicationReplacements[$pub->id_publication] ?? null);
+                    if ($replaceId && !$pub->publishers()->where('publisher_id', $replaceId)->exists()) {
+                        $pub->publishers()->attach($replaceId);
+                    }
+                }
+                $old->publications()->detach();
+                $old->delete();
+                session()->flash('message', __('Издатель заменён и удалён.'));
+                $this->loadPublishers();
+                break;
+        }
+
+        $this->cancelDelete();
+    }
+
+    public function detachAndDelete(): void
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        switch ($this->deleteType) {
+            case 'content-type':
+                // For HasMany, set FK to null
+                \App\Models\Publication::where('content_type_id', $this->deleteId)
+                    ->update(['content_type_id' => null]);
+                ContentType::findOrFail($this->deleteId)->delete();
+                session()->flash('message', __('Тип контента отвязан и удалён.'));
+                $this->loadContentTypes();
+                break;
+
+            case 'genre':
+                $entity = Genre::findOrFail($this->deleteId);
+                $entity->publications()->detach();
+                $entity->delete();
+                session()->flash('message', __('Жанр отвязан и удалён.'));
+                $this->loadGenres();
+                break;
+
+            case 'theme':
+                $entity = Theme::findOrFail($this->deleteId);
+                $entity->publications()->detach();
+                $entity->delete();
+                session()->flash('message', __('Тема отвязана и удалена.'));
+                $this->loadThemes();
+                break;
+
+            case 'section':
+                $entity = Section::findOrFail($this->deleteId);
+                $entity->publications()->detach();
+                $entity->delete();
+                session()->flash('message', __('Раздел отвязан и удалён.'));
+                $this->loadSections();
+                break;
+
+            case 'author':
+                $entity = Author::findOrFail($this->deleteId);
+                $entity->publications()->detach();
+                $entity->delete();
+                session()->flash('message', __('Автор отвязан и удалён.'));
+                $this->loadAuthors();
+                break;
+
+            case 'publisher':
+                $entity = Publisher::findOrFail($this->deleteId);
+                $entity->publications()->detach();
+                $entity->delete();
+                session()->flash('message', __('Издатель отвязан и удалён.'));
+                $this->loadPublishers();
+                break;
+        }
+
+        $this->cancelDelete();
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->showDeleteModal = false;
+        $this->deleteType = '';
+        $this->deleteId = null;
+        $this->deleteName = '';
+        $this->deletePublications = [];
+        $this->replaceWithId = null;
+        $this->replacementOptions = [];
+        $this->deleteChildrenCount = 0;
+        $this->publicationReplacements = [];
+        $this->applyToAll = true;
     }
 
     // ==================== MODAL CLOSE ====================

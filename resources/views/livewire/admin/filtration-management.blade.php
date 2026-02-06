@@ -114,4 +114,9 @@
     @if($showPublisherModal)
         @include('livewire.admin.filtration-modals.publisher-modal')
     @endif
+
+    {{-- Delete Confirmation Modal --}}
+    @if($showDeleteModal)
+        @include('livewire.admin.filtration-modals.delete-confirmation-modal')
+    @endif
 </div>

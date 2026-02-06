@@ -52,8 +52,7 @@
                                         title="{{ __('Edit') }}">
                                     <x-heroicon-o-pencil-square class="h-5 w-5" />
                                 </button>
-                                <button wire:click="deleteAuthor({{ $author->id_author }})"
-                                        wire:confirm="{{ __('Are you sure you want to delete this author?') }}"
+                                <button wire:click="confirmDelete('author', {{ $author->id_author }})"
                                         class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/50 dark:hover:text-red-400"
                                         title="{{ __('Delete') }}">
                                     <x-heroicon-o-trash class="h-5 w-5" />
