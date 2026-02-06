@@ -54,27 +54,33 @@ class FileViewController extends Controller
         }
 
         // Get file path (same logic as convertDoc)
-        $fileSource = $file->file_source;
-
-        if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
-            $disk = 'local';
-            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
-        } elseif ($fileSource === 'bulk_scan') {
+        // Get file path (same logic as convertDoc)
+        if ($file->file_path) {
             $disk = 'library';
-            $allFiles = Storage::disk($disk)->allFiles();
-            $storagePath = null;
-            foreach ($allFiles as $filePath) {
-                if (basename($filePath) === $decodedFilename) {
-                    $storagePath = $filePath;
-                    break;
-                }
-            }
-            if ($storagePath === null) {
-                abort(404, 'File not found in library storage');
-            }
+            $storagePath = $file->file_path;
         } else {
-            $disk = 'library';
-            $storagePath = $fileSource.'/'.$decodedFilename;
+            $fileSource = $file->file_source;
+    
+            if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
+                $disk = 'local';
+                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
+            } elseif ($fileSource === 'bulk_scan') {
+                $disk = 'library';
+                $allFiles = Storage::disk($disk)->allFiles();
+                $storagePath = null;
+                foreach ($allFiles as $filePath) {
+                    if (basename($filePath) === $decodedFilename) {
+                        $storagePath = $filePath;
+                        break;
+                    }
+                }
+                if ($storagePath === null) {
+                    abort(404, 'File not found in library storage');
+                }
+            } else {
+                $disk = 'library';
+                $storagePath = $fileSource.'/'.$decodedFilename;
+            }
         }
 
         if (! Storage::disk($disk)->exists($storagePath)) {
@@ -271,27 +277,38 @@ class FileViewController extends Controller
         }
 
         // Get file path
-        $fileSource = $file->file_source;
-
-        if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
-            $disk = 'local';
-            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
-        } elseif ($fileSource === 'bulk_scan') {
+        if ($file->file_path) {
             $disk = 'library';
-            $allFiles = Storage::disk($disk)->allFiles();
-            $storagePath = null;
-            foreach ($allFiles as $filePath) {
-                if (basename($filePath) === $decodedFilename) {
-                    $storagePath = $filePath;
-                    break;
-                }
-            }
-            if ($storagePath === null) {
-                abort(404, 'File not found in library storage');
-            }
+            $storagePath = $file->file_path;
         } else {
-            $disk = 'library';
-            $storagePath = $fileSource.'/'.$decodedFilename;
+            $fileSource = $file->file_source;
+    
+            if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
+                $disk = 'local';
+                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
+            } elseif ($fileSource === 'bulk_scan') {
+                // Legacy bulk_scan files: search recursively in library disk (for backwards compatibility)
+                $disk = 'library';
+    
+                // Search for the file in the library directory
+                $allFiles = Storage::disk($disk)->allFiles();
+                $storagePath = null;
+    
+                foreach ($allFiles as $filePath) {
+                    if (basename($filePath) === $decodedFilename) {
+                        $storagePath = $filePath;
+                        break;
+                    }
+                }
+    
+                if ($storagePath === null) {
+                    abort(404, 'File not found in library storage');
+                }
+            } else {
+                // New bulk scanned file: file_source is the relative directory path on library disk
+                $disk = 'library';
+                $storagePath = $fileSource.'/'.$decodedFilename;
+            }
         }
 
         if (! Storage::disk($disk)->exists($storagePath)) {
@@ -403,27 +420,32 @@ class FileViewController extends Controller
         }
 
         // Get file path
-        $fileSource = $file->file_source;
-
-        if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
-            $disk = 'local';
-            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
-        } elseif ($fileSource === 'bulk_scan') {
+        if ($file->file_path) {
             $disk = 'library';
-            $allFiles = Storage::disk($disk)->allFiles();
-            $storagePath = null;
-            foreach ($allFiles as $filePath) {
-                if (basename($filePath) === $decodedFilename) {
-                    $storagePath = $filePath;
-                    break;
-                }
-            }
-            if ($storagePath === null) {
-                abort(404, 'File not found in library storage');
-            }
+            $storagePath = $file->file_path;
         } else {
-            $disk = 'library';
-            $storagePath = $fileSource.'/'.$decodedFilename;
+            $fileSource = $file->file_source;
+    
+            if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
+                $disk = 'local';
+                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
+            } elseif ($fileSource === 'bulk_scan') {
+                $disk = 'library';
+                $allFiles = Storage::disk($disk)->allFiles();
+                $storagePath = null;
+                foreach ($allFiles as $filePath) {
+                    if (basename($filePath) === $decodedFilename) {
+                        $storagePath = $filePath;
+                        break;
+                    }
+                }
+                if ($storagePath === null) {
+                    abort(404, 'File not found in library storage');
+                }
+            } else {
+                $disk = 'library';
+                $storagePath = $fileSource.'/'.$decodedFilename;
+            }
         }
 
         if (! Storage::disk($disk)->exists($storagePath)) {
@@ -694,6 +716,7 @@ class FileViewController extends Controller
      */
     public function view(int $publication, string $filename): Response|JsonResponse
     {
+        Log::info("FileViewController::view called for pub {$publication}");
         // Check authentication
         if (! Auth::check()) {
             abort(401, 'Unauthorized');
@@ -751,40 +774,82 @@ class FileViewController extends Controller
 
         // Get the file path from storage
         // Use 'library' disk for bulk scanned files, 'local' disk for uploaded files
-        $fileSource = $file->file_source;
-
-        // Check if file_source contains a full path (uploaded file) or directory path (bulk scanned)
-        if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
-            // Uploaded file: has an extension, use local disk with content/ prefix if not already included
-            $disk = 'local';
-            $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
-        } elseif ($fileSource === 'bulk_scan') {
-            // Legacy bulk_scan files: search recursively in library disk (for backwards compatibility)
-            $disk = 'library';
-
-            // Search for the file in the library directory
-            $allFiles = Storage::disk($disk)->allFiles();
-            $storagePath = null;
-
-            foreach ($allFiles as $filePath) {
-                if (basename($filePath) === $decodedFilename) {
-                    $storagePath = $filePath;
-                    break;
-                }
-            }
-
-            if ($storagePath === null) {
-                Log::error('Bulk scanned file not found in library', [
-                    'publication_id' => $publication,
-                    'filename' => $decodedFilename,
-                    'searched_in' => Storage::disk($disk)->path(''),
-                ]);
-                abort(404, 'File not found in library storage');
-            }
+        // Get the file path from storage
+        // Use 'library' disk for bulk scanned files, 'local' disk for uploaded files
+        
+        // Prioritize file_path if available (standard for new system)
+        if ($file->file_path) {
+            $disk = 'library'; 
+            // Note: Uploads via FileRegistrationForm use 'library' disk which maps to storage_path('app/content')
+            // stored path is e.g. 02-2026/books/filename.pdf
+            // So we use it directly on library disk.
+            $storagePath = $file->file_path;
         } else {
-            // New bulk scanned file: file_source is the relative directory path on library disk
-            $disk = 'library';
-            $storagePath = $fileSource.'/'.$decodedFilename;
+            // Fallback for legacy items without file_path
+            $fileSource = $file->file_source;
+    
+            // Check if file_source is an absolute path
+            if (str_starts_with($fileSource, '/')) {
+                // Absolute path - check if file exists directly
+                if (file_exists($fileSource)) {
+                    // Return the file directly from absolute path
+                    $content = file_get_contents($fileSource);
+                    $mimeType = $file->mime_type ?? 'application/octet-stream';
+                    
+                    return response($content)
+                        ->header('Content-Type', $mimeType)
+                        ->header('Content-Disposition', 'inline; filename="'.basename($filename).'"')
+                        ->header('Cache-Control', 'public, max-age=3600')
+                        ->header('Access-Control-Allow-Origin', '*');
+                }
+                
+                // Try to extract relative path from library disk root
+                $libraryRoot = config('filesystems.disks.library.root');
+                if ($libraryRoot && str_starts_with($fileSource, $libraryRoot)) {
+                    $disk = 'library';
+                    $storagePath = ltrim(substr($fileSource, strlen($libraryRoot)), '/');
+                } else {
+                    // Try local storage root
+                    $localRoot = storage_path('app');
+                    if (str_starts_with($fileSource, $localRoot)) {
+                        $disk = 'local';
+                        $storagePath = ltrim(substr($fileSource, strlen($localRoot)), '/');
+                    } else {
+                        abort(404, 'File not found: absolute path not accessible');
+                    }
+                }
+            } elseif (pathinfo($fileSource, PATHINFO_EXTENSION)) {
+                // Relative path with extension - use local disk with content/ prefix if not already included
+                $disk = 'local';
+                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
+            } elseif ($fileSource === 'bulk_scan') {
+                // Legacy bulk_scan files: search recursively in library disk (for backwards compatibility)
+                $disk = 'library';
+    
+                // Search for the file in the library directory
+                $allFiles = Storage::disk($disk)->allFiles();
+                $storagePath = null;
+    
+                foreach ($allFiles as $filePath) {
+                    if (basename($filePath) === $decodedFilename) {
+                        $storagePath = $filePath;
+                        break;
+                    }
+                }
+    
+                if ($storagePath === null) {
+                    Log::error('Bulk scanned file not found in library', [
+                        'publication_id' => $publication,
+                        'filename' => $decodedFilename,
+                        'searched_in' => Storage::disk($disk)->path(''),
+                    ]);
+                    abort(404, 'File not found in library storage');
+                }
+            } else {
+                // New bulk scanned file: file_source is the relative directory path on library disk
+                $disk = 'library';
+                $storagePath = $fileSource.'/'.$decodedFilename;
+            }
         }
 
         // Debug logging
@@ -799,15 +864,8 @@ class FileViewController extends Controller
 
         // Ensure the path exists in storage
         if (! Storage::disk($disk)->exists($storagePath)) {
-            Log::warning('File viewer: File not found at resolved path', [
-                'publication_id' => $publication,
-                'filename' => $filename,
-                'file_source' => $file->file_source,
-                'storage_path' => $storagePath,
-                'attempted_full_path' => Storage::disk($disk)->path($storagePath),
-            ]);
-
-            abort(404, 'File not found at resolved path: '.$storagePath);
+            $root = config("filesystems.disks.{$disk}.root");
+            abort(404, "File not found. Disk: {$disk}. Looking for: {$storagePath}. Root: {$root}.");
         }
 
         try {

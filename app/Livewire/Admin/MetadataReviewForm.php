@@ -93,7 +93,6 @@ class MetadataReviewForm extends Component
      * Updated hook: Auto-save cover image when uploaded
      * This ensures the image is persisted even if user closes modal without clicking save button
      */
-    #[\Livewire\Attributes\On('updated:coverImage')]
     public function updatedCoverImage(): void
     {
         if ($this->coverImage && $this->fileMetadata) {
@@ -115,12 +114,38 @@ class MetadataReviewForm extends Component
                 // Store the file
                 $filePath = $this->coverImage->storeAs('covers', $uniqueName, 'public');
 
+                // Delete existing cover image(s) for this publication (including soft-deleted)
+                $existingCovers = File::withTrashed()
+                    ->where('id_publication', $publication->id_publication)
+                    ->where('file_type', 'cover')
+                    ->get();
+                
+                Log::info('Cover upload: found existing covers', ['count' => $existingCovers->count()]);
+                    
+                foreach ($existingCovers as $existingCover) {
+                    // Delete the file from storage
+                    if ($existingCover->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($existingCover->file_path)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($existingCover->file_path);
+                    }
+                    // Force delete the database record using query builder (composite key + SoftDeletes workaround)
+                    File::withTrashed()
+                        ->where('id_publication', $existingCover->id_publication)
+                        ->where('file_name', $existingCover->file_name)
+                        ->forceDelete();
+                }
+
                 // Get next ord_num for this publication
                 $nextOrdNum = File::where('id_publication', $publication->id_publication)
                     ->max('ord_num') + 1;
 
+                Log::info('Cover upload: creating new cover', [
+                    'publication_id' => $publication->id_publication,
+                    'file_name' => $originalName,
+                    'file_path' => $filePath,
+                ]);
+
                 // Create File record for cover image
-                File::create([
+                $newFile = File::create([
                     'id_publication' => $publication->id_publication,
                     'ord_num' => $nextOrdNum,
                     'file_name' => $originalName,
@@ -132,6 +157,8 @@ class MetadataReviewForm extends Component
                     'file_path' => $filePath,
                     'file_source' => 'manual_upload',
                 ]);
+
+                Log::info('Cover upload: created new cover record', ['file_name' => $newFile->file_name ?? 'unknown']);
 
                 // Show success notification
                 $this->dispatch('notify', message: 'Cover image saved successfully!', type: 'success')->to('admin.metadata-review-dashboard');
@@ -418,10 +445,13 @@ class MetadataReviewForm extends Component
             $authors = $extracted->getAuthors();
             if (! empty($authors)) {
                 $this->authors = [];
+                $this->createNewAuthors = [];
                 foreach ($authors as $author) {
                     $this->authors[] = ['id' => uniqid(), 'value' => $author];
+                    // Only flag for creation if author doesn't exist
+                    $exists = Author::where('author_low', mb_strtolower(trim($author)))->exists();
+                    $this->createNewAuthors[] = !$exists;
                 }
-                $this->createNewAuthors = array_fill(0, count($authors), true);
             }
 
             if ($extracted->getPublicationYear()) {
@@ -431,7 +461,9 @@ class MetadataReviewForm extends Component
             if ($extracted->getPublisher()) {
                 $this->publisher = $extracted->getPublisher();
                 $this->aiSuggestions['publisher'] = $extracted->getPublisher();
-                $this->createNewPublisher = true;
+                // Only flag for creation if publisher doesn't exist
+                $exists = Publishing::where('publishing_low', mb_strtolower(trim($extracted->getPublisher())))->exists();
+                $this->createNewPublisher = !$exists;
             }
 
             if ($extracted->getIssuer()) {
@@ -442,10 +474,13 @@ class MetadataReviewForm extends Component
             $genres = $extracted->getGenres();
             if (! empty($genres)) {
                 $this->genres = [];
+                $this->createNewGenres = [];
                 foreach ($genres as $genre) {
                     $this->genres[] = ['id' => uniqid(), 'value' => $genre];
+                    // Only flag for creation if genre doesn't exist
+                    $exists = Genre::where('slug', Str::slug($genre))->exists();
+                    $this->createNewGenres[] = !$exists;
                 }
-                $this->createNewGenres = array_fill(0, count($genres), true);
             }
 
             $themes = $extracted->getThemes();
@@ -477,6 +512,7 @@ class MetadataReviewForm extends Component
 
             // Update status and mark as extracted
             $this->useExtracted = true;
+            $this->extractionStatus = 'processed';
             $this->extractionMethod = 'gemini_llm';
 
             Log::channel('folder_scan')->info('AI extraction completed in form', [
@@ -626,7 +662,16 @@ class MetadataReviewForm extends Component
      */
     public function confirmExtraction(): void
     {
-        $this->validate();
+        // Debug: dispatch notification to confirm method was called
+        $this->dispatch('notify', message: 'Processing confirmation...', type: 'info')->to('admin.metadata-review-dashboard');
+        
+        try {
+            $this->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $errors = collect($e->errors())->flatten()->join(', ');
+            $this->dispatch('notify', message: 'Validation failed: ' . $errors, type: 'error')->to('admin.metadata-review-dashboard');
+            return;
+        }
 
         DB::beginTransaction();
         try {

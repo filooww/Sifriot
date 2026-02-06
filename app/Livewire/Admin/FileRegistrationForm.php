@@ -130,6 +130,7 @@ class FileRegistrationForm extends Component
                     'file_source' => $fullPath,
                     'mime_type' => $mimeType,
                     'file_size_bytes' => $fileSize,
+                    'ord_num' => 1,
                 ]);
 
                 // Create registration log
@@ -183,7 +184,7 @@ class FileRegistrationForm extends Component
             $originalName = $this->uploadedFile->getClientOriginalName();
 
             // Generate unique filename
-            $uniqueFilename = hash('sha256', $originalName.time()).'.'.$extension;
+            $uniqueFilename = $originalName;
 
             // Determine storage path: month-year/content_type (e.g., 02-2026/books)
             $monthYear = now()->format('m-Y'); // e.g., 02-2026
@@ -223,6 +224,7 @@ class FileRegistrationForm extends Component
                     'file_source' => $fullPath,
                     'mime_type' => $mimeType,
                     'file_size_bytes' => $fileSize,
+                    'ord_num' => 1,
                 ]);
 
                 // Create registration log
@@ -260,7 +262,7 @@ class FileRegistrationForm extends Component
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            session()->flash('error', __('Unable to save file. Check server permissions.'));
+            session()->flash('error', 'Error: ' . $e->getMessage());
         }
     }
 

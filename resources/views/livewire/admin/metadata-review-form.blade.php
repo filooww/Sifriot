@@ -9,7 +9,7 @@
                     </svg>
                 </div>
                 <div class="flex-1">
-                    <h3 class="font-semibold text-red-800 dark:text-red-200 mb-2">Please fix the following errors:</h3>
+                    <h3 class="font-semibold text-red-800 dark:text-red-200 mb-2">{{ __('Please fix the following errors:') }}</h3>
                     <ul class="list-disc list-inside space-y-1">
                         @foreach ($errors->all() as $error)
                             <li class="text-sm text-red-700 dark:text-red-300">{{ $error }}</li>
@@ -58,36 +58,32 @@
             <div class="text-right">
                 @if ($extractionStatus === 'processed')
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                        📋 Ready for Review
+                        📋 {{ __('Ready for Review') }}
                     </span>
                 @elseif ($extractionStatus === 'confirmed')
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                        ✅ Confirmed
+                        ✅ {{ __('Confirmed') }}
                     </span>
                 @elseif ($extractionStatus === 'rejected')
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
-                        🚫 Rejected - Edit & Confirm
+                        🚫 {{ __('Rejected - Edit & Confirm') }}
                     </span>
                 @elseif ($extractionStatus === 'failed')
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
-                        ❌ Failed
+                        ❌ {{ __('Failed') }}
                     </span>
                 @elseif ($extractionStatus === 'pending')
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                        ⏳ Processing
+                        ⏳ {{ __('Processing') }}
                     </span>
                 @endif
             </div>
         </div>
 
-        <div wire:loading wire:target="extractWithAI" class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-            <p class="text-sm text-yellow-800 dark:text-yellow-200">Extraction in progress...</p>
-        </div>
-
         @if ($extractionStatus === 'failed' && $errorMessage)
             <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
                 <p class="text-sm text-red-800 dark:text-red-200">
-                    <strong>Error:</strong> {{ $errorMessage }}
+                    <strong>{{ __('Error') }}:</strong> {{ $errorMessage }}
                 </p>
             </div>
         @endif
@@ -112,7 +108,7 @@
                     <svg class="w-5 h-5 transition transform {{ $showFilePreview ?? false ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                     </svg>
-                    <span>📄 File Preview</span>
+                    <span>📄 {{ __('File Preview') }}</span>
                 </button>
                 
                 <div class="flex items-center gap-2" x-show="$wire.showFilePreview">
@@ -155,7 +151,7 @@
                 wire:click="toggleDetails"
                 class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
             >
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Extraction Details</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Extraction Details') }}</span>
                 <svg class="w-5 h-5 transition transform {{ $showDetails ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                 </svg>
@@ -165,19 +161,19 @@
                 <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
                     <div class="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                            <p class="text-gray-600 dark:text-gray-400">Extractor</p>
-                            <p class="font-medium text-gray-900 dark:text-white">{{ $extractionMethod ?? 'Unknown' }}</p>
+                            <p class="text-gray-600 dark:text-gray-400">{{ __('Extractor') }}</p>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ $extractionMethod ?? __('Unknown') }}</p>
                         </div>
                         <div>
-                            <p class="text-gray-600 dark:text-gray-400">Extracted At</p>
-                            <p class="font-medium text-gray-900 dark:text-white">{{ $fileMetadata->extracted_at?->format('M d, Y H:i') ?? 'N/A' }}</p>
+                            <p class="text-gray-600 dark:text-gray-400">{{ __('Extracted At') }}</p>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ $fileMetadata->extracted_at?->format('M d, Y H:i') ?? __('N/A') }}</p>
                         </div>
                     </div>
 
                     @if ($extractionStatus === 'confirmed')
                         <div class="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
                             <p class="text-sm text-green-800 dark:text-green-200">
-                                <strong>Confirmed:</strong> {{ $fileMetadata->confirmed_at?->format('M d, Y H:i') }}
+                                <strong>{{ __('Confirmed') }}:</strong> {{ $fileMetadata->confirmed_at?->format('M d, Y H:i') }}
                             </p>
                         </div>
                     @endif
@@ -191,13 +187,13 @@
         <!-- Form Section: Basic Info -->
         <div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                📝 Basic Information
+                📝 {{ __('Basic Information') }}
             </h3>
             <div class="space-y-4">
         <!-- Title Field -->
         <div>
             <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Title
+                {{ __('Title') }}
             </label>
             <input
                 type="text"
@@ -214,16 +210,16 @@
         <!-- Authors Field -->
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Authors
+                {{ __('Authors') }}
             </label>
             <div class="space-y-2">
                 @foreach ($authors as $index => $author)
-                    <div class="flex gap-2" wire:key="author-field-{{ $author['id'] }}">
+                    <div class="flex gap-2" wire:key="author-field-{{ $author['id'] ?? $index }}">
                         <x-autocomplete-input
                             wireModel="authors.{{ $index }}.value"
                             searchMethod="searchAuthors"
-                            placeholder="Author name"
-                            createNewLabel="Create new author"
+                            :placeholder="__('Author name')"
+                            :createNewLabel="__('Create new author')"
                             createNewModel="createNewAuthors.{{ $index }}"
                             createMethod="storeAuthor"
                         />
@@ -233,7 +229,7 @@
                                 wire:click="removeAuthor({{ $index }})"
                                 class="px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                             >
-                                Remove
+                                {{ __('Remove') }}
                             </button>
                         @endif
                     </div>
@@ -243,7 +239,7 @@
                     wire:click="addAuthor"
                     class="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition text-sm font-medium"
                 >
-                    + Add Author
+                    + {{ __('Add Author') }}
                 </button>
             </div>
             @error('authors')
@@ -257,13 +253,13 @@
         <!-- Form Section: Publication Details -->
         <div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                📚 Publication Details
+                📚 {{ __('Publication Details') }}
             </h3>
             <div class="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Publication Year -->
                 <div>
                     <label for="publicationYear" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Publication Year
+                        {{ __('Publication Year') }}
                     </label>
                     <input
                         type="number"
@@ -288,7 +284,7 @@
                     }
                 }" class="relative">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Content Type
+                        {{ __('Content Type') }}
                     </label>
                     <button
                         type="button"
@@ -309,7 +305,7 @@
                                 </span>
                             </template>
                             <template x-if="!selectedType">
-                                <span class="text-gray-500">-- Select Content Type --</span>
+                                <span class="text-gray-500">-- {{ __('Select Content Type') }} --</span>
                             </template>
                         </span>
                         <x-heroicon-o-chevron-down class="w-5 h-5 text-gray-400" />
@@ -330,7 +326,7 @@
                             @click="selectedId = ''; open = false"
                             class="w-full px-3 py-2 text-left text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
-                            -- Select Content Type --
+                            -- {{ __('Select Content Type') }} --
                         </button>
                         @foreach (\App\Models\ContentType::all() as $contentType)
                             <button
@@ -362,7 +358,7 @@
                 
                 @if(isset($aiSuggestions['content_type']))
                     <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                        <span>✨ AI Suggestion: </span>
+                        <span>✨ {{ __('AI Suggestion') }}: </span>
                         <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
                             {{ $aiSuggestions['content_type'] }}
                         </span>
@@ -374,19 +370,19 @@
                 <!-- Publisher Field -->
                 <div>
                     <label for="publisher" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Publisher
+                        {{ __('Publisher') }}
                     </label>
             <x-autocomplete-input
                 wireModel="publisher"
                 searchMethod="searchPublishers"
-                placeholder="Publisher name"
-                createNewLabel="Create new publisher"
+                :placeholder="__('Publisher name')"
+                :createNewLabel="__('Create new publisher')"
                 createNewModel="createNewPublisher"
                 createMethod="storePublisher"
             />
                     @if(isset($aiSuggestions['publisher']))
                         <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                             <span>✨ AI Suggestion: </span>
+                             <span>✨ {{ __('AI Suggestion') }}: </span>
                              <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
                                  {{ $aiSuggestions['publisher'] }}
                              </span>
@@ -400,13 +396,13 @@
                 <!-- Issuer Field -->
                 <div>
                     <label for="issuer" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Issuer
+                        {{ __('Issuer') }}
                     </label>
                     <x-autocomplete-input
                         wireModel="issuer"
                         searchMethod="searchPublishers"
-                        placeholder="Issuer name (Organization)"
-                        createNewLabel="Create new issuer"
+                        :placeholder="__('Issuer name (Organization)')"
+                        :createNewLabel="__('Create new issuer')"
                         createMethod="storePublisher"
                     />
                     @if(isset($aiSuggestions['issuer']))
@@ -427,22 +423,22 @@
         <!-- Form Section: Categorization -->
         <div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                🏷️ Categorization
+                🏷️ {{ __('Categorization') }}
             </h3>
             <div class="space-y-4">
                 <!-- Genres Field -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Genres
+                        {{ __('Genres') }}
                     </label>
             <div class="space-y-2">
                 @foreach ($genres as $index => $genre)
-                    <div class="flex gap-2" wire:key="genre-field-{{ $genre['id'] }}">
+                    <div class="flex gap-2" wire:key="genre-field-{{ $genre['id'] ?? $index }}">
                         <x-autocomplete-input
                             wireModel="genres.{{ $index }}.value"
                             searchMethod="searchGenres"
-                            placeholder="Genre"
-                            createNewLabel="Create new genre"
+                            :placeholder="__('Genre')"
+                            :createNewLabel="__('Create new genre')"
                             createNewModel="createNewGenres.{{ $index }}"
                             createMethod="storeGenre"
                         />
@@ -452,7 +448,7 @@
                                 wire:click="removeGenre({{ $index }})"
                                 class="px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                             >
-                                Remove
+                                {{ __('Remove') }}
                             </button>
                         @endif
                     </div>
@@ -462,7 +458,7 @@
                     wire:click="addGenre"
                     class="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition text-sm font-medium"
                 >
-                    + Add Genre
+                    + {{ __('Add Genre') }}
                 </button>
                     </div>
                     @error('genres')
@@ -473,16 +469,16 @@
                 <!-- Themes Field -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Themes
+                        {{ __('Themes') }}
                     </label>
                     <div class="space-y-2">
                         @foreach ($themes as $index => $theme)
-                            <div class="flex gap-2" wire:key="theme-field-{{ $theme['id'] }}">
+                            <div class="flex gap-2" wire:key="theme-field-{{ $theme['id'] ?? $index }}">
                                 <x-autocomplete-input
                                     wireModel="themes.{{ $index }}.value"
                                     searchMethod="searchThemes"
-                                    placeholder="Theme"
-                                    createNewLabel="Create new theme"
+                                    :placeholder="__('Theme')"
+                                    :createNewLabel="__('Create new theme')"
                                     createMethod="storeTheme"
                                 />
                                 <button
@@ -490,7 +486,7 @@
                                     wire:click="removeTheme({{ $index }})"
                                     class="px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                                 >
-                                    Remove
+                                    {{ __('Remove') }}
                                 </button>
                             </div>
                         @endforeach
@@ -499,7 +495,7 @@
                             wire:click="addTheme"
                             class="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition text-sm font-medium"
                         >
-                            + Add Theme
+                            + {{ __('Add Theme') }}
                         </button>
                     </div>
                     @error('themes')
@@ -512,13 +508,13 @@
         <!-- Form Section: Sections -->
         <div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                📚 Sections
+                📚 {{ __('Sections') }}
             </h3>
             <div class="space-y-4">
                 <!-- Sections Field -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Sections
+                        {{ __('Sections') }}
                     </label>
                     <div class="space-y-2">
                         {{-- List of selected sections --}}
@@ -526,7 +522,7 @@
                             @foreach ($this->getSelectedSectionsWithNames() as $section)
                                 <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
                                     {{ $section['name'] }}
-                                    <button type="button" wire:click="removeSection({{ $section['id'] }})" class="hover:text-blue-600 dark:hover:text-blue-400">
+                                    <button type="button" wire:click="removeSection({{ $section['id'] ?? 0 }})" class="hover:text-blue-600 dark:hover:text-blue-400">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                     </button>
                                 </span>
@@ -569,7 +565,7 @@
                                         x-ref="searchInput"
                                         type="text"
                                         x-model="filter"
-                                        placeholder="Filter sections..."
+                                        placeholder="{{ __('Filter sections...') }}"
                                         class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                                         @click.stop
                                     >
@@ -584,7 +580,7 @@
                                 </template>
                                 <template x-if="filteredSections.length === 0">
                                     <div class="px-4 py-2 text-gray-500 dark:text-gray-400 text-sm italic">
-                                        No sections found
+                                        {{ __('No sections found') }}
                                     </div>
                                 </template>
                             </div>
@@ -592,7 +588,7 @@
                     </div>
                     @if(isset($aiSuggestions['section']))
                         <div class="mt-2 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                            <span>✨ AI Suggestion: </span>
+                            <span>✨ {{ __('AI Suggestion') }}: </span>
                             <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
                                 {{ $aiSuggestions['section'] }}
                             </span>
@@ -605,23 +601,23 @@
         <!-- Form Section: Media & Additional Info -->
         <div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                🖼️ Media & Additional Info
+                🖼️ {{ __('Media & Additional Info') }}
             </h3>
             <div class="space-y-4">
 
         <!-- Description Field -->
         <div>
             <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description
+                {{ __('Description') }}
             </label>
             <textarea
                 id="description"
                 wire:model="description"
                 rows="4"
-                placeholder="Publication description or summary..."
+                placeholder="{{ __('Publication description or summary...') }}"
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
             ></textarea>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Max 1000 characters</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Max 1000 characters') }}</p>
             @error('description')
                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
             @enderror
@@ -648,7 +644,7 @@
         <!-- Cover Image Field -->
         <div>
             <label for="coverImage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Cover Image
+                {{ __('Cover Image') }}
             </label>
             <div class="space-y-3">
                 <input
@@ -697,14 +693,20 @@
                         wire:click="rejectExtraction"
                         class="px-6 py-2.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 font-semibold rounded-lg transition flex items-center gap-2"
                     >
-                        <span>❌</span> Reject & Edit
+                        <span>❌</span> {{ __('Reject & Edit') }}
                     </button>
                     <button
                         type="button"
                         wire:click="confirmExtraction"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-50 cursor-wait"
+                        wire:target="confirmExtraction"
                         class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition flex items-center gap-2 shadow-md"
                     >
-                        <span>✅</span> Confirm Extraction
+                        <span wire:loading.remove wire:target="confirmExtraction">✅</span>
+                        <span wire:loading wire:target="confirmExtraction" class="animate-spin">⏳</span>
+                        <span wire:loading.remove wire:target="confirmExtraction">{{ __('Confirm Extraction') }}</span>
+                        <span wire:loading wire:target="confirmExtraction">{{ __('Saving...') }}</span>
                     </button>
                 @elseif ($useExtracted && $extractionStatus === 'rejected')
                     <!-- For rejected: save changes or confirm as pending -->
@@ -713,14 +715,14 @@
                         wire:click="updateMetadata"
                         class="px-6 py-2.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold rounded-lg transition flex items-center gap-2"
                     >
-                        <span>💾</span> Save Changes
+                        <span>💾</span> {{ __('Save Changes') }}
                     </button>
                     <button
                         type="button"
                         wire:click="confirmExtraction"
                         class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition flex items-center gap-2 shadow-md"
                     >
-                        <span>✅</span> Confirm & Mark Pending
+                        <span>✅</span> {{ __('Confirm & Mark Pending') }}
                     </button>
                 @elseif ($extractionStatus === 'confirmed')
                     <!-- For confirmed: save updates -->
@@ -729,7 +731,7 @@
                         wire:click="updateMetadata"
                         class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center gap-2 shadow-md"
                     >
-                        <span>💾</span> Save Changes
+                        <span>💾</span> {{ __('Save Changes') }}
                     </button>
                 @elseif ($useManual || $extractionStatus === 'failed' || $extractionStatus === 'pending')
                     <!-- For manual entry or failed: save and confirm -->
@@ -738,7 +740,16 @@
                         wire:click="saveManualEntry"
                         class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition flex items-center gap-2 shadow-md"
                     >
-                        <span>💾</span> Save & Confirm
+                        <span>💾</span> {{ __('Save & Confirm') }}
+                    </button>
+                @else
+                    <!-- Fallback: always show a save option -->
+                    <button
+                        type="button"
+                        wire:click="confirmExtraction"
+                        class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition flex items-center gap-2 shadow-md"
+                    >
+                        <span>💾</span> {{ __('Save') }}
                     </button>
                 @endif
             </div>

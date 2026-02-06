@@ -137,6 +137,14 @@ class FileMetadata extends Model
     }
 
     /**
+     * Get issuer from extracted data.
+     */
+    public function getIssuer(): ?string
+    {
+        return $this->extracted_data['issuer']['value'] ?? null;
+    }
+
+    /**
      * Get genres from extracted data.
      *
      * @return array<string>
@@ -148,6 +156,20 @@ class FileMetadata extends Model
         }
 
         return array_map(fn ($genre) => $genre['value'] ?? '', $this->extracted_data['genres']);
+    }
+
+    /**
+     * Get themes from extracted data.
+     *
+     * @return array<string>
+     */
+    public function getThemes(): array
+    {
+        if (! isset($this->extracted_data['themes']) || ! is_array($this->extracted_data['themes'])) {
+            return [];
+        }
+
+        return array_map(fn ($theme) => $theme['value'] ?? '', $this->extracted_data['themes']);
     }
 
     /**

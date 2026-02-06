@@ -224,21 +224,17 @@
                     <button
                         type="button"
                         wire:click="extractWithAISelected"
+                        wire:loading.attr="disabled"
+                        wire:target="extractWithAISelected"
                         @if (!$geminiConfigured)
                             disabled
                             @mouseenter="showTooltip = true"
                             @mouseleave="showTooltip = false"
                         @endif
-                        class="px-4 py-2 text-sm font-medium rounded-lg transition flex items-center gap-2
-                            @if ($geminiConfigured)
-                                bg-purple-600 hover:bg-purple-700 text-white
-                            @else
-                                bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed
-                            @endif
-                        "
-                        type="button"
-                        wire:loading.attr="disabled"
-                        wire:target="extractWithAISelected"
+                        class="px-4 py-2 text-sm font-medium rounded-lg transition flex items-center gap-2 {{ $geminiConfigured ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm' : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' }}"
+                        @if($geminiConfigured)
+                        style="background-color: rgb(147, 51, 234) !important; color: white !important;"
+                        @endif
                     >
                         <span wire:loading.remove wire:target="extractWithAISelected">✨</span>
                         <span wire:loading wire:target="extractWithAISelected">

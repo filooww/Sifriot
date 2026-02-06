@@ -53,9 +53,9 @@
             this.search = item.name;
             this.exists = true;
             this.shouldCreate = false;
-            if (this.hasCreateModel) {
-                $wire.set('{{ $createNewModel ?? '' }}', false);
-            }
+            @if($createNewModel)
+            $wire.set('{{ $createNewModel }}', false);
+            @endif
             this.open = false;
             this.results = [];
         },
@@ -70,9 +70,9 @@
         },
         toggleCreate() {
             this.shouldCreate = !this.shouldCreate;
-            if (this.hasCreateModel) {
-                $wire.set('{{ $createNewModel ?? '' }}', this.shouldCreate);
-            }
+            @if($createNewModel)
+            $wire.set('{{ $createNewModel }}', this.shouldCreate);
+            @endif
         },
         async createNew() {
             const methodName = '{{ $createMethod ?? str_replace('search', 'createNew', $searchMethod) }}';
@@ -151,21 +151,6 @@
                 </template>
             </div>
         </div>
-
-        <!-- Create New Checkbox (shown when value doesn't exist) -->
-        @if ($createNewModel)
-            <template x-if="search.length >= 2 && !exists && !checking">
-                <label class="flex items-center gap-1.5 cursor-pointer whitespace-nowrap text-sm" title="Create new entry on save">
-                    <input
-                        type="checkbox"
-                        x-model="shouldCreate"
-                        @change="toggleCreate()"
-                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                    />
-                    <span class="text-yellow-600 dark:text-yellow-400">Create</span>
-                </label>
-            </template>
-        @endif
     </div>
 
     <!-- Autocomplete Dropdown -->
@@ -200,7 +185,7 @@
             <!-- Create New Option (Admin Only - instant create) -->
             @auth
                 @if (auth()->user()->role === 'admin')
-                    <template x-if="search.length >= 2 && results.length === 0">
+                    <template x-if="search.length >= 2 && results.length === 0 && !exists">
                         <li
                             @click="createNew()"
                             class="px-3 py-2 cursor-pointer text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-sm font-medium border-t border-gray-200 dark:border-gray-700 flex items-center gap-2"
