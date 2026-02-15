@@ -281,6 +281,10 @@
                     contentTypes: {{ \App\Models\ContentType::all()->toJson() }},
                     get selectedType() {
                         return this.contentTypes.find(ct => ct.id == this.selectedId);
+                    },
+                    isEmoji(str) {
+                        if (!str) return false;
+                        return /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(str);
                     }
                 }" class="relative">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -295,12 +299,12 @@
                         <span class="flex items-center gap-2">
                             <template x-if="selectedType">
                                 <span class="flex items-center gap-2">
-                                    <template x-if="selectedType.icon && /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(selectedType.icon)">
-                                        <span x-text="selectedType.icon"></span>
-                                    </template>
-                                    <template x-if="selectedType.icon && !/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(selectedType.icon)">
-                                        <span class="w-5 h-5 text-blue-600 dark:text-blue-400" x-html="document.querySelector('[data-icon=\'' + selectedType.icon + '\']')?.innerHTML || ''"></span>
-                                    </template>
+                            <template x-if="isEmoji(selectedType.icon)">
+                                <span x-text="selectedType.icon"></span>
+                            </template>
+                            <template x-if="selectedType.icon && !isEmoji(selectedType.icon)">
+                                <span class="w-5 h-5 text-blue-600 dark:text-blue-400" x-html="document.querySelector('[data-icon=\'' + selectedType.icon + '\']')?.innerHTML || ''"></span>
+                            </template>
                                     <span x-text="selectedType.name_en"></span>
                                 </span>
                             </template>

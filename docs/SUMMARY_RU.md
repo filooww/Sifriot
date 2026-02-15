@@ -273,6 +273,7 @@ npm run dev                         # Разработка с hot reload
 - **[LANGUAGE_SUPPORT.md](LANGUAGE_SUPPORT.md)** - Мультиязычность (EN/RU)
 - **[QUICKSTART.md](QUICKSTART.md)** - Быстрый старт (английский)
 - **[LIVEWIRE_GUIDE.md](LIVEWIRE_GUIDE.md)** - Подробное руководство по Livewire
+- **[ADMIN_WORKFLOWS_RU.md](ADMIN_WORKFLOWS_RU.md)** - 🛠️ Рабочие процессы администратора (Новое)
 
 ---
 
