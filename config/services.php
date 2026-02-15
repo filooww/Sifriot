@@ -43,4 +43,8 @@ return [
         'max_retries' => 3,
     ],
 
+    'libreoffice' => [
+        'path' => env('LIBREOFFICE_PATH', 'soffice'),
+    ],
+
 ];

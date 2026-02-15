@@ -102,14 +102,14 @@ class MetadataReviewForm extends Component
 
                 // Get publication
                 $publication = Publication::with('files')->find($this->fileMetadata->file_id);
-                if (! $publication) {
+                if (!$publication) {
                     throw new \Exception('Publication not found');
                 }
 
                 // Generate unique filename
                 $originalName = $this->coverImage->getClientOriginalName();
                 $extension = pathinfo($originalName, PATHINFO_EXTENSION);
-                $uniqueName = uniqid().'_'.time().'.'.$extension;
+                $uniqueName = uniqid() . '_' . time() . '.' . $extension;
 
                 // Store the file
                 $filePath = $this->coverImage->storeAs('covers', $uniqueName, 'public');
@@ -119,9 +119,9 @@ class MetadataReviewForm extends Component
                     ->where('id_publication', $publication->id_publication)
                     ->where('file_type', 'cover')
                     ->get();
-                
+
                 Log::info('Cover upload: found existing covers', ['count' => $existingCovers->count()]);
-                    
+
                 foreach ($existingCovers as $existingCover) {
                     // Delete the file from storage
                     if ($existingCover->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($existingCover->file_path)) {
@@ -164,7 +164,7 @@ class MetadataReviewForm extends Component
                 $this->dispatch('notify', message: 'Cover image saved successfully!', type: 'success')->to('admin.metadata-review-dashboard');
             } catch (\Exception $e) {
                 Log::error('Failed to auto-save cover image', ['error' => $e->getMessage()]);
-                $this->dispatch('notify', message: 'Failed to save cover image: '.$e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+                $this->dispatch('notify', message: 'Failed to save cover image: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
             }
         }
     }
@@ -191,12 +191,15 @@ class MetadataReviewForm extends Component
     public function mount(FileMetadata $fileMetadata): void
     {
         $this->fileMetadata = $fileMetadata;
-        $this->geminiConfigured = ! empty(config('services.gemini.api_key'));
-        
+        $this->geminiConfigured = !empty(config('services.gemini.api_key'));
+
         // Initialize arrays with one empty item if empty
-        if (empty($this->authors)) $this->addAuthor();
-        if (empty($this->genres)) $this->addGenre();
-        if (empty($this->themes)) $this->addTheme();
+        if (empty($this->authors))
+            $this->addAuthor();
+        if (empty($this->genres))
+            $this->addGenre();
+        if (empty($this->themes))
+            $this->addTheme();
 
         $this->loadMetadata();
     }
@@ -206,7 +209,7 @@ class MetadataReviewForm extends Component
      */
     private function loadMetadata(): void
     {
-        if (! $this->fileMetadata) {
+        if (!$this->fileMetadata) {
             return;
         }
 
@@ -217,7 +220,7 @@ class MetadataReviewForm extends Component
         // Load extracted data
         if ($this->fileMetadata->status === 'processed' || $this->fileMetadata->status === 'confirmed' || $this->fileMetadata->status === 'rejected') {
             $this->title = $this->fileMetadata->getTitle() ?? '';
-            
+
             $authors = $this->fileMetadata->getAuthors();
             if (!empty($authors)) {
                 $this->authors = [];
@@ -229,7 +232,7 @@ class MetadataReviewForm extends Component
             $this->publicationYear = $this->fileMetadata->getPublicationYear();
             $this->publisher = $this->fileMetadata->getPublisher() ?? '';
             $this->issuer = $this->fileMetadata->getIssuer() ?? '';
-            
+
             $genres = $this->fileMetadata->getGenres();
             if (!empty($genres)) {
                 $this->genres = [];
@@ -277,7 +280,7 @@ class MetadataReviewForm extends Component
      */
     public function loadCustomFields(): void
     {
-        if (! $this->contentTypeId) {
+        if (!$this->contentTypeId) {
             $this->customFields = [];
 
             return;
@@ -309,12 +312,12 @@ class MetadataReviewForm extends Component
      */
     private function loadSectionsAndPublishers(): void
     {
-        if (! $this->fileMetadata || ! $this->fileMetadata->file_id) {
+        if (!$this->fileMetadata || !$this->fileMetadata->file_id) {
             return;
         }
 
         $publication = Publication::with(['sections', 'publishers'])->find($this->fileMetadata->file_id);
-        if (! $publication) {
+        if (!$publication) {
             return;
         }
 
@@ -338,12 +341,12 @@ class MetadataReviewForm extends Component
      */
     public function getCurrentCoverImageUrl(): ?string
     {
-        if (! $this->fileMetadata) {
+        if (!$this->fileMetadata) {
             return null;
         }
 
         $publication = Publication::with('files')->find($this->fileMetadata->file_id);
-        if (! $publication) {
+        if (!$publication) {
             return null;
         }
 
@@ -369,13 +372,13 @@ class MetadataReviewForm extends Component
      */
     public function extractWithAI(): void
     {
-        if (! $this->geminiConfigured) {
+        if (!$this->geminiConfigured) {
             $this->dispatch('notify', message: __('Gemini API not configured'), type: 'error');
 
             return;
         }
 
-        if (! $this->fileMetadata) {
+        if (!$this->fileMetadata) {
             $this->dispatch('notify', message: __('No file metadata available'), type: 'error');
 
             return;
@@ -395,27 +398,28 @@ class MetadataReviewForm extends Component
             // Get file path from file_registration_logs
             $fileLog = DB::table('file_registration_logs')
                 ->where('publication_id', $publicationId)
-                ->where('file_path', 'like', '%'.addcslashes($this->fileMetadata->file_name, '%_').'%')
+                ->where('file_path', 'like', '%' . addcslashes($this->fileMetadata->file_name, '%_') . '%')
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-            if (! $fileLog || ! $fileLog->file_path) {
+            if (!$fileLog || !$fileLog->file_path) {
                 throw new \Exception('File path not found');
             }
 
             // Build absolute file path
             $fullPath = $fileLog->file_path;
-            if (! str_starts_with($fullPath, '/')) {
-                $filePath = storage_path('app/content/'.$fullPath);
-                if (! file_exists($filePath)) {
-                    $filePath = storage_path('app/'.$fullPath);
-                }
-            } else {
+            if (preg_match('/^(\/|[A-Za-z]:)/', $fullPath)) {
+                // Already an absolute path (Unix or Windows)
                 $filePath = $fullPath;
+            } else {
+                $filePath = storage_path('app/content/' . $fullPath);
+                if (!file_exists($filePath)) {
+                    $filePath = storage_path('app/' . $fullPath);
+                }
             }
 
-            if (! file_exists($filePath)) {
-                throw new \Exception('File not found: '.$filePath);
+            if (!file_exists($filePath)) {
+                throw new \Exception('File not found: ' . $filePath);
             }
 
             // Extract text from document
@@ -443,7 +447,7 @@ class MetadataReviewForm extends Component
             }
 
             $authors = $extracted->getAuthors();
-            if (! empty($authors)) {
+            if (!empty($authors)) {
                 $this->authors = [];
                 $this->createNewAuthors = [];
                 foreach ($authors as $author) {
@@ -472,7 +476,7 @@ class MetadataReviewForm extends Component
             }
 
             $genres = $extracted->getGenres();
-            if (! empty($genres)) {
+            if (!empty($genres)) {
                 $this->genres = [];
                 $this->createNewGenres = [];
                 foreach ($genres as $genre) {
@@ -484,7 +488,7 @@ class MetadataReviewForm extends Component
             }
 
             $themes = $extracted->getThemes();
-            if (! empty($themes)) {
+            if (!empty($themes)) {
                 $this->themes = [];
                 foreach ($themes as $theme) {
                     $this->themes[] = ['id' => uniqid(), 'value' => $theme];
@@ -530,7 +534,7 @@ class MetadataReviewForm extends Component
                 'error' => $e->getMessage(),
             ]);
 
-            $this->dispatch('notify', message: __('AI extraction failed').': '.$e->getMessage(), type: 'error');
+            $this->dispatch('notify', message: __('AI extraction failed') . ': ' . $e->getMessage(), type: 'error');
         } finally {
             $this->isExtractingWithAI = false;
         }
@@ -552,19 +556,27 @@ class MetadataReviewForm extends Component
             ->orWhere('slug', Str::slug($aiValue))
             ->first();
 
-        if ($type) return $type->id;
+        if ($type)
+            return $type->id;
 
         // 3. Simple mapping for known variations
         $map = [
-            'книга' => 'books', 'книги' => 'books', 'book' => 'books',
-            'журнал' => 'magazines', 'журналы' => 'magazines', 'magazine' => 'magazines',
-            'статья' => 'articles', 'статьи' => 'articles', 'article' => 'articles',
+            'книга' => 'books',
+            'книги' => 'books',
+            'book' => 'books',
+            'журнал' => 'magazines',
+            'журналы' => 'magazines',
+            'magazine' => 'magazines',
+            'статья' => 'articles',
+            'статьи' => 'articles',
+            'article' => 'articles',
         ];
 
         if (isset($map[$aiValueLower])) {
             $slug = $map[$aiValueLower];
             $type = DB::table('content_types')->where('slug', $slug)->first();
-            if ($type) return $type->id;
+            if ($type)
+                return $type->id;
         }
 
         return null;
@@ -587,7 +599,8 @@ class MetadataReviewForm extends Component
             ->orWhere('slug', Str::slug($aiValue))
             ->first();
 
-        if ($section) return $section->id;
+        if ($section)
+            return $section->id;
 
         // 2. Fuzzy match - try to find if the AI value matches loosely
         // e.g. "Biology" matching "Science / Biology"
@@ -595,7 +608,8 @@ class MetadataReviewForm extends Component
             ->orWhere(DB::raw('LOWER(name_en)'), 'like', "%{$aiValueLower}%")
             ->first();
 
-        if ($section) return $section->id;
+        if ($section)
+            return $section->id;
 
         return null;
     }
@@ -639,7 +653,7 @@ class MetadataReviewForm extends Component
         $this->genres = array_values($this->genres);
         $this->createNewGenres = array_values($this->createNewGenres);
     }
-    
+
     /**
      * Add a new theme field.
      */
@@ -664,7 +678,7 @@ class MetadataReviewForm extends Component
     {
         // Debug: dispatch notification to confirm method was called
         $this->dispatch('notify', message: 'Processing confirmation...', type: 'info')->to('admin.metadata-review-dashboard');
-        
+
         try {
             $this->validate();
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -677,23 +691,23 @@ class MetadataReviewForm extends Component
         try {
             // Clean empty values
             $cleanedAuthors = array_filter(
-                array_column($this->authors, 'value'), 
-                fn ($author) => ! empty(trim($author))
+                array_column($this->authors, 'value'),
+                fn($author) => !empty(trim($author))
             );
             $cleanedGenres = array_filter(
-                array_column($this->genres, 'value'), 
-                fn ($genre) => ! empty(trim($genre))
+                array_column($this->genres, 'value'),
+                fn($genre) => !empty(trim($genre))
             );
             $cleanedThemes = array_filter(
-                array_column($this->themes, 'value'), 
-                fn ($theme) => ! empty(trim($theme))
+                array_column($this->themes, 'value'),
+                fn($theme) => !empty(trim($theme))
             );
 
             // Get or create Publication (from FileMetadata's relationship)
             $publication = $this->fileMetadata->file()->first()?->publication
                 ?? Publication::find($this->fileMetadata->file_id);
 
-            if (! $publication) {
+            if (!$publication) {
                 throw new \Exception('Publication not found for this file metadata');
             }
 
@@ -707,7 +721,7 @@ class MetadataReviewForm extends Component
             }
 
             // Save publisher if provided
-            if (! empty($this->publisher)) {
+            if (!empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
                 $publisher = Publishing::firstOrCreate(
                     ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
@@ -725,12 +739,12 @@ class MetadataReviewForm extends Component
             }
 
             // Sync sections
-            if (! empty($this->selectedSections)) {
+            if (!empty($this->selectedSections)) {
                 $publication->sections()->sync($this->selectedSections);
             }
 
             // Sync publishers (new Publisher model)
-            if (! empty($this->selectedPublishers)) {
+            if (!empty($this->selectedPublishers)) {
                 $publication->publishers()->sync($this->selectedPublishers);
             }
 
@@ -764,7 +778,7 @@ class MetadataReviewForm extends Component
                         'confidence' => 1.0,
                     ],
                     'authors' => array_map(
-                        fn ($author) => [
+                        fn($author) => [
                             'value' => trim($author),
                             'confidence' => 1.0,
                         ],
@@ -783,14 +797,14 @@ class MetadataReviewForm extends Component
                         'confidence' => 1.0,
                     ] : null,
                     'genres' => array_map(
-                        fn ($genre) => [
+                        fn($genre) => [
                             'value' => trim($genre),
                             'confidence' => 1.0,
                         ],
                         $cleanedGenres
                     ),
                     'themes' => array_map(
-                        fn ($theme) => [
+                        fn($theme) => [
                             'value' => trim($theme),
                             'confidence' => 1.0,
                         ],
@@ -839,8 +853,8 @@ class MetadataReviewForm extends Component
                 'trace' => $e->getTraceAsString(),
                 'file_metadata_id' => $this->fileMetadata->id ?? null,
             ]);
-            \Log::channel('folder_scan')->error('Metadata confirmation failed: '.$e->getMessage());
-            $this->dispatch('notify', message: 'Failed to confirm metadata: '.$e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+            \Log::channel('folder_scan')->error('Metadata confirmation failed: ' . $e->getMessage());
+            $this->dispatch('notify', message: 'Failed to confirm metadata: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
         }
     }
 
@@ -867,7 +881,7 @@ class MetadataReviewForm extends Component
             $this->dispatch('notify', message: 'Extraction rejected. Enter metadata manually.', type: 'info');
         } catch (\Exception $e) {
             Log::error('Failed to reject metadata extraction', ['error' => $e->getMessage()]);
-            $this->dispatch('notify', message: 'Failed to reject extraction: '.$e->getMessage(), type: 'error');
+            $this->dispatch('notify', message: 'Failed to reject extraction: ' . $e->getMessage(), type: 'error');
         }
     }
 
@@ -882,23 +896,23 @@ class MetadataReviewForm extends Component
         DB::beginTransaction();
         try {
             $cleanedAuthors = array_filter(
-                array_column($this->authors, 'value'), 
-                fn ($author) => ! empty(trim($author))
+                array_column($this->authors, 'value'),
+                fn($author) => !empty(trim($author))
             );
             $cleanedGenres = array_filter(
-                array_column($this->genres, 'value'), 
-                fn ($genre) => ! empty(trim($genre))
+                array_column($this->genres, 'value'),
+                fn($genre) => !empty(trim($genre))
             );
             $cleanedThemes = array_filter(
-                array_column($this->themes, 'value'), 
-                fn ($theme) => ! empty(trim($theme))
+                array_column($this->themes, 'value'),
+                fn($theme) => !empty(trim($theme))
             );
 
             // Get or create Publication
             $publication = $this->fileMetadata->file()->first()?->publication
                 ?? Publication::find($this->fileMetadata->file_id);
 
-            if (! $publication) {
+            if (!$publication) {
                 throw new \Exception('Publication not found for this file metadata');
             }
 
@@ -912,7 +926,7 @@ class MetadataReviewForm extends Component
             }
 
             // Save publisher if provided
-            if (! empty($this->publisher)) {
+            if (!empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
                 $publisher = Publishing::firstOrCreate(
                     ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
@@ -956,7 +970,7 @@ class MetadataReviewForm extends Component
                         'confidence' => 1.0,
                     ],
                     'authors' => array_map(
-                        fn ($author) => [
+                        fn($author) => [
                             'value' => trim($author),
                             'confidence' => 1.0,
                         ],
@@ -975,14 +989,14 @@ class MetadataReviewForm extends Component
                         'confidence' => 1.0,
                     ] : null,
                     'genres' => array_map(
-                        fn ($genre) => [
+                        fn($genre) => [
                             'value' => trim($genre),
                             'confidence' => 1.0,
                         ],
                         $cleanedGenres
                     ),
                     'themes' => array_map(
-                        fn ($theme) => [
+                        fn($theme) => [
                             'value' => trim($theme),
                             'confidence' => 1.0,
                         ],
@@ -1012,7 +1026,7 @@ class MetadataReviewForm extends Component
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to update metadata', ['error' => $e->getMessage()]);
-            $this->dispatch('notify', message: 'Failed to update metadata: '.$e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+            $this->dispatch('notify', message: 'Failed to update metadata: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
         }
     }
 
@@ -1026,19 +1040,19 @@ class MetadataReviewForm extends Component
         DB::beginTransaction();
         try {
             $cleanedAuthors = array_filter(
-                array_column($this->authors, 'value'), 
-                fn ($author) => ! empty(trim($author))
+                array_column($this->authors, 'value'),
+                fn($author) => !empty(trim($author))
             );
             $cleanedGenres = array_filter(
-                array_column($this->genres, 'value'), 
-                fn ($genre) => ! empty(trim($genre))
+                array_column($this->genres, 'value'),
+                fn($genre) => !empty(trim($genre))
             );
 
             // Get or create Publication (from FileMetadata's relationship)
             $publication = $this->fileMetadata->file()->first()?->publication
                 ?? Publication::find($this->fileMetadata->file_id);
 
-            if (! $publication) {
+            if (!$publication) {
                 throw new \Exception('Publication not found for this file metadata');
             }
 
@@ -1052,7 +1066,7 @@ class MetadataReviewForm extends Component
             }
 
             // Save publisher if provided
-            if (! empty($this->publisher)) {
+            if (!empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
                 $publisher = Publishing::firstOrCreate(
                     ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
@@ -1097,7 +1111,7 @@ class MetadataReviewForm extends Component
                         'confidence' => 1.0,
                     ],
                     'authors' => array_map(
-                        fn ($author) => [
+                        fn($author) => [
                             'value' => trim($author),
                             'confidence' => 1.0,
                         ],
@@ -1112,14 +1126,14 @@ class MetadataReviewForm extends Component
                         'confidence' => 1.0,
                     ] : null,
                     'genres' => array_map(
-                        fn ($genre) => [
+                        fn($genre) => [
                             'value' => trim($genre),
                             'confidence' => 1.0,
                         ],
                         $cleanedGenres
                     ),
                     'themes' => array_map(
-                        fn ($theme) => [
+                        fn($theme) => [
                             'value' => trim($theme),
                             'confidence' => 1.0,
                         ],
@@ -1158,7 +1172,7 @@ class MetadataReviewForm extends Component
                 'error' => $e->getMessage(),
                 'file_metadata_id' => $this->fileMetadata->id ?? null,
             ]);
-            $this->dispatch('notify', message: 'Failed to save metadata: '.$e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+            $this->dispatch('notify', message: 'Failed to save metadata: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
         }
     }
 
@@ -1167,7 +1181,7 @@ class MetadataReviewForm extends Component
      */
     public function toggleDetails(): void
     {
-        $this->showDetails = ! $this->showDetails;
+        $this->showDetails = !$this->showDetails;
     }
 
     /**
@@ -1225,11 +1239,11 @@ class MetadataReviewForm extends Component
         return Author::query()
             ->where(function ($q) use ($query) {
                 $q->where('author', 'like', "%{$query}%")
-                    ->orWhere('author_low', 'like', '%'.mb_strtolower($query).'%');
+                    ->orWhere('author_low', 'like', '%' . mb_strtolower($query) . '%');
             })
             ->limit(10)
             ->get()
-            ->map(fn ($author) => [
+            ->map(fn($author) => [
                 'id' => $author->id_author,
                 'name' => $author->author,
             ])
@@ -1248,11 +1262,11 @@ class MetadataReviewForm extends Component
         return Publishing::query()
             ->where(function ($q) use ($query) {
                 $q->where('publishing', 'like', "%{$query}%")
-                    ->orWhere('publishing_low', 'like', '%'.mb_strtolower($query).'%');
+                    ->orWhere('publishing_low', 'like', '%' . mb_strtolower($query) . '%');
             })
             ->limit(10)
             ->get()
-            ->map(fn ($pub) => [
+            ->map(fn($pub) => [
                 'id' => $pub->id_publishing,
                 'name' => $pub->publishing,
             ])
@@ -1276,7 +1290,7 @@ class MetadataReviewForm extends Component
             })
             ->limit(10)
             ->get()
-            ->map(fn ($genre) => [
+            ->map(fn($genre) => [
                 'id' => $genre->id,
                 'name' => $genre->name_en ?? $genre->name_ru ?? $genre->name_he ?? 'Unknown',
             ])
@@ -1295,11 +1309,11 @@ class MetadataReviewForm extends Component
         return \App\Models\Theme::query()
             ->where(function ($q) use ($query) {
                 $q->where('theme', 'like', "%{$query}%")
-                    ->orWhere('theme_low', 'like', '%'.mb_strtolower($query).'%');
+                    ->orWhere('theme_low', 'like', '%' . mb_strtolower($query) . '%');
             })
             ->limit(10)
             ->get()
-            ->map(fn ($theme) => [
+            ->map(fn($theme) => [
                 'id' => $theme->id_theme,
                 'name' => $theme->theme,
             ])
@@ -1324,7 +1338,7 @@ class MetadataReviewForm extends Component
             ->whereNotIn('id', $this->selectedSections)
             ->limit(10)
             ->get()
-            ->map(fn ($cat) => [
+            ->map(fn($cat) => [
                 'id' => $cat->id,
                 'name' => $cat->localizedName,
             ])
@@ -1349,7 +1363,7 @@ class MetadataReviewForm extends Component
             ->whereNotIn('id', $this->selectedPublishers)
             ->limit(10)
             ->get()
-            ->map(fn ($pub) => [
+            ->map(fn($pub) => [
                 'id' => $pub->id,
                 'name' => $pub->localizedName,
             ])
@@ -1361,7 +1375,7 @@ class MetadataReviewForm extends Component
      */
     public function addSection(int $sectionId): void
     {
-        if (! in_array($sectionId, $this->selectedSections)) {
+        if (!in_array($sectionId, $this->selectedSections)) {
             $this->selectedSections[] = $sectionId;
         }
         $this->sectionSearchQuery = '';
@@ -1380,7 +1394,7 @@ class MetadataReviewForm extends Component
      */
     public function addPublisher(int $publisherId): void
     {
-        if (! in_array($publisherId, $this->selectedPublishers)) {
+        if (!in_array($publisherId, $this->selectedPublishers)) {
             $this->selectedPublishers[] = $publisherId;
         }
         $this->publisherSearchQuery = '';
@@ -1401,7 +1415,7 @@ class MetadataReviewForm extends Component
     {
         return Section::whereIn('id', $this->selectedSections)
             ->get()
-            ->map(fn ($cat) => [
+            ->map(fn($cat) => [
                 'id' => $cat->id,
                 'name' => $cat->localizedName,
             ])
@@ -1415,7 +1429,7 @@ class MetadataReviewForm extends Component
     {
         return Publisher::whereIn('id', $this->selectedPublishers)
             ->get()
-            ->map(fn ($pub) => [
+            ->map(fn($pub) => [
                 'id' => $pub->id,
                 'name' => $pub->localizedName,
             ])
@@ -1430,7 +1444,7 @@ class MetadataReviewForm extends Component
      */
     public function storeAuthor(string $name): array
     {
-        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
+        abort_if(!auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $author = Author::firstOrCreate(
@@ -1448,7 +1462,7 @@ class MetadataReviewForm extends Component
      */
     public function storePublisher(string $name): array
     {
-        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
+        abort_if(!auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $publisher = Publishing::firstOrCreate(
@@ -1467,7 +1481,7 @@ class MetadataReviewForm extends Component
      */
     public function storeGenre(string $name): array
     {
-        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
+        abort_if(!auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $genre = Genre::firstOrCreate(
             ['slug' => Str::slug($name)],
@@ -1485,7 +1499,7 @@ class MetadataReviewForm extends Component
      */
     public function storeTheme(string $name): array
     {
-        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
+        abort_if(!auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $theme = \App\Models\Theme::firstOrCreate(
@@ -1503,7 +1517,7 @@ class MetadataReviewForm extends Component
      */
     public function createNewSection(string $name): void
     {
-        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
+        abort_if(!auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $section = Section::firstOrCreate(
@@ -1519,7 +1533,7 @@ class MetadataReviewForm extends Component
      */
     public function createNewPublisher(string $name): void
     {
-        abort_if(! auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
+        abort_if(!auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
         $publisher = Publisher::firstOrCreate(

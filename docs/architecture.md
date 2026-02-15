@@ -161,9 +161,9 @@ This document supplements the existing Laravel project architecture by defining 
 | **Package Manager (JS)** | npm | Latest | JS dependencies | Existing |
 | **Testing Framework** | PHPUnit | 11.5.3 | Unit and feature tests | Built-in |
 | **Code Quality** | Laravel Pint | 1.24 | PSR-12 formatting | Enforce standards |
-| **Development Server** | Apache HTTP | 2.4 | Web server in Docker | PHP 8.4-Apache |
-| **Container Platform** | Docker Compose | Latest | Development/production | Multi-container |
-| **Database Admin** | phpMyAdmin | Latest | Database UI | Admin tool |
+| **Development Server** | Laragon (Apache) | 6.0+ | Web server on Windows | PHP 8.4-Apache |
+| **Environment** | Local (Laragon) | Latest | Development/production | Replaces Docker |
+| **Database Admin** | HeidiSQL | Latest | Database UI | Included with Laragon |
 
 ### 3.2 New Technology Additions
 
@@ -434,69 +434,49 @@ tests/
 
 ## 7. Infrastructure and Deployment Integration
 
-### 7.1 Enhanced docker-compose.yml
+### 7.1 Local Environment (Laragon)
 
-**New Containers:**
-- `literature_queue` - Queue worker (`php artisan queue:work --tries=3 --timeout=600`)
-- `literature_scheduler` - Cron scheduler (runs `schedule:run` every 60 seconds)
+**Services:**
+- `Apache/Nginx` - Web Server (Virtual Host: `sifriot.test`)
+- `MySQL 8.0` - Database Server
+- `Redis` (Optional) - Cache/Queue (if enabled in Laragon)
 
 **Volume Mounts:**
-- `/mnt/library-storage:/var/www/html/storage/app/content` - Local disk (1.1TB)
-
-**Healthcheck Directives:**
-```yaml
-healthcheck:
-  test: ["CMD", "php", "artisan", "health:check"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-```
+- Project root maps directly to `C:\laragon\www\sifriot` in Laragon.
 
 ### 7.2 Deployment Strategy
 
-**Deployment Script (deploy.sh):**
-```bash
-# Stop containers
-docker compose down
-
-# Database backup (automated)
-docker compose exec literature_db mysqldump -u root -p$DB_PASSWORD literature > backup_$(date +%Y%m%d_%H%M%S).sql
-
+**Deployment Script (deploy.sh - Windows/PowerShell):**
+```powershell
 # Update dependencies
-docker compose run --rm literature_web composer install --optimize-autoloader --no-dev
-docker compose run --rm literature_web npm ci && npm run build
+composer install --optimize-autoloader --no-dev
+npm ci && npm run build
 
 # Run migrations
-docker compose run --rm literature_web php artisan migrate --force
+php artisan migrate --force
 
 # Clear caches
-docker compose run --rm literature_web php artisan optimize:clear
-docker compose run --rm literature_web php artisan config:cache
+php artisan optimize:clear
+php artisan config:cache
 
-# Restart
-docker compose up -d
+# Restart Queue Worker
+php artisan queue:restart
 ```
 
 ### 7.3 Monitoring
 
 **Health Check Endpoint (`/health`):**
-- Checks database connection, storage accessibility, queue worker heartbeat
-- Returns 200 (healthy) or 503 (unhealthy)
+- Checks database connection, storage accessibility.
 
-**Colored Logs:**
-- Custom `ColoredLineFormatter` with ANSI codes
-- `folder-scan.log` - Green (info), Yellow (warning), Red (error)
-- `file-sync.log` - Cyan (info), Yellow (warning), Red (error)
+**Logs:**
+- `storage/logs/laravel.log`
+- `storage/logs/folder-scan.log`
 
 **Queue Monitoring:**
-- Queue worker heartbeat via cache every 60s
-- Admin dashboard shows failed jobs count
+- Ensure `php artisan queue:work` is running in a separate terminal or service.
 
 **Scheduled Tasks:**
-- File integrity check (configurable: daily, weekly, hourly)
-- Cleanup old logs (keep 90 days)
-- Engagement metrics reconciliation (daily)
-- Database backup (weekly)
+- Ensure Windows Task Scheduler runs `php artisan schedule:run` every minute.
 
 ---
 
@@ -733,24 +713,20 @@ public function validatePath(string $filePath): string
 
 ### 11.2 Developer Quick Start
 
-```bash
-# Setup
-docker compose up -d
-docker compose exec literature_web composer install
-docker compose exec literature_web npm install
-docker compose exec literature_web php artisan migrate
-docker compose exec literature_web npm run dev
+See [docs/QUICKSTART.md](docs/QUICKSTART.md) for detailed Laragon setup instructions.
 
-# Pre-commit hooks
-cat > .git/hooks/pre-commit << 'EOF'
-#!/bin/sh
-./vendor/bin/pint
-php artisan test --testsuite=Unit --stop-on-failure
-EOF
-chmod +x .git/hooks/pre-commit
+```bash
+# Setup (in Laragon Terminal)
+cd C:\laragon\www\sifriot
+cp .env.example .env
+composer install
+npm install
+php artisan key:generate
+php artisan migrate --seed
+npm run dev
 
 # Verify
-docker compose exec literature_web php artisan test
+php artisan test
 ```
 
 ### 11.3 Key Technical Reminders

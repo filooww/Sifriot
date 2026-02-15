@@ -31,7 +31,8 @@ class ProcessFileRegistrationJob implements ShouldQueue
     public function __construct(
         public string $filePath,
         public int $scanJobId
-    ) {}
+    ) {
+    }
 
     /**
      * Execute the job.
@@ -52,7 +53,7 @@ class ProcessFileRegistrationJob implements ShouldQueue
         }
 
         // Validate file still exists on library disk
-        if (! Storage::disk('library')->exists($this->filePath)) {
+        if (!Storage::disk('library')->exists($this->filePath)) {
             $this->recordFailure($scanJob, 'File not found');
 
             return;
@@ -63,9 +64,38 @@ class ProcessFileRegistrationJob implements ShouldQueue
                 // Get file metadata
                 $fullPath = Storage::disk('library')->path($this->filePath);
                 $metadata = $fileStorage->getFileMetadata($this->filePath);
+                $fileName = basename($this->filePath);
+
+                // Check if file already exists in the database
+                $existingFile = File::where('file_name', $fileName)->first();
+                if ($existingFile) {
+                    // File already registered, just update the registration log
+                    FileRegistrationLog::updateOrCreate(
+                        ['file_path' => $fullPath],
+                        [
+                            'publication_id' => $existingFile->id_publication,
+                            'registration_source' => 'bulk_scan',
+                            'folder_scan_job_id' => $this->scanJobId,
+                            'metadata_auto_extracted' => false,
+                            'status' => 'processed',
+                            'error_message' => null,
+                            'registered_by' => $scanJob->user_id,
+                        ]
+                    );
+
+                    $scanJob->increment('files_registered');
+
+                    Log::channel('folder_scan')->info('File already exists, updated registration log', [
+                        'file_path' => $this->filePath,
+                        'scan_job_id' => $this->scanJobId,
+                        'publication_id' => $existingFile->id_publication,
+                    ]);
+
+                    return;
+                }
 
                 // Create publication record with pending status
-                $title = $metadata['suggested_title'] ?? basename($this->filePath);
+                $title = $metadata['suggested_title'] ?? $fileName;
                 $publication = Publication::create([
                     'title' => $title,
                     'title_low' => strtolower($title),
@@ -76,49 +106,33 @@ class ProcessFileRegistrationJob implements ShouldQueue
                 ]);
 
                 // Create file record
-                // Get the next ord_num for this publication (default to 1 for first file)
                 $nextOrdNum = File::where('id_publication', $publication->id_publication)->max('ord_num') ?? 0;
                 $nextOrdNum++;
 
                 File::create([
                     'id_publication' => $publication->id_publication,
                     'ord_num' => $nextOrdNum,
-                    'file_name' => basename($this->filePath),
-                    'file_name_low' => strtolower(basename($this->filePath)),
-                    'file_source' => dirname($this->filePath), // Store relative directory path for library disk
+                    'file_name' => $fileName,
+                    'file_name_low' => strtolower($fileName),
+                    'file_source' => dirname($this->filePath),
                     'mime_type' => $metadata['mime_type'] ?? 'application/octet-stream',
                     'file_size_bytes' => $metadata['file_size'] ?? 0,
                 ]);
 
-                // Trigger metadata extraction for bulk scanned files
-                if (config('library.extraction.enabled', true)) {
-                    $fileId = "{$publication->id_publication}-".basename($this->filePath);
-                    $fullPath = Storage::disk('library')->path($this->filePath);
 
-                    ExtractMetadataFromFile::dispatch(
-                        $fileId,
-                        $fullPath,
-                        $publication->content_type_id,
-                        $metadata['mime_type'] ?? 'application/octet-stream'
-                    );
-
-                    Log::channel('folder_scan')->info('Metadata extraction queued for bulk scanned file', [
-                        'file_id' => $fileId,
-                        'scan_job_id' => $this->scanJobId,
+                // Create or update registration log
+                FileRegistrationLog::updateOrCreate(
+                    ['file_path' => $fullPath],
+                    [
                         'publication_id' => $publication->id_publication,
-                    ]);
-                }
-
-                // Create registration log
-                FileRegistrationLog::create([
-                    'publication_id' => $publication->id_publication,
-                    'file_path' => $fullPath,
-                    'registration_source' => 'bulk_scan',
-                    'folder_scan_job_id' => $this->scanJobId,
-                    'metadata_auto_extracted' => true,
-                    'status' => 'processed',
-                    'registered_by' => $scanJob->user_id,
-                ]);
+                        'registration_source' => 'bulk_scan',
+                        'folder_scan_job_id' => $this->scanJobId,
+                        'metadata_auto_extracted' => true,
+                        'status' => 'processed',
+                        'error_message' => null,
+                        'registered_by' => $scanJob->user_id,
+                    ]
+                );
 
                 // Increment registered count
                 $scanJob->increment('files_registered');
@@ -162,18 +176,20 @@ class ProcessFileRegistrationJob implements ShouldQueue
         // Increment failed count
         $scanJob->increment('files_failed');
 
-        // Create failed registration log
+        // Create or update failed registration log
         $fullPath = Storage::disk('library')->path($this->filePath);
-        FileRegistrationLog::create([
-            'publication_id' => null,
-            'file_path' => $fullPath,
-            'registration_source' => 'bulk_scan',
-            'folder_scan_job_id' => $this->scanJobId,
-            'metadata_auto_extracted' => false,
-            'status' => 'failed',
-            'error_message' => $errorMessage,
-            'registered_by' => $scanJob->user_id,
-        ]);
+        FileRegistrationLog::updateOrCreate(
+            ['file_path' => $fullPath],
+            [
+                'publication_id' => null,
+                'registration_source' => 'bulk_scan',
+                'folder_scan_job_id' => $this->scanJobId,
+                'metadata_auto_extracted' => false,
+                'status' => 'failed',
+                'error_message' => $errorMessage,
+                'registered_by' => $scanJob->user_id,
+            ]
+        );
 
         Log::channel('folder_scan')->error('File registration failed', [
             'file_path' => $this->filePath,
