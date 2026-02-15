@@ -315,54 +315,17 @@ class FileViewController extends Controller
             abort(404, 'File not found in storage');
         }
 
-        // Get full path and convert using antiword
+        // Get full path and convert using LibreOffice
         $fullPath = Storage::disk($disk)->path($storagePath);
 
         try {
-            // Use antiword to extract text (-m UTF-8 for UTF-8 output, -w 0 for no line breaks)
-            $command = sprintf('antiword -m UTF-8 -w 0 %s 2>&1', escapeshellarg($fullPath));
-            exec($command, $output, $returnCode);
+            $html = $this->convertDocWithLibreOffice($fullPath);
 
-            if ($returnCode !== 0) {
-                throw new \Exception('Antiword conversion failed: ' . implode("\n", $output));
-            }
+            // Extract text content from the HTML for plain text endpoint
+            $textContent = strip_tags($html);
+            $textContent = html_entity_decode($textContent, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $textContent = preg_replace('/\n{3,}/', "\n\n", trim($textContent));
 
-            $textContent = implode("\n", $output);
-
-            // Clean up antiword error messages and warnings
-            // Remove lines that start with "I can't find" or other error patterns
-            $lines = explode("\n", $textContent);
-            $cleanedLines = array_filter($lines, function ($line) {
-                $line = trim($line);
-                // Skip antiword error/warning messages
-                if (empty($line)) {
-                    return true;
-                }
-                if (str_starts_with($line, "I can't find")) {
-                    return false;
-                }
-                if (str_starts_with($line, 'I can not find')) {
-                    return false;
-                }
-                if (str_starts_with($line, "I couldn't find")) {
-                    return false;
-                }
-                if (str_starts_with($line, 'Unable to')) {
-                    return false;
-                }
-                if (str_starts_with($line, 'Warning:')) {
-                    return false;
-                }
-
-                return true;
-            });
-
-            $textContent = implode("\n", $cleanedLines);
-
-            // Trim any leading/trailing whitespace
-            $textContent = trim($textContent);
-
-            // Return as plain text
             return response($textContent)
                 ->header('Content-Type', 'text/plain; charset=UTF-8')
                 ->header('Cache-Control', 'public, max-age=3600');
@@ -455,38 +418,17 @@ class FileViewController extends Controller
         try {
             $fullPath = Storage::disk($disk)->path($storagePath);
 
-            // Load and parse DOC file using PHPWord
+            // Try LibreOffice first as primary converter
             try {
-                try {
-                    $phpWord = \PhpOffice\PhpWord\IOFactory::load($fullPath);
-                } catch (\Exception $e) {
-                    // Fallback: Try explicitly with MsDoc reader (for older binary DOC files)
-                    try {
-                        $reader = \PhpOffice\PhpWord\IOFactory::createReader('MsDoc');
-                        if ($reader->canRead($fullPath)) {
-                            $phpWord = $reader->load($fullPath);
-                        } else {
-                            throw $e; // Re-throw original if MsDoc can't read
-                        }
-                    } catch (\Exception $msDocEx) {
-                        throw $e; // Re-throw original to trigger antiword fallback
-                    }
-                }
+                $libreOfficeHtml = $this->convertDocWithLibreOffice($fullPath);
 
-                // Use PHPWord's built-in HTML writer for robust conversion
-                $tempFile = tempnam(sys_get_temp_dir(), 'phpword_') . '.html';
-                $htmlWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'HTML');
-                $htmlWriter->save($tempFile);
-                $generatedHtml = file_get_contents($tempFile);
-                @unlink($tempFile);
-
-                // Extract the <body> content from PHPWord's HTML output
-                $bodyContent = $generatedHtml;
-                if (preg_match('/<body[^>]*>(.*)<\/body>/si', $generatedHtml, $matches)) {
+                // Extract body content
+                $bodyContent = $libreOfficeHtml;
+                if (preg_match('/<body[^>]*>(.*)<\/body>/si', $libreOfficeHtml, $matches)) {
                     $bodyContent = $matches[1];
                 }
 
-                // Wrap in our styled template
+                // Wrap in styled template
                 $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
                 $html .= '<style>';
                 $html .= 'body { font-family: "Segoe UI", "Calibri", sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 2rem; background: #f9fafb; color: #1f2937; }';
@@ -505,70 +447,51 @@ class FileViewController extends Controller
 
                 return response($html)
                     ->header('Content-Type', 'text/html; charset=UTF-8')
-                    ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+                    ->header('Cache-Control', 'public, max-age=3600');
 
-            } catch (\Exception $e) {
-                // Fallback to antiword if PHPWord fails
-                Log::warning('PHPWord parsing failed, falling back to antiword', [
+            } catch (\Exception $loException) {
+                Log::warning('LibreOffice conversion failed, trying PHPWord fallback', [
                     'publication_id' => $publication,
                     'filename' => $decodedFilename,
-                    'error' => $e->getMessage(),
+                    'error' => $loException->getMessage(),
                 ]);
 
-                $command = sprintf('antiword -m UTF-8 -w 0 %s 2>&1', escapeshellarg($fullPath));
-                exec($command, $output, $returnCode);
-
-                if ($returnCode !== 0) {
-                    throw new \Exception('Both PHPWord and antiword conversion failed');
+                // Fallback: Try PHPWord if LibreOffice fails
+                try {
+                    $phpWord = \PhpOffice\PhpWord\IOFactory::load($fullPath);
+                } catch (\Exception $e) {
+                    try {
+                        $reader = \PhpOffice\PhpWord\IOFactory::createReader('MsDoc');
+                        if ($reader->canRead($fullPath)) {
+                            $phpWord = $reader->load($fullPath);
+                        } else {
+                            throw $e;
+                        }
+                    } catch (\Exception $e2) {
+                        throw new \Exception('Both LibreOffice and PHPWord conversion failed. LibreOffice error: ' . $loException->getMessage());
+                    }
                 }
 
-                $textContent = implode("\n", $output);
+                // Use PHPWord's HTML writer
+                $tempFile = tempnam(sys_get_temp_dir(), 'phpword_') . '.html';
+                $htmlWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'HTML');
+                $htmlWriter->save($tempFile);
+                $generatedHtml = file_get_contents($tempFile);
+                @unlink($tempFile);
 
-                // Clean up antiword messages
-                $lines = explode("\n", $textContent);
-                $cleanedLines = array_filter($lines, function ($line) {
-                    $line = trim($line);
-                    if (empty($line)) {
-                        return true;
-                    }
-                    if (str_starts_with($line, "I can't find")) {
-                        return false;
-                    }
-                    if (str_starts_with($line, 'I can not find')) {
-                        return false;
-                    }
-                    if (str_starts_with($line, "I couldn't find")) {
-                        return false;
-                    }
-                    if (str_starts_with($line, 'Unable to')) {
-                        return false;
-                    }
-                    if (str_starts_with($line, 'Warning:')) {
-                        return false;
-                    }
+                // Extract body and return (reuse previous styling logic if needed, or simple return)
+                $bodyContent = $generatedHtml;
+                if (preg_match('/<body[^>]*>(.*)<\/body>/si', $generatedHtml, $matches)) {
+                    $bodyContent = $matches[1];
+                }
 
-                    return true;
-                });
-
-                $textContent = trim(implode("\n", $cleanedLines));
-
-                // Wrap plain text in HTML
                 $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
-                $html .= '<style>';
-                $html .= 'body { font-family: "Segoe UI", "Calibri", sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 2rem; background: #f9fafb; color: #1f2937; }';
-                $html .= '.content { background: #fff; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }';
-                $html .= 'p { margin-bottom: 1rem; whitespace: pre-wrap; }';
-                $html .= '@media (prefers-color-scheme: dark) {';
-                $html .= '  body { background: #111827; color: #e5e7eb; }';
-                $html .= '  .content { background: #1f2937; color: #e5e7eb; }';
-                $html .= '}';
-                $html .= '</style></head><body><div class="content">';
-                $html .= '<p>' . nl2br(htmlspecialchars($textContent)) . '</p>';
-                $html .= '</div></body></html>';
+                $html .= '<style>body { font-family: sans-serif; padding: 20px; }</style>';
+                $html .= '</head><body>' . $bodyContent . '</body></html>';
 
                 return response($html)
                     ->header('Content-Type', 'text/html; charset=UTF-8')
-                    ->header('Cache-Control', 'public, max-age=3600');
+                    ->header('Cache-Control', 'no-cache');
             }
 
         } catch (\Exception $e) {
@@ -582,6 +505,70 @@ class FileViewController extends Controller
                 'error' => 'Failed to convert DOC file',
                 'message' => $e->getMessage(),
             ], 500)->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+    }
+
+    /**
+     * Convert DOC file to HTML using LibreOffice headless mode.
+     *
+     * @throws \Exception if conversion fails
+     */
+    private function convertDocWithLibreOffice(string $fullPath): string
+    {
+        $soffice = config('services.libreoffice.path', 'soffice');
+
+        // Create a temp directory for the output
+        $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'lo_convert_' . uniqid();
+        if (!mkdir($tempDir, 0777, true) && !is_dir($tempDir)) {
+            throw new \Exception('Failed to create temp directory for conversion');
+        }
+
+        // Create a safe temporary copy of the input file to avoid filename issues
+        // (LibreOffice fails with spaces/Cyrillic in filenames on Windows CLI)
+        $extension = pathinfo($fullPath, PATHINFO_EXTENSION) ?: 'doc';
+        $safeInputPath = $tempDir . DIRECTORY_SEPARATOR . 'input_' . uniqid() . '.' . $extension;
+
+        if (!copy($fullPath, $safeInputPath)) {
+            @rmdir($tempDir);
+            throw new \Exception('Failed to create temporary copy of input file');
+        }
+
+        try {
+            // Run LibreOffice headless conversion on the SAFE temp file
+            $command = sprintf(
+                '%s --headless --convert-to html --outdir %s %s 2>&1',
+                escapeshellarg($soffice),
+                escapeshellarg($tempDir),
+                escapeshellarg($safeInputPath)
+            );
+
+            exec($command, $output, $returnCode);
+
+            if ($returnCode !== 0) {
+                throw new \Exception('LibreOffice conversion failed (exit code ' . $returnCode . '): ' . implode("\n", $output));
+            }
+
+            // Find the generated HTML file
+            $htmlFiles = glob($tempDir . DIRECTORY_SEPARATOR . '*.html');
+            if (empty($htmlFiles)) {
+                throw new \Exception('LibreOffice did not generate an HTML file');
+            }
+
+            $htmlContent = file_get_contents($htmlFiles[0]);
+            if ($htmlContent === false) {
+                throw new \Exception('Failed to read LibreOffice output');
+            }
+
+            return $htmlContent;
+        } finally {
+            // Clean up temp files
+            $files = glob($tempDir . DIRECTORY_SEPARATOR . '*');
+            if ($files) {
+                foreach ($files as $file) {
+                    @unlink($file);
+                }
+            }
+            @rmdir($tempDir);
         }
     }
 

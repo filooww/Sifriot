@@ -140,7 +140,7 @@ class FileStorageService implements FileStorageServiceInterface
         $disk = Storage::disk('library');
 
         // Verify file exists
-        if (! $disk->exists($filePath)) {
+        if (!$disk->exists($filePath)) {
             throw new \Exception("File not found: {$filePath}");
         }
 
@@ -160,6 +160,9 @@ class FileStorageService implements FileStorageServiceInterface
             'txt' => 1,  // Books
             'docx' => 1, // Books
             'doc' => 1,  // Books
+            'djvu' => 1, // Books
+            'fb2' => 1,  // Books
+            'xml' => 1,  // Books
         ];
 
         // MIME type mapping
@@ -169,6 +172,9 @@ class FileStorageService implements FileStorageServiceInterface
             'txt' => 'text/plain',
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'doc' => 'application/msword',
+            'djvu' => 'image/vnd.djvu',
+            'fb2' => 'application/x-fictionbook',
+            'xml' => 'text/xml',
         ];
 
         return [
@@ -199,7 +205,7 @@ class FileStorageService implements FileStorageServiceInterface
         $disk = Storage::disk('library');
 
         // Verify path exists
-        if (! $disk->exists($filePath)) {
+        if (!$disk->exists($filePath)) {
             throw new \Exception("File path does not exist: {$filePath}");
         }
 

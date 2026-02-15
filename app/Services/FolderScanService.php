@@ -16,7 +16,8 @@ class FolderScanService
 {
     public function __construct(
         private FileStorageService $fileStorageService
-    ) {}
+    ) {
+    }
 
     public function initiateScan(string $folderPath, array $options, int $userId): FolderScanJob
     {
@@ -32,7 +33,7 @@ class FolderScanService
         ]);
 
         // Dispatch file discovery job
-        DiscoverFilesJob::dispatch($scanJob->id);
+        DiscoverFilesJob::dispatchSync($scanJob->id);
 
         Log::channel('folder_scan')->info('Bulk scan initiated', [
             'scan_job_id' => $scanJob->id,
@@ -74,16 +75,16 @@ class FolderScanService
 
         // Process each file
         foreach ($filteredFiles as $filePath) {
-            // Check if already registered
+            // Check if already successfully registered
             $fullPath = Storage::disk('library')->path($filePath);
-            if (FileRegistrationLog::where('file_path', $fullPath)->exists()) {
+            if (FileRegistrationLog::where('file_path', $fullPath)->where('status', 'processed')->exists()) {
                 $filesSkipped++;
 
                 continue;
             }
 
             // Dispatch file registration job
-            \App\Jobs\ProcessFileRegistrationJob::dispatch($filePath, $scanJob->id);
+            \App\Jobs\ProcessFileRegistrationJob::dispatchSync($filePath, $scanJob->id);
         }
 
         // Update skipped count
@@ -112,7 +113,7 @@ class FolderScanService
         // Delete queued jobs from queue (only pending, not processing)
         DB::table('jobs')
             ->where('payload', 'like', '%ProcessFileRegistrationJob%')
-            ->where('payload', 'like', '%"scanJobId":'.$scanJob->id.'%')
+            ->where('payload', 'like', '%"scanJobId":' . $scanJob->id . '%')
             ->delete();
 
         Log::channel('folder_scan')->info('Scan cancelled', [

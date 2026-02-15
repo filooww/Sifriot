@@ -29,8 +29,17 @@ class MetadataExtractorFactory
         $contentType = strtolower(trim($contentType));
 
         // Handle file extension
-        if (! str_contains($contentType, '/')) {
+        if (!str_contains($contentType, '/')) {
             $contentType = self::extensionToMimeType($contentType);
+        }
+
+        // If content type is generic/unknown, try to determine from file extension
+        if ($contentType === 'application/octet-stream') {
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $resolvedType = self::extensionToMimeType($extension);
+            if ($resolvedType !== 'application/octet-stream') {
+                $contentType = $resolvedType;
+            }
         }
 
         return match ($contentType) {
@@ -41,7 +50,7 @@ class MetadataExtractorFactory
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => new DOCXMetadataExtractor,
             'application/x-fictionbook', 'text/xml' => self::detectFB2OrXml($filePath),
             'image/vnd.djvu' => new DJVUMetadataExtractor,
-            default => throw new \InvalidArgumentException("Unsupported content type: {$contentType}"),
+            default => throw new \InvalidArgumentException("Unsupported content type: {$contentType}. Supported formats: " . implode(', ', self::supportedExtensions())),
         };
     }
 
@@ -121,7 +130,7 @@ class MetadataExtractorFactory
         $contentType = strtolower(trim($contentType));
 
         // Check as extension
-        if (! str_contains($contentType, '/')) {
+        if (!str_contains($contentType, '/')) {
             return in_array($contentType, self::supportedExtensions());
         }
 

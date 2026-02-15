@@ -801,13 +801,14 @@ class MetadataReviewDashboard extends Component
                 // Handle relative paths versus absolute paths
                 if (empty($fullPath)) {
                     $filePath = '';
-                } elseif (!str_starts_with($fullPath, '/')) {
+                } elseif (preg_match('/^(\/|[A-Za-z]:)/', $fullPath)) {
+                    // Already an absolute path (Unix or Windows)
+                    $filePath = $fullPath;
+                } else {
                     $filePath = storage_path('app/content/' . $fullPath);
                     if (!file_exists($filePath)) {
                         $filePath = storage_path('app/' . $fullPath);
                     }
-                } else {
-                    $filePath = $fullPath;
                 }
 
                 if (!file_exists($filePath)) {
