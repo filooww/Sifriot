@@ -106,7 +106,7 @@
                                 })
                                 .catch(error => {
                                     console.error('Error loading file:', error);
-                                    contentEl.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading file") }}</p><p class="text-sm mt-2 text-gray-500">' + error.message + '</p></div>';
+                                    contentEl.innerHTML = `<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading file") }}</p><p class="text-sm mt-2 text-gray-500">' + error.message + '</p></div>`;
                                 });
                         })();
                     </script>
@@ -127,7 +127,7 @@
                                 iframe.style.display = 'none';
                                 const errorDiv = document.createElement('div');
                                 errorDiv.className = 'flex items-center justify-center h-full bg-gray-100 dark:bg-gray-950';
-                                errorDiv.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading FB2 file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>';
+                                errorDiv.innerHTML = `<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading FB2 file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>`;
                                 iframe.parentNode.insertBefore(errorDiv, iframe);
                             };
                         })();
@@ -187,7 +187,7 @@
                                     .catch(error => {
                                         console.error('Error loading document:', error);
                                         let msg = error.name === 'AbortError' ? '{{ __("Loading timed out") }}' : error.message;
-                                        viewerEl.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading document") }}</p><p class="text-sm mt-2 text-gray-500">' + msg + '</p><p class="text-sm mt-4 text-gray-400">{{ __("Try downloading the file instead") }}</p></div></div>';
+                                        viewerEl.innerHTML = `<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading document") }}</p><p class="text-sm mt-2 text-gray-500">' + msg + '</p><p class="text-sm mt-4 text-gray-400">{{ __("Try downloading the file instead") }}</p></div></div>`;
                                     });
                             })();
                         </script>
@@ -206,7 +206,7 @@
                                     iframe.style.display = 'none';
                                     const errorDiv = document.createElement('div');
                                     errorDiv.className = 'flex items-center justify-center h-full bg-gray-100 dark:bg-gray-950';
-                                    errorDiv.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error converting DOC file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>';
+                                    errorDiv.innerHTML = `<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error converting DOC file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>`;
                                     iframe.parentNode.insertBefore(errorDiv, iframe);
                                 };
                             })();

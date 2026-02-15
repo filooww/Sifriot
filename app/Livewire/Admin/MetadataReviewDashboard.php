@@ -7,6 +7,7 @@ namespace App\Livewire\Admin;
 use App\Jobs\ExtractMetadataFromFile;
 use App\Models\File;
 use App\Models\FileMetadata;
+use App\Models\FileRegistrationLog;
 use App\Models\Publication;
 use App\Services\MetadataExtractors\DocumentTextExtractor;
 use App\Services\MetadataExtractors\GeminiMetadataExtractorService;
@@ -106,8 +107,8 @@ class MetadataReviewDashboard extends Component
 
     public function mount(FileMetadataService $metadataService): void
     {
-        $this->geminiConfigured = ! empty(config('services.gemini.api_key'));
-        
+        $this->geminiConfigured = !empty(config('services.gemini.api_key'));
+
         // Auto-heal: Ensure all visible publications have metadata records
         // This is a "lazy" check - we could optimize to only check "missing" ones if performance is an issue,
         // but for now, we'll rely on the service to handle existence checks efficiently.
@@ -115,7 +116,7 @@ class MetadataReviewDashboard extends Component
 
         Log::info('MetadataReviewDashboard mounted', [
             'gemini_configured' => $this->geminiConfigured,
-            'api_key_set' => ! empty(config('services.gemini.api_key')),
+            'api_key_set' => !empty(config('services.gemini.api_key')),
             'user_id' => auth()->id(),
         ]);
     }
@@ -141,12 +142,12 @@ class MetadataReviewDashboard extends Component
         // Get IDs of publications that match current broad criteria (e.g. not deleted)
         // We limit this to recent or active ones to avoid scanning the entire DB on every load if it's huge.
         // For now, let's just check the ones that would be visible.
-        
+
         // Optimization: querying ALL might be heavy. Let's query "orphans" directly here.
         // The FileMetadata.file_id is formatted as "pubID-filename".
         // The relation whereDoesntHave('fileMetadata') fails because keys don't match directly.
         // So we manually find publications IDs that are NOT present as prefixes in file_metadatas.
-        
+
         $orphans = Publication::query()
             ->whereNull('deleted_at') // Explicitly exclude soft-deleted
             ->whereNotExists(function ($query) {
@@ -273,8 +274,8 @@ class MetadataReviewDashboard extends Component
             if ($this->search) {
                 $searchTerm = trim($this->search);
                 $query->where(function ($q) use ($searchTerm) {
-                    $q->where('file_name', 'like', '%'.$searchTerm.'%')
-                        ->orWhere('extracted_data->title', 'like', '%'.$searchTerm.'%');
+                    $q->where('file_name', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('extracted_data->title', 'like', '%' . $searchTerm . '%');
                 });
             }
 
@@ -298,7 +299,7 @@ class MetadataReviewDashboard extends Component
             }
 
             // Apply publication filters
-            if (! empty($this->filterSections)) {
+            if (!empty($this->filterSections)) {
                 $query->whereRaw("
                     CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                         SELECT DISTINCT p.id_publication
@@ -309,7 +310,7 @@ class MetadataReviewDashboard extends Component
                 ", [$this->filterSections]);
             }
 
-            if (! empty($this->filterAuthors)) {
+            if (!empty($this->filterAuthors)) {
                 $query->whereRaw("
                     CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                         SELECT DISTINCT p.id_publication
@@ -343,7 +344,7 @@ class MetadataReviewDashboard extends Component
                 ", [$this->filterDateTo]);
             }
 
-            if (! empty($this->filterGenres)) {
+            if (!empty($this->filterGenres)) {
                 $query->whereRaw("
                     CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                         SELECT DISTINCT p.id_publication
@@ -363,7 +364,7 @@ class MetadataReviewDashboard extends Component
                 ", [$this->filterTextSizeRange[0], $this->filterTextSizeRange[1]]);
             }
 
-            if (! empty($this->filterPublicationStatus)) {
+            if (!empty($this->filterPublicationStatus)) {
                 $query->whereRaw("
                     CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                         SELECT id_publication FROM publications
@@ -395,8 +396,8 @@ class MetadataReviewDashboard extends Component
         if ($this->search) {
             $searchTerm = trim($this->search);
             $query->where(function ($q) use ($searchTerm) {
-                $q->where('file_name', 'like', '%'.$searchTerm.'%')
-                    ->orWhere('extracted_data->title', 'like', '%'.$searchTerm.'%');
+                $q->where('file_name', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('extracted_data->title', 'like', '%' . $searchTerm . '%');
             });
         }
 
@@ -429,7 +430,7 @@ class MetadataReviewDashboard extends Component
         // Note: file_id format is "publication_id-filename.ext", so we extract the ID
 
         // Helper to extract publication ID from file_id
-        $extractPubId = fn ($fileId) => (int) (explode('-', $fileId)[0] ?? 0);
+        $extractPubId = fn($fileId) => (int) (explode('-', $fileId)[0] ?? 0);
 
         // Ensure we only show metadata for non-deleted publications
         $query->whereExists(function ($subQuery) {
@@ -440,7 +441,7 @@ class MetadataReviewDashboard extends Component
         });
 
         // Publication section filter
-        if (! empty($this->filterSections)) {
+        if (!empty($this->filterSections)) {
             $query->whereRaw("
                 CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                     SELECT DISTINCT p.id_publication
@@ -452,7 +453,7 @@ class MetadataReviewDashboard extends Component
         }
 
         // Publication author filter
-        if (! empty($this->filterAuthors)) {
+        if (!empty($this->filterAuthors)) {
             $query->whereRaw("
                 CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                     SELECT DISTINCT p.id_publication
@@ -488,7 +489,7 @@ class MetadataReviewDashboard extends Component
         }
 
         // Publication genre filter
-        if (! empty($this->filterGenres)) {
+        if (!empty($this->filterGenres)) {
             $query->whereRaw("
                 CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                     SELECT DISTINCT p.id_publication
@@ -510,7 +511,7 @@ class MetadataReviewDashboard extends Component
         }
 
         // Publication status filter
-        if (! empty($this->filterPublicationStatus)) {
+        if (!empty($this->filterPublicationStatus)) {
             $query->whereRaw("
                 CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
                     SELECT id_publication FROM publications
@@ -554,7 +555,7 @@ class MetadataReviewDashboard extends Component
             // Select all items on current page
             $this->selectedItems = $this->getFileMetadataList()
                 ->pluck('id')
-                ->map(fn ($id) => (string) $id)
+                ->map(fn($id) => (string) $id)
                 ->toArray();
         } else {
             // Deselect all items
@@ -572,7 +573,7 @@ class MetadataReviewDashboard extends Component
         if (in_array($idString, $this->selectedItems)) {
             $this->selectedItems = array_filter(
                 $this->selectedItems,
-                fn ($item) => $item !== $idString
+                fn($item) => $item !== $idString
             );
         } else {
             $this->selectedItems[] = $idString;
@@ -645,7 +646,7 @@ class MetadataReviewDashboard extends Component
 
         foreach ($this->selectedItems as $id) {
             $metadata = FileMetadata::find($id);
-            if (! $metadata || ! $metadata->file_id) {
+            if (!$metadata || !$metadata->file_id) {
                 $failed++;
 
                 continue;
@@ -664,11 +665,11 @@ class MetadataReviewDashboard extends Component
             // Get the file path from file_registration_logs (files table doesn't have file_path)
             $fileLog = DB::table('file_registration_logs')
                 ->where('publication_id', $publicationId)
-                ->where('file_path', 'like', '%'.addcslashes($metadata->file_name, '%_').'%')
+                ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%')
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-            if (! $fileLog || ! $fileLog->file_path) {
+            if (!$fileLog || !$fileLog->file_path) {
                 Log::warning('File path not found for bulk re-extraction', [
                     'id' => $id,
                     'file_id' => $metadata->file_id,
@@ -724,7 +725,7 @@ class MetadataReviewDashboard extends Component
             'selected_count' => count($this->selectedItems),
             'force' => $forceOverwrite,
         ]);
-        if (! $this->geminiConfigured) {
+        if (!$this->geminiConfigured) {
             $this->dispatch('notify', message: __('Gemini API not configured'), type: 'error');
 
             return;
@@ -738,7 +739,7 @@ class MetadataReviewDashboard extends Component
 
         // Check for confirmed items and warn user if not forced
         $confirmedCount = $this->getConfirmedCountInSelection();
-        if ($confirmedCount > 0 && ! $forceOverwrite) {
+        if ($confirmedCount > 0 && !$forceOverwrite) {
             $this->dispatch('confirm-ai-extraction', confirmedCount: $confirmedCount);
 
             return;
@@ -755,7 +756,7 @@ class MetadataReviewDashboard extends Component
         foreach ($this->selectedItems as $id) {
             try {
                 $metadata = FileMetadata::find($id);
-                if (! $metadata) {
+                if (!$metadata) {
                     $failed++;
 
                     continue;
@@ -778,11 +779,11 @@ class MetadataReviewDashboard extends Component
                 // Get file path from file_registration_logs (same pattern as reExtractSelected)
                 $fileLog = DB::table('file_registration_logs')
                     ->where('publication_id', $publicationId)
-                    ->where('file_path', 'like', '%'.addcslashes($metadata->file_name, '%_').'%')
+                    ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%')
                     ->orderBy('created_at', 'desc')
                     ->first();
 
-                if (! $fileLog || ! $fileLog->file_path) {
+                if (!$fileLog || !$fileLog->file_path) {
                     Log::channel('folder_scan')->warning('File path not found for AI extraction', [
                         'id' => $id,
                         'file_id' => $metadata->file_id,
@@ -800,16 +801,16 @@ class MetadataReviewDashboard extends Component
                 // Handle relative paths versus absolute paths
                 if (empty($fullPath)) {
                     $filePath = '';
-                } elseif (! str_starts_with($fullPath, '/')) {
-                    $filePath = storage_path('app/content/'.$fullPath);
-                    if (! file_exists($filePath)) {
-                        $filePath = storage_path('app/'.$fullPath);
+                } elseif (!str_starts_with($fullPath, '/')) {
+                    $filePath = storage_path('app/content/' . $fullPath);
+                    if (!file_exists($filePath)) {
+                        $filePath = storage_path('app/' . $fullPath);
                     }
                 } else {
                     $filePath = $fullPath;
                 }
 
-                if (! file_exists($filePath)) {
+                if (!file_exists($filePath)) {
                     Log::channel('folder_scan')->warning('File not found for AI extraction', [
                         'id' => $id,
                         'file_id' => $metadata->file_id,
@@ -860,9 +861,9 @@ class MetadataReviewDashboard extends Component
                 }
 
                 $authors = $extractedMetadata->getAuthors();
-                if (! empty($authors)) {
+                if (!empty($authors)) {
                     $extractedData['authors'] = array_map(
-                        fn ($author) => [
+                        fn($author) => [
                             'value' => $author,
                             'confidence' => 1.0,
                         ],
@@ -892,9 +893,9 @@ class MetadataReviewDashboard extends Component
                 }
 
                 $genres = $extractedMetadata->getGenres();
-                if (! empty($genres)) {
+                if (!empty($genres)) {
                     $extractedData['genres'] = array_map(
-                        fn ($genre) => [
+                        fn($genre) => [
                             'value' => $genre,
                             'confidence' => 1.0,
                         ],
@@ -903,9 +904,9 @@ class MetadataReviewDashboard extends Component
                 }
 
                 $themes = $extractedMetadata->getThemes();
-                if (! empty($themes)) {
+                if (!empty($themes)) {
                     $extractedData['themes'] = array_map(
-                        fn ($theme) => [
+                        fn($theme) => [
                             'value' => $theme,
                             'confidence' => 1.0,
                         ],
@@ -960,7 +961,7 @@ class MetadataReviewDashboard extends Component
 
         $message = __(':success items extracted with AI', ['success' => $success]);
         if ($failed > 0) {
-            $message .= ' ('.__(':failed failed', ['failed' => $failed]).')';
+            $message .= ' (' . __(':failed failed', ['failed' => $failed]) . ')';
         }
         $this->dispatch('notify', message: $message, type: $failed > 0 ? 'warning' : 'success');
     }
@@ -971,7 +972,7 @@ class MetadataReviewDashboard extends Component
     public function reExtractSingle(int $id): void
     {
         $metadata = FileMetadata::find($id);
-        if (! $metadata || ! $metadata->file_id) {
+        if (!$metadata || !$metadata->file_id) {
             $this->dispatch('notify', message: 'Metadata not found', type: 'error');
 
             return;
@@ -993,16 +994,16 @@ class MetadataReviewDashboard extends Component
         // Get the file path from file_registration_logs (files table doesn't have file_path)
         $fileLog = DB::table('file_registration_logs')
             ->where('publication_id', $publicationId)
-            ->where('file_path', 'like', '%'.DB::raw('CONCAT(\'%-\', ?)').'%', [$metadata->file_name])
+            ->where('file_path', 'like', '%' . DB::raw('CONCAT(\'%-\', ?)') . '%', [$metadata->file_name])
             ->orWhere(function ($query) use ($publicationId, $metadata) {
                 // Alternative: match by publication_id and filename pattern
                 $query->where('publication_id', $publicationId)
-                    ->where('file_path', 'like', '%'.addcslashes($metadata->file_name, '%_').'%');
+                    ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%');
             })
             ->orderBy('created_at', 'desc')
             ->first();
 
-        if (! $fileLog || ! $fileLog->file_path) {
+        if (!$fileLog || !$fileLog->file_path) {
             Log::warning('File path not found in file_registration_logs', [
                 'publication_id' => $publicationId,
                 'file_name' => $metadata->file_name,
@@ -1025,17 +1026,56 @@ class MetadataReviewDashboard extends Component
     public function deleteMetadata(int $id): void
     {
         $metadata = FileMetadata::find($id);
-        
+
         if ($metadata) {
-            // Also delete the associated publication to prevent it from being "auto-healed"
-            // and reappearing as a new metadata record
+            // Full cleanup of all related records
             if ($metadata->publication) {
-                $metadata->publication->delete();
+                $pubId = $metadata->publication->id_publication;
+                // Delete file registration logs
+                FileRegistrationLog::where('publication_id', $pubId)->delete();
+                // Delete file records
+                File::where('id_publication', $pubId)->delete();
+                // Delete the publication
+                $metadata->publication->forceDelete();
             }
-            
+
             $metadata->delete();
             $this->dispatch('notify', message: 'Publication deleted', type: 'success');
         }
+    }
+
+    /**
+     * Delete all selected metadata records and their associated publications
+     */
+    public function deleteAllSelected(): void
+    {
+        if (empty($this->selectedItems)) {
+            $this->dispatch('notify', message: 'No items selected', type: 'warning');
+
+            return;
+        }
+
+        $count = 0;
+
+        foreach ($this->selectedItems as $id) {
+            $metadata = FileMetadata::find($id);
+            if ($metadata) {
+                // Full cleanup of all related records
+                if ($metadata->publication) {
+                    $pubId = $metadata->publication->id_publication;
+                    FileRegistrationLog::where('publication_id', $pubId)->delete();
+                    File::where('id_publication', $pubId)->delete();
+                    $metadata->publication->forceDelete();
+                }
+                $metadata->delete();
+                $count++;
+            }
+        }
+
+        $this->selectedItems = [];
+        $this->selectAll = false;
+        $this->resetPage();
+        $this->dispatch('notify', message: "{$count} items deleted", type: 'success');
     }
 
     /**
@@ -1059,7 +1099,7 @@ class MetadataReviewDashboard extends Component
      */
     public function togglePublicationStatus(int $publicationId, string $newStatus): void
     {
-        if (! in_array($newStatus, ['published', 'hidden', 'pending'])) {
+        if (!in_array($newStatus, ['published', 'hidden', 'pending'])) {
             $this->dispatch('notify', message: 'Invalid status', type: 'error');
 
             return;
@@ -1090,7 +1130,7 @@ class MetadataReviewDashboard extends Component
      */
     public function bulkUpdateStatus(array $publicationIds, string $newStatus): void
     {
-        if (empty($publicationIds) || ! in_array($newStatus, ['published', 'hidden', 'pending'])) {
+        if (empty($publicationIds) || !in_array($newStatus, ['published', 'hidden', 'pending'])) {
             $this->dispatch('notify', message: 'Invalid request', type: 'error');
 
             return;
@@ -1108,7 +1148,7 @@ class MetadataReviewDashboard extends Component
                 ]);
             });
 
-            $this->dispatch('notify', message: count($publicationIds)." publications updated to {$newStatus}", type: 'success');
+            $this->dispatch('notify', message: count($publicationIds) . " publications updated to {$newStatus}", type: 'success');
         } catch (\Exception $e) {
             Log::error('Bulk status update failed', ['error' => $e->getMessage()]);
             $this->dispatch('notify', message: 'Bulk update failed', type: 'error');
@@ -1174,7 +1214,7 @@ class MetadataReviewDashboard extends Component
      */
     public function toggleOrphanedView(): void
     {
-        $this->showOrphanedPublications = ! $this->showOrphanedPublications;
+        $this->showOrphanedPublications = !$this->showOrphanedPublications;
     }
 
     /**

@@ -95,7 +95,7 @@ npm run build
 
 -   **Watch Frontend Changes**: `npm run dev` (for hot-module replacement)
 -   **Run Tests**: `php artisan test`
--   **Queue Worker**: `php artisan queue:work` (required for background tasks like file scanning)
+-   **Queue Worker**: Not required in development (defaults to `sync`). For production, run `php artisan queue:work`.
 -   **Clear Cache**: `php artisan optimize:clear`
 
 ## Troubleshooting
