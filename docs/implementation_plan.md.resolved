@@ -1,0 +1,30 @@
+# Fix Publication infinite loading and 404 issue
+
+## Goal Description
+Resolve the issue where `sifriot.test/publications/188` returns a 404, and fix the infinite loading sequence for DOCX files in the [DocumentViewer](file:///c:/laragon/www/Sifriot/app/Livewire/Publications/DocumentViewer.php#12-120) Livewire component.
+
+## User Review Required
+No major architectural changes. Wait, I must apologize for the misinformation in my last message: Publication 188 **does** indeed have a file attached! I made a mistake reading the database output. The 404 is strictly because it is currently in `pending` status instead of `published`.
+
+## Proposed Changes
+
+### Database Changes
+- **Publication 188**: Update the `status` from `pending` to `published` so it can be viewed by guests and non-admins. This can be done via Artisan tinker directly.
+
+---
+
+### App\Livewire\Publications\DocumentViewer
+#### [MODIFY] document-viewer.blade.php
+- **Issue**: Livewire DOM updates cause the DOCX preview wrapper `div` to be replaced while `fetch`/`Mammoth.js` is still parsing the file. When parsing finishes, the script tries to inject into a disconnected DOM element, resulting in the new `div` remaining stuck on "Loading document...".
+- **Fix**: Add `wire:ignore` to the DOCX viewer wrapper element (`<div id="docx-viewer-{{ $publicationId }}" ...>`). 
+- **Improvement**: Increase the timeout in `fetchWithTimeout` from 15,000ms (15 seconds) to 60,000ms (60 seconds) to accommodate parsing larger files.
+
+## Verification Plan
+
+### Automated Tests
+N/A
+
+### Manual Verification
+1. I will run a Tinker command to change Publication 188's status to `published`.
+2. I will apply the changes to [document-viewer.blade.php](file:///c:/laragon/www/Sifriot/resources/views/livewire/publications/document-viewer.blade.php).
+3. The user can then visit `http://sifriot.test/publications/188` to see if the page correctly loads without throwing a 404, and whether the document correctly renders instead of freezing on "Loading document...".

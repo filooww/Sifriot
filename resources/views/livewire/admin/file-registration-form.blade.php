@@ -13,25 +13,9 @@
         </div>
     @endif
 
-    <!-- Mode Selection -->
-    <div class="mb-6">
-        <label class="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">{{ __('Registration Mode') }}</label>
-        <div class="flex gap-4">
-            <label class="flex items-center text-gray-900 dark:text-gray-100">
-                <input type="radio" wire:model.live="registrationMode" value="register_existing" class="me-2 dark:bg-gray-700 dark:border-gray-600">
-                {{ __('Register Existing File') }}
-            </label>
-            <label class="flex items-center text-gray-900 dark:text-gray-100">
-                <input type="radio" wire:model.live="registrationMode" value="upload_new" class="me-2 dark:bg-gray-700 dark:border-gray-600">
-                {{ __('Upload New File') }}
-            </label>
-        </div>
-    </div>
-
     <!-- Registration Form -->
-    <form wire:submit.prevent="{{ $registrationMode === 'upload_new' ? 'uploadFile' : 'registerFile' }}" class="space-y-6">
+    <form wire:submit.prevent="uploadFile" class="space-y-6">
 
-        @if($registrationMode === 'upload_new')
             <!-- Upload File Section -->
             <div>
                 <label class="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">{{ __('Select File') }}</label>
@@ -50,15 +34,6 @@
                     </div>
                 </div>
             </div>
-        @else
-            <!-- Selected File Path (for existing file registration) -->
-            @if($selectedFilePath)
-                <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded border border-gray-300 dark:border-gray-700">
-                    <p class="text-sm text-gray-900 dark:text-gray-100"><strong>{{ __('Selected File') }}:</strong> {{ basename($selectedFilePath) }}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $selectedFilePath }}</p>
-                </div>
-            @endif
-        @endif
 
         <!-- Publication Title -->
         <div>
@@ -146,15 +121,9 @@
 
         <!-- Submit Buttons -->
         <div class="flex gap-4">
-            @if($registrationMode === 'upload_new')
-                <button type="submit" class="bg-blue-600 dark:bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800">
-                    {{ __('Upload File') }}
-                </button>
-            @else
-                <button type="submit" class="bg-blue-600 dark:bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800">
-                    {{ __('Register Selected') }}
-                </button>
-            @endif
+            <button type="submit" class="bg-blue-600 dark:bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800">
+                {{ __('Upload File') }}
+            </button>
 
             <a href="{{ route('admin.files.browse') }}" class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2 rounded hover:bg-gray-400 dark:hover:bg-gray-600">
                 {{ __('Cancel') }}
@@ -162,7 +131,7 @@
         </div>
 
         <!-- Loading Indicator -->
-        <div wire:loading wire:target="uploadFile,registerFile" class="mt-4">
+        <div wire:loading wire:target="uploadFile" class="mt-4">
             <div class="bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-700 text-blue-700 dark:text-blue-200 px-4 py-3 rounded">
                 {{ __('Processing...') }}
             </div>

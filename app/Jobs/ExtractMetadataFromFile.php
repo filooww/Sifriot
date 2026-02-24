@@ -104,7 +104,7 @@ class ExtractMetadataFromFile implements ShouldQueue
 
             $fileMetadata->update([
                 'status' => $extractedMetadata->isEmpty() ? 'failed' : 'processed',
-                'extracted_data' => $extractedMetadata->toArray(),
+                'extracted_data' => $this->sanitizeUtf8($extractedMetadata->toArray()),
                 'extraction_method' => $extractorClass,
                 'confidence_scores' => $extractedMetadata->getConfidenceScores(),
                 'extracted_at' => now(),
@@ -201,5 +201,18 @@ class ExtractMetadataFromFile implements ShouldQueue
 
         // Rethrow to trigger retry logic
         throw $e;
+    }
+
+    /**
+     * Sanitize array to ensure valid UTF-8 encoding.
+     */
+    private function sanitizeUtf8(array $data): array
+    {
+        array_walk_recursive($data, function (&$item) {
+            if (is_string($item)) {
+                $item = mb_convert_encoding($item, 'UTF-8', 'UTF-8');
+            }
+        });
+        return $data;
     }
 }

@@ -21,7 +21,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
                     </div>
-<<<<<<< HEAD
                     <p class="text-gray-600 dark:text-gray-400">{{ __('Select a file to view') }}</p>
                 </div>
             </div>
@@ -56,63 +55,6 @@
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                     </span>
                                 </button>
-=======
-                    <script>
-                        (function() {
-                            const contentEl = document.getElementById('text-content-{{ $publicationId }}');
-                            fetch('{{ $fileUrl }}')
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-                                    }
-                                    return response.text();
-                                })
-                                .then(text => {
-                                    contentEl.textContent = text;
-                                })
-                                .catch(error => {
-                                    console.error('Error loading file:', error);
-                                    contentEl.innerHTML = `<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading file") }}</p><p class="text-sm mt-2 text-gray-500">' + error.message + '</p></div>`;
-                                });
-                        })();
-                    </script>
-                @break
-
-                @case('fb2')
-                    <!-- FB2 Viewer using server-side XML-to-HTML conversion -->
-                    <iframe
-                        id="fb2-viewer-{{ $publicationId }}"
-                        src="{{ route('files.convert-fb2', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}"
-                        class="w-full h-full border-0"
-                        sandbox="allow-same-origin"
-                    ></iframe>
-                    <script>
-                        (function() {
-                            const iframe = document.getElementById('fb2-viewer-{{ $publicationId }}');
-                            iframe.onerror = function() {
-                                iframe.style.display = 'none';
-                                const errorDiv = document.createElement('div');
-                                errorDiv.className = 'flex items-center justify-center h-full bg-gray-100 dark:bg-gray-950';
-                                errorDiv.innerHTML = `<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading FB2 file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>`;
-                                iframe.parentNode.insertBefore(errorDiv, iframe);
-                            };
-                        })();
-                    </script>
-                @break
-
-                @case('document')
-                    <!-- DOCX/DOC Viewer -->
-                    @php
-                        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-                        $isDocx = $extension === 'docx';
-                    @endphp
-
-                    @if($isDocx)
-                        <!-- DOCX Viewer using Mammoth.js -->
-                        <div id="docx-viewer-{{ $publicationId }}" class="w-full h-full p-8 md:p-12 bg-white dark:bg-gray-950 overflow-auto">
-                            <div class="max-w-3xl mx-auto text-gray-800 dark:text-gray-300">
-                                <p class="text-gray-500">{{ __('Loading document...') }}</p>
->>>>>>> ed932cd8cb0e8344bfc916a8466b7f4af9640275
                             </div>
                         </div>
                         <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
@@ -143,40 +85,6 @@
                         </script>
                     @break
 
-                    @case('text')
-                        <!-- Text Viewer -->
-                        <div class="w-full h-full p-8 md:p-12 bg-white dark:bg-gray-950 overflow-auto">
-                            <div id="text-content-{{ $publicationId }}" class="max-w-3xl mx-auto text-gray-800 dark:text-gray-300 whitespace-pre-wrap font-serif text-base leading-relaxed">
-                                <p class="text-gray-500">{{ __('Loading...') }}</p>
-                            </div>
-                        </div>
-                        <script>
-                            (function() {
-                                const contentEl = document.getElementById('text-content-{{ $publicationId }}');
-                                fetch('{{ $fileUrl }}')
-                                    .then(response => {
-                                        if (!response.ok) {
-                                            throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-                                        }
-                                        return response.text();
-                                    })
-                                    .then(text => {
-                                        contentEl.textContent = text;
-                                    })
-                                    .catch(error => {
-<<<<<<< HEAD
-                                        console.error('Error loading file:', error);
-                                        contentEl.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading file") }}</p><p class="text-sm mt-2 text-gray-500">' + error.message + '</p></div>';
-=======
-                                        console.error('Error loading document:', error);
-                                        let msg = error.name === 'AbortError' ? '{{ __("Loading timed out") }}' : error.message;
-                                        viewerEl.innerHTML = `<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading document") }}</p><p class="text-sm mt-2 text-gray-500">' + msg + '</p><p class="text-sm mt-4 text-gray-400">{{ __("Try downloading the file instead") }}</p></div></div>`;
->>>>>>> ed932cd8cb0e8344bfc916a8466b7f4af9640275
-                                    });
-                            })();
-                        </script>
-                    @break
-
                     @case('fb2')
                         <!-- FB2 Viewer using server-side XML-to-HTML conversion -->
                         <iframe
@@ -192,11 +100,7 @@
                                     iframe.style.display = 'none';
                                     const errorDiv = document.createElement('div');
                                     errorDiv.className = 'flex items-center justify-center h-full bg-gray-100 dark:bg-gray-950';
-<<<<<<< HEAD
                                     errorDiv.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading FB2 file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>';
-=======
-                                    errorDiv.innerHTML = `<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error converting DOC file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>`;
->>>>>>> ed932cd8cb0e8344bfc916a8466b7f4af9640275
                                     iframe.parentNode.insertBefore(errorDiv, iframe);
                                 };
                             })();
@@ -281,6 +185,35 @@
                                 })();
                             </script>
                         @endif
+                    @break
+
+                    @case('text')
+                        <!-- Text Viewer -->
+                        <div class="w-full h-full p-8 md:p-12 bg-white dark:bg-gray-950 overflow-auto">
+                            <div id="text-content-{{ $publicationId }}" class="max-w-3xl mx-auto text-gray-800 dark:text-gray-300 whitespace-pre-wrap font-serif text-base leading-relaxed">
+                                <p class="text-gray-500">{{ __('Loading...') }}</p>
+                            </div>
+                        </div>
+                        <script>
+                            (function() {
+                                const contentEl = document.getElementById('text-content-{{ $publicationId }}');
+                                fetch('{{ $fileUrl }}')
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                                        }
+                                        return response.text();
+                                    })
+                                    .then(text => {
+                                        contentEl.textContent = text;
+                                    })
+                                    .catch(error => {
+                                        console.error('Error loading document:', error);
+                                        let msg = error.name === 'AbortError' ? '{{ __("Loading timed out") }}' : error.message;
+                                        contentEl.innerHTML = `<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading document") }}</p><p class="text-sm mt-2 text-gray-500">' + msg + '</p><p class="text-sm mt-4 text-gray-400">{{ __("Try downloading the file instead") }}</p></div></div>`;
+                                    });
+                            })();
+                        </script>
                     @break
 
                     @case('djvu')
