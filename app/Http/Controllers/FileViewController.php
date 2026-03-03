@@ -773,23 +773,21 @@ class FileViewController extends Controller
 
         // Get the file path from storage
         // Use 'library' disk for bulk scanned files, 'local' disk for uploaded files
-        // Get the file path from storage
-        // Use 'library' disk for bulk scanned files, 'local' disk for uploaded files
 
         // Prioritize file_path if available (standard for new system)
         if ($file->file_path) {
             $disk = 'library';
-            // Note: Uploads via FileRegistrationForm use 'library' disk which maps to storage_path('app/content')
-            // stored path is e.g. 02-2026/books/filename.pdf
-            // So we use it directly on library disk.
             $storagePath = $file->file_path;
         } else {
             // Fallback for legacy items without file_path
             $fileSource = $file->file_source;
 
-            // Check if file_source is an absolute path
-            if (str_starts_with($fileSource, '/')) {
-                // Absolute path - check if file exists directly
+            // Check if file_source is an absolute path (Unix: /foo or Windows: C:\foo or C:/foo)
+            if ($this->isAbsolutePath($fileSource)) {
+                // Normalize path separators for consistent comparison
+                $normalizedSource = str_replace('\\', '/', $fileSource);
+
+                // Check if file exists directly on filesystem
                 if (file_exists($fileSource)) {
                     // Return the file directly from absolute path
                     $content = file_get_contents($fileSource);
@@ -803,18 +801,18 @@ class FileViewController extends Controller
                 }
 
                 // Try to extract relative path from library disk root
-                $libraryRoot = config('filesystems.disks.library.root');
-                if ($libraryRoot && str_starts_with($fileSource, $libraryRoot)) {
+                $libraryRoot = str_replace('\\', '/', config('filesystems.disks.library.root', ''));
+                if ($libraryRoot && str_starts_with($normalizedSource, $libraryRoot)) {
                     $disk = 'library';
-                    $storagePath = ltrim(substr($fileSource, strlen($libraryRoot)), '/');
+                    $storagePath = ltrim(substr($normalizedSource, strlen($libraryRoot)), '/');
                 } else {
                     // Try local storage root
-                    $localRoot = storage_path('app');
-                    if (str_starts_with($fileSource, $localRoot)) {
+                    $localRoot = str_replace('\\', '/', storage_path('app'));
+                    if (str_starts_with($normalizedSource, $localRoot)) {
                         $disk = 'local';
-                        $storagePath = ltrim(substr($fileSource, strlen($localRoot)), '/');
+                        $storagePath = ltrim(substr($normalizedSource, strlen($localRoot)), '/');
                     } else {
-                        abort(404, 'File not found: absolute path not accessible');
+                        abort(404, 'File not found: absolute path not in known disk roots. Source: ' . $fileSource);
                     }
                 }
             } elseif (pathinfo($fileSource, PATHINFO_EXTENSION)) {
@@ -890,5 +888,21 @@ class FileViewController extends Controller
             ->header('Content-Disposition', 'inline; filename="' . basename($filename) . '"')
             ->header('Cache-Control', 'public, max-age=3600')
             ->header('Access-Control-Allow-Origin', '*');
+    }
+
+    /**
+     * Detect whether a path is absolute on either Unix (starts with /) or Windows (starts with drive letter e.g. C:\ or C:/)
+     */
+    private function isAbsolutePath(string $path): bool
+    {
+        // Unix absolute path
+        if (str_starts_with($path, '/')) {
+            return true;
+        }
+        // Windows absolute path: letter followed by colon and slash/backslash (e.g. C:\ or D:/)
+        if (preg_match('/^[A-Za-z]:[\\\\\/]/', $path)) {
+            return true;
+        }
+        return false;
     }
 }
