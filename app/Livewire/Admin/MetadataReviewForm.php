@@ -101,7 +101,7 @@ class MetadataReviewForm extends Component
                 $this->validate(['coverImage' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120']);
 
                 // Get publication
-                $publication = Publication::with('files')->find($this->fileMetadata->file_id);
+                $publication = Publication::with('files')->find((int) strtok($this->fileMetadata->file_id, "-"));
                 if (!$publication) {
                     throw new \Exception('Publication not found');
                 }
@@ -261,7 +261,7 @@ class MetadataReviewForm extends Component
         // Load description from publication if confirmed
         if ($this->fileMetadata->status === 'confirmed') {
             // Use with('files') to eager-load files relationship including cover images
-            $publication = Publication::with('files')->find($this->fileMetadata->file_id);
+            $publication = Publication::with('files')->find((int) strtok($this->fileMetadata->file_id, "-"));
             if ($publication) {
                 $this->description = $publication->description ?? '';
                 $this->contentTypeId = $publication->content_type_id;
@@ -292,7 +292,7 @@ class MetadataReviewForm extends Component
 
         // Load existing values if publication exists
         if ($this->fileMetadata && $this->fileMetadata->file_id) {
-            $publication = Publication::find($this->fileMetadata->file_id);
+            $publication = Publication::find((int) strtok($this->fileMetadata->file_id, "-"));
             if ($publication) {
                 foreach ($this->customFields as $field) {
                     $value = $publication->customFieldValues()
@@ -316,7 +316,7 @@ class MetadataReviewForm extends Component
             return;
         }
 
-        $publication = Publication::with(['sections', 'publishers'])->find($this->fileMetadata->file_id);
+        $publication = Publication::with(['sections', 'publishers'])->find((int) strtok($this->fileMetadata->file_id, "-"));
         if (!$publication) {
             return;
         }
@@ -345,7 +345,7 @@ class MetadataReviewForm extends Component
             return null;
         }
 
-        $publication = Publication::with('files')->find($this->fileMetadata->file_id);
+        $publication = Publication::with('files')->find((int) strtok($this->fileMetadata->file_id, "-"));
         if (!$publication) {
             return null;
         }
@@ -705,7 +705,7 @@ class MetadataReviewForm extends Component
 
             // Get or create Publication (from FileMetadata's relationship)
             $publication = $this->fileMetadata->file()->first()?->publication
-                ?? Publication::find($this->fileMetadata->file_id);
+                ?? Publication::find((int) strtok($this->fileMetadata->file_id, "-"));
 
             if (!$publication) {
                 throw new \Exception('Publication not found for this file metadata');
@@ -910,7 +910,7 @@ class MetadataReviewForm extends Component
 
             // Get or create Publication
             $publication = $this->fileMetadata->file()->first()?->publication
-                ?? Publication::find($this->fileMetadata->file_id);
+                ?? Publication::find((int) strtok($this->fileMetadata->file_id, "-"));
 
             if (!$publication) {
                 throw new \Exception('Publication not found for this file metadata');
@@ -1050,7 +1050,7 @@ class MetadataReviewForm extends Component
 
             // Get or create Publication (from FileMetadata's relationship)
             $publication = $this->fileMetadata->file()->first()?->publication
-                ?? Publication::find($this->fileMetadata->file_id);
+                ?? Publication::find((int) strtok($this->fileMetadata->file_id, "-"));
 
             if (!$publication) {
                 throw new \Exception('Publication not found for this file metadata');
@@ -1549,3 +1549,4 @@ class MetadataReviewForm extends Component
         return view('livewire.admin.metadata-review-form');
     }
 }
+

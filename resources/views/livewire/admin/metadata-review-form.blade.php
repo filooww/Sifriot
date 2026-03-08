@@ -91,7 +91,8 @@
 
     <!-- File Content Preview -->
     @php
-        $publication = \App\Models\Publication::with('files')->find($fileMetadata->file_id);
+        $publicationId = (int) explode('-', $fileMetadata->file_id)[0];
+        $publication = \App\Models\Publication::with('files')->find($publicationId);
     @endphp
     @if($publication)
         <div 
@@ -135,6 +136,7 @@
                 >
                     <livewire:publications.document-viewer
                         :publicationId="$publication->id_publication"
+                        :fileName="$fileMetadata->file_name"
                         :key="'metadata-viewer-' . $fileMetadata->id"
                         class="h-full w-full"
                     />

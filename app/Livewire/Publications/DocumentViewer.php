@@ -27,22 +27,27 @@ class DocumentViewer extends Component
 
     public ?int $fileSizeBytes = null;
 
-    public function mount(int $publicationId): void
+    public function mount(int $publicationId, ?string $fileName = null): void
     {
         $this->publicationId = $publicationId;
 
         // Check authorization
         $this->isAuthorized = Auth::check();
 
-        // Auto-select first file if authorized
         if ($this->isAuthorized) {
-            $firstFile = File::where('id_publication', $publicationId)
-                ->orderBy('ord_num')
-                ->first();
+            $query = File::where('id_publication', $publicationId);
+            
+            if ($fileName) {
+                $query->where('file_name', $fileName);
+            } else {
+                $query->orderBy('ord_num');
+            }
+            
+            $file = $query->first();
 
-            if ($firstFile) {
-                $this->selectedFileName = $firstFile->file_name;
-                $this->setFileData($firstFile);
+            if ($file) {
+                $this->selectedFileName = $file->file_name;
+                $this->setFileData($file);
             }
         }
     }

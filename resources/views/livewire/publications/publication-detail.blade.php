@@ -267,7 +267,7 @@
             @endauth
 
             <!-- Document Viewer (Full Width) -->
-            <div class="flex-1 overflow-hidden">
+            <div class="flex-1 h-full overflow-hidden">
                 @auth
                     @if($publication->files->isNotEmpty())
                         <!-- Document Viewer Component -->
