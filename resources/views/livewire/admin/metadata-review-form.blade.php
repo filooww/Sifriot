@@ -20,172 +20,183 @@
         </div>
     @endif
 
-    <!-- File Info Header -->
-    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <div class="flex justify-between items-start">
-            <div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $fileMetadata->file_name }}</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Format: <span class="font-medium">{{ strtoupper(pathinfo($fileMetadata->file_name, PATHINFO_EXTENSION)) }}</span>
-                </p>
-                <!-- Extract with AI Button -->
-                @if ($geminiConfigured)
-                    <button
-                        type="button"
-                        wire:click="extractWithAI"
-                        wire:loading.attr="disabled"
-                        wire:target="extractWithAI"
-                        class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 disabled:bg-purple-50 text-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 dark:disabled:bg-purple-800 dark:text-white text-sm font-medium rounded-lg transition"
-                    >
-                        <div wire:loading.remove wire:target="extractWithAI" class="flex items-center gap-2">
-                            <span>✨</span>
-                            <span>{{ __('Extract with AI') }}</span>
-                        </div>
-                        <div wire:loading wire:target="extractWithAI" class="flex items-center gap-2">
-                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>{{ __('Extracting...') }}</span>
-                        </div>
-                    </button>
-                @else
-                    <p class="mt-3 text-xs text-gray-500 dark:text-gray-400" title="{{ __('Gemini API not configured') }}">
-                        {{ __('AI extraction unavailable') }}
-                    </p>
-                @endif
-            </div>
-            <div class="text-right">
-                @if ($extractionStatus === 'processed')
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                        📋 {{ __('Ready for Review') }}
-                    </span>
-                @elseif ($extractionStatus === 'confirmed')
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                        ✅ {{ __('Confirmed') }}
-                    </span>
-                @elseif ($extractionStatus === 'rejected')
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
-                        🚫 {{ __('Rejected - Edit & Confirm') }}
-                    </span>
-                @elseif ($extractionStatus === 'failed')
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
-                        ❌ {{ __('Failed') }}
-                    </span>
-                @elseif ($extractionStatus === 'pending')
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                        ⏳ {{ __('Processing') }}
-                    </span>
-                @endif
-            </div>
-        </div>
-
-        @if ($extractionStatus === 'failed' && $errorMessage)
-            <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-                <p class="text-sm text-red-800 dark:text-red-200">
-                    <strong>{{ __('Error') }}:</strong> {{ $errorMessage }}
-                </p>
-            </div>
-        @endif
-    </div>
-
-    <!-- File Content Preview -->
-    @php
-        $publicationId = (int) explode('-', $fileMetadata->file_id)[0];
-        $publication = \App\Models\Publication::with('files')->find($publicationId);
-    @endphp
-    @if($publication)
-        <div 
-            x-data="{ isFullscreen: false }" 
-            class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 transition-all duration-300"
-            :class="{ 'fixed inset-0 z-50 h-screen w-screen m-0 rounded-none border-0 flex flex-col': isFullscreen }"
-        >
-            <div class="flex-none flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                <button
-                    type="button"
-                    wire:click="$toggle('showFilePreview')"
-                    class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                    <svg class="w-5 h-5 transition transform {{ $showFilePreview ?? false ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                    </svg>
-                    <span>📄 {{ __('File Preview') }}</span>
-                </button>
-                
-                <div class="flex items-center gap-2" x-show="$wire.showFilePreview">
-                     <button 
-                        @click="isFullscreen = !isFullscreen" 
-                        type="button"
-                        class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                        title="Toggle Fullscreen"
-                    >
-                        <svg x-show="!isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M20 8V4m0 0h-4M4 16v4m0 0h4M20 16v4m0 0h-4"></path>
-                        </svg>
-                        <svg x-show="isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
+    <div class="grid gap-6 lg:grid-cols-2 lg:items-start">
+        <!-- Left column: file info, preview, extraction details -->
+        <div class="space-y-6">
+            <!-- File Info Header -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white break-words">
+                            {{ $fileMetadata->file_name }}
+                        </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {{ __('Format') }}:
+                            <span class="font-medium">
+                                {{ strtoupper(pathinfo($fileMetadata->file_name, PATHINFO_EXTENSION)) }}
+                            </span>
+                        </p>
+                        <!-- Extract with AI Button -->
+                        @if ($geminiConfigured)
+                            <button
+                                type="button"
+                                wire:click="extractWithAI"
+                                wire:loading.attr="disabled"
+                                wire:target="extractWithAI"
+                                class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 disabled:bg-purple-50 text-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 dark:disabled:bg-purple-800 dark:text-white text-sm font-medium rounded-lg transition"
+                            >
+                                <div wire:loading.remove wire:target="extractWithAI" class="flex items-center gap-2">
+                                    <span>✨</span>
+                                    <span>{{ __('Extract with AI') }}</span>
+                                </div>
+                                <div wire:loading wire:target="extractWithAI" class="flex items-center gap-2">
+                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>{{ __('Extracting...') }}</span>
+                                </div>
+                            </button>
+                        @else
+                            <p class="mt-3 text-xs text-gray-500 dark:text-gray-400" title="{{ __('Gemini API not configured') }}">
+                                {{ __('AI extraction unavailable') }}
+                            </p>
+                        @endif
+                    </div>
+                    <div class="text-right">
+                        @if ($extractionStatus === 'processed')
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                                📋 {{ __('Ready for Review') }}
+                            </span>
+                        @elseif ($extractionStatus === 'confirmed')
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                ✅ {{ __('Confirmed') }}
+                            </span>
+                        @elseif ($extractionStatus === 'rejected')
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
+                                🚫 {{ __('Rejected - Edit & Confirm') }}
+                            </span>
+                        @elseif ($extractionStatus === 'failed')
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
+                                ❌ {{ __('Failed') }}
+                            </span>
+                        @elseif ($extractionStatus === 'pending')
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                ⏳ {{ __('Processing') }}
+                            </span>
+                        @endif
+                    </div>
                 </div>
+
+                @if ($extractionStatus === 'failed' && $errorMessage)
+                    <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                        <p class="text-sm text-red-800 dark:text-red-200">
+                            <strong>{{ __('Error') }}:</strong> {{ $errorMessage }}
+                        </p>
+                    </div>
+                @endif
             </div>
 
-            @if($showFilePreview ?? false)
+            <!-- File Content Preview -->
+            @php
+                $publicationId = (int) explode('-', $fileMetadata->file_id)[0];
+                $publication = \App\Models\Publication::with('files')->find($publicationId);
+            @endphp
+            @if($publication)
                 <div 
-                    class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden transition-all" 
-                    :class="{ 'flex-1': isFullscreen, 'h-[600px]': !isFullscreen }"
+                    x-data="{ isFullscreen: false }" 
+                    class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 transition-all duration-300"
+                    :class="{ 'fixed inset-0 z-50 h-screen w-screen m-0 rounded-none border-0 flex flex-col': isFullscreen }"
                 >
-                    <livewire:publications.document-viewer
-                        :publicationId="$publication->id_publication"
-                        :fileName="$fileMetadata->file_name"
-                        :key="'metadata-viewer-' . $fileMetadata->id"
-                        class="h-full w-full"
-                    />
-                </div>
-            @endif
-        </div>
-    @endif
-
-    <!-- Extraction Details (Collapsible) -->
-    @if ($extractionMethod)
-        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-            <button
-                type="button"
-                wire:click="toggleDetails"
-                class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-            >
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Extraction Details') }}</span>
-                <svg class="w-5 h-5 transition transform {{ $showDetails ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                </svg>
-            </button>
-
-            @if ($showDetails)
-                <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <p class="text-gray-600 dark:text-gray-400">{{ __('Extractor') }}</p>
-                            <p class="font-medium text-gray-900 dark:text-white">{{ $extractionMethod ?? __('Unknown') }}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600 dark:text-gray-400">{{ __('Extracted At') }}</p>
-                            <p class="font-medium text-gray-900 dark:text-white">{{ $fileMetadata->extracted_at?->format('M d, Y H:i') ?? __('N/A') }}</p>
+                    <div class="flex-none flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                        <button
+                            type="button"
+                            wire:click="$toggle('showFilePreview')"
+                            class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                            <svg class="w-5 h-5 transition transform {{ $showFilePreview ?? false ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            </svg>
+                            <span>📄 {{ __('File Preview') }}</span>
+                        </button>
+                        
+                        <div class="flex items-center gap-2" x-show="$wire.showFilePreview">
+                            <button 
+                                @click="isFullscreen = !isFullscreen" 
+                                type="button"
+                                class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                title="{{ __('Toggle Fullscreen') }}"
+                            >
+                                <svg x-show="!isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M20 8V4m0 0h-4M4 16v4m0 0h4M20 16v4m0 0h-4"></path>
+                                </svg>
+                                <svg x-show="isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
-                    @if ($extractionStatus === 'confirmed')
-                        <div class="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
-                            <p class="text-sm text-green-800 dark:text-green-200">
-                                <strong>{{ __('Confirmed') }}:</strong> {{ $fileMetadata->confirmed_at?->format('M d, Y H:i') }}
-                            </p>
+                    @if($showFilePreview ?? false)
+                        <div 
+                            class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden transition-all" 
+                            :class="{ 'flex-1': isFullscreen, 'h-[600px]': !isFullscreen }"
+                        >
+                            <livewire:publications.document-viewer
+                                :publicationId="$publication->id_publication"
+                                :fileName="$fileMetadata->file_name"
+                                :key="'metadata-viewer-' . $fileMetadata->id"
+                                class="h-full w-full"
+                            />
+                        </div>
+                    @endif
+                </div>
+            @endif
+
+            <!-- Extraction Details (Collapsible) -->
+            @if ($extractionMethod)
+                <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <button
+                        type="button"
+                        wire:click="toggleDetails"
+                        class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                    >
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Extraction Details') }}</span>
+                        <svg class="w-5 h-5 transition transform {{ $showDetails ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                        </svg>
+                    </button>
+
+                    @if ($showDetails)
+                        <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p class="text-gray-600 dark:text-gray-400">{{ __('Extractor') }}</p>
+                                    <p class="font-medium text-gray-900 dark:text-white">{{ $extractionMethod ?? __('Unknown') }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 dark:text-gray-400">{{ __('Extracted At') }}</p>
+                                    <p class="font-medium text-gray-900 dark:text-white">{{ $fileMetadata->extracted_at?->format('M d, Y H:i') ?? __('N/A') }}</p>
+                                </div>
+                            </div>
+
+                            @if ($extractionStatus === 'confirmed')
+                                <div class="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
+                                    <p class="text-sm text-green-800 dark:text-green-200">
+                                        <strong>{{ __('Confirmed') }}:</strong> {{ $fileMetadata->confirmed_at?->format('M d, Y H:i') }}
+                                    </p>
+                                </div>
+                            @endif
                         </div>
                     @endif
                 </div>
             @endif
         </div>
-    @endif
 
-    <!-- Metadata Form -->
-    <form class="space-y-8">
+        <!-- Right column: metadata form -->
+        <div>
+            <!-- Metadata Form -->
+            <form class="space-y-8">
         <!-- Form Section: Basic Info -->
         <div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
@@ -760,5 +771,7 @@
                 @endif
             </div>
         </div>
-    </form>
+            </form>
+        </div>
+    </div>
 </div>

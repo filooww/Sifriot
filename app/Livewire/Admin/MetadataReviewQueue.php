@@ -28,7 +28,6 @@ class MetadataReviewQueue extends Component
 
     public bool $selectAll = false;
 
-    public ?int $selectedMetadataId = null;
 
     protected $queryString = [
         'statusFilter' => ['except' => 'all'],

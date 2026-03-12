@@ -35,10 +35,8 @@ class FileViewController extends Controller
             ], 400);
         }
 
-        // Try to find the file
-        $file = File::where('id_publication', $publication)
-            ->where('file_name', $decodedFilename)
-            ->first();
+        // Try to find the file (with case-insensitive fallback)
+        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
 
         if (!$file) {
             return response()->json([
@@ -258,10 +256,8 @@ class FileViewController extends Controller
             ], 400);
         }
 
-        // Try to find the file
-        $file = File::where('id_publication', $publication)
-            ->where('file_name', $decodedFilename)
-            ->first();
+        // Try to find the file (with case-insensitive fallback)
+        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
 
         if (!$file) {
             return response()->json([
@@ -364,10 +360,8 @@ class FileViewController extends Controller
             ], 400);
         }
 
-        // Try to find the file
-        $file = File::where('id_publication', $publication)
-            ->where('file_name', $decodedFilename)
-            ->first();
+        // Try to find the file (with case-insensitive fallback)
+        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
 
         if (!$file) {
             return response()->json([
@@ -740,10 +734,8 @@ class FileViewController extends Controller
             'decoded' => $decodedFilename,
         ]);
 
-        // Try to find the file
-        $file = File::where('id_publication', $publication)
-            ->where('file_name', $decodedFilename)
-            ->first();
+        // Try to find the file (with case-insensitive fallback)
+        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
 
         // If not found, log all files for this publication for debugging
         if (!$file) {
@@ -904,5 +896,25 @@ class FileViewController extends Controller
             return true;
         }
         return false;
+    }
+
+    /**
+     * Find a File by publication and original filename, with a case-insensitive fallback.
+     */
+    private function findFileByPublicationAndName(int $publication, string $decodedFilename): ?File
+    {
+        // Primary: exact match on original file_name
+        $file = File::where('id_publication', $publication)
+            ->where('file_name', $decodedFilename)
+            ->first();
+
+        if ($file) {
+            return $file;
+        }
+
+        // Fallback: case-insensitive match via file_name_low
+        return File::where('id_publication', $publication)
+            ->where('file_name_low', mb_strtolower($decodedFilename))
+            ->first();
     }
 }

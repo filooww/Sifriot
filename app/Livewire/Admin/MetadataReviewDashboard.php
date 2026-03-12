@@ -75,8 +75,6 @@ class MetadataReviewDashboard extends Component
 
     public bool $selectAll = false;
 
-    public ?int $selectedMetadataId = null;
-
     public int $perPage = 20;
 
     // UI state
@@ -218,14 +216,6 @@ class MetadataReviewDashboard extends Component
         $this->resetPage();
     }
 
-    /**
-     * Listen for modal close event from form
-     */
-    #[On('close-metadata-modal')]
-    public function closeModalFromForm(): void
-    {
-        $this->closeReview();
-    }
 
     /**
      * Clear all filters
@@ -1079,21 +1069,6 @@ class MetadataReviewDashboard extends Component
         $this->dispatch('notify', message: "{$count} items deleted", type: 'success');
     }
 
-    /**
-     * Open review modal for a metadata item
-     */
-    public function openReview(int $id): void
-    {
-        $this->selectedMetadataId = $id;
-    }
-
-    /**
-     * Close review modal
-     */
-    public function closeReview(): void
-    {
-        $this->selectedMetadataId = null;
-    }
 
     /**
      * Toggle publication status

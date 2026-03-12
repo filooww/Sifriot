@@ -842,10 +842,12 @@ class MetadataReviewForm extends Component
 
             // Close modal and refresh parent queue
             $this->dispatch('refresh-metadata-queue')->to('admin.metadata-review-dashboard');
-            $this->dispatch('notify', message: 'Metadata confirmed and saved successfully!', type: 'success')->to('admin.metadata-review-dashboard');
-
-            // Close the modal
-            $this->dispatch('close-metadata-modal')->to('admin.metadata-review-dashboard');
+            
+            session()->flash('notify', [
+                'message' => 'Metadata confirmed and saved successfully!',
+                'type' => 'success'
+            ]);
+            $this->redirectRoute('dashboard', navigate: true);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to confirm metadata', [

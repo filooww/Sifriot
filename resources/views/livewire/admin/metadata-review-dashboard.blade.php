@@ -442,15 +442,15 @@
                                 <td class="px-6 py-3 text-right">
                                     <div class="flex justify-end gap-2 items-center">
                                         @if ($metadata->status === 'processed' || $metadata->status === 'rejected' || $metadata->status === 'pending')
-                                            <button type="button" wire:click="openReview({{ (int) $metadata->id }})"
+                                            <a href="{{ route('admin.metadata-review', $metadata->id) }}"
                                                 class="px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition">
                                                 {{ __('Review') }}
-                                            </button>
+                                            </a>
                                         @elseif ($metadata->status === 'confirmed')
-                                            <button type="button" wire:click="openReview({{ (int) $metadata->id }})"
+                                            <a href="{{ route('admin.metadata-review', $metadata->id) }}"
                                                 class="px-3 py-1 text-sm font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition">
                                                 {{ __('Edit') }}
-                                            </button>
+                                            </a>
                                         @elseif ($metadata->status === 'failed')
                                             <button type="button" wire:click="reExtractSingle({{ (int) $metadata->id }})"
                                                 wire:loading.attr="disabled" wire:loading.delay.longer
@@ -488,51 +488,4 @@
                 @endif
             </div>
         </main>
-    </div>
-
-    <!-- Review Modal -->
-    @if (isset($selectedMetadataId) && $selectedMetadataId)
-        @php
-            $selectedMetadata = \App\Models\FileMetadata::find($selectedMetadataId);
-        @endphp
-
-        @if ($selectedMetadata)
-            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto flex items-center justify-center p-4"
-                wire:click="closeReview">
-                <div class="bg-white dark:bg-gray-900 rounded-xl max-w-3xl w-full max-h-[95vh] overflow-hidden shadow-2xl"
-                    wire:click.stop>
-                    <!-- Modal Header with Status -->
-                    <div
-                        class="sticky top-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-600 px-6 py-5 flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <div>
-                                <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                                    @if ($selectedMetadata->status === 'confirmed')
-                                        ✏️ {{ __('Edit Metadata') }}
-                                    @else
-                                        📋 {{ __('Review Metadata') }}
-                                    @endif
-                                </h2>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                    {{ Str::limit($selectedMetadata->file_name, 50) }}
-                                </p>
-                            </div>
-                        </div>
-                        <button type="button" wire:click="closeReview"
-                            class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-lg transition"
-                            title="Close (Esc)">
-                            ✕
-                        </button>
-                    </div>
-
-                    <!-- Modal Content with Scrollable Form -->
-                    <div class="overflow-y-auto" style="max-height: calc(95vh - 100px);">
-                        <div class="p-6 md:p-8">
-                            @livewire('admin.metadata-review-form', ['fileMetadata' => $selectedMetadata], key('metadata-review-' . $selectedMetadata->id))
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
-    @endif
 </div>

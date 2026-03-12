@@ -30,20 +30,30 @@ class DocumentViewer extends Component
     public function mount(int $publicationId, ?string $fileName = null): void
     {
         $this->publicationId = $publicationId;
-
         // Check authorization
         $this->isAuthorized = Auth::check();
 
         if ($this->isAuthorized) {
-            $query = File::where('id_publication', $publicationId);
-            
+            $file = null;
+
             if ($fileName) {
-                $query->where('file_name', $fileName);
+                // Primary: strict match on original filename
+                $file = File::where('id_publication', $publicationId)
+                    ->where('file_name', $fileName)
+                    ->first();
+
+                // Fallback: case-insensitive match via file_name_low
+                if (! $file) {
+                    $file = File::where('id_publication', $publicationId)
+                        ->where('file_name_low', mb_strtolower($fileName))
+                        ->first();
+                }
             } else {
-                $query->orderBy('ord_num');
+                // No specific file requested: use first by order
+                $file = File::where('id_publication', $publicationId)
+                    ->orderBy('ord_num')
+                    ->first();
             }
-            
-            $file = $query->first();
 
             if ($file) {
                 $this->selectedFileName = $file->file_name;
@@ -58,10 +68,16 @@ class DocumentViewer extends Component
         if (! $this->isAuthorized) {
             return;
         }
-
+        // Try strict match first, then case-insensitive fallback
         $file = File::where('id_publication', $this->publicationId)
             ->where('file_name', $fileName)
             ->first();
+
+        if (! $file) {
+            $file = File::where('id_publication', $this->publicationId)
+                ->where('file_name_low', mb_strtolower($fileName))
+                ->first();
+        }
 
         if ($file) {
             $this->selectedFileName = $fileName;

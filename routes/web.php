@@ -9,6 +9,7 @@ use App\Livewire\Admin\FileRegistrationForm;
 use App\Livewire\Admin\FiltrationManagement;
 use App\Livewire\Admin\FolderBrowser;
 use App\Livewire\Admin\MetadataReviewDashboard;
+use App\Livewire\Admin\MetadataReviewPage;
 use App\Livewire\Admin\ScanResultsViewer;
 use App\Livewire\Publications\PublicationDetail;
 use App\Livewire\Publications\PublicationPreview;
@@ -76,6 +77,9 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dashboard', MetadataReviewDashboard::class)
         ->name('dashboard');
+
+    Route::get('/admin/metadata-review/{fileMetadata}', MetadataReviewPage::class)
+        ->name('admin.metadata-review');
 
     // Unified file management page
     Route::get('/admin/files', FileManagement::class)
