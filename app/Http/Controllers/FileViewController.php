@@ -12,6 +12,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class FileViewController extends Controller
 {
@@ -35,15 +36,6 @@ class FileViewController extends Controller
             ], 400);
         }
 
-        // Try to find the file (with case-insensitive fallback)
-        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
-
-        if (!$file) {
-            return response()->json([
-                'error' => 'File not found in database',
-            ], 404);
-        }
-
         // Verify publication exists and is accessible
         $pub = Publication::findOrFail($publication);
 
@@ -51,43 +43,86 @@ class FileViewController extends Controller
             throw new AuthorizationException('Cannot view this publication');
         }
 
-        // Get file path (same logic as convertDoc)
-        // Get file path (same logic as convertDoc)
-        if ($file->file_path) {
-            $disk = 'library';
-            $storagePath = $file->file_path;
-        } else {
-            $fileSource = $file->file_source;
+        // Try to find the file (with case-insensitive fallback)
+        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
 
-            if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
-                $disk = 'local';
-                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
-            } elseif ($fileSource === 'bulk_scan') {
-                $disk = 'library';
-                $allFiles = Storage::disk($disk)->allFiles();
-                $storagePath = null;
-                foreach ($allFiles as $filePath) {
-                    if (basename($filePath) === $decodedFilename) {
-                        $storagePath = $filePath;
-                        break;
-                    }
-                }
-                if ($storagePath === null) {
-                    abort(404, 'File not found in library storage');
+        $disk = null;
+        $storagePath = null;
+
+        if ($file) {
+            // Get file path (same logic as convertDoc), but choose disk based on path prefix
+            if ($file->file_path) {
+                $storagePath = $file->file_path;
+
+                // If the path is under content/ it lives on the local disk, otherwise on the library disk
+                if (str_starts_with($storagePath, 'content/')) {
+                    $disk = 'local';
+                } else {
+                    $disk = 'library';
                 }
             } else {
-                $disk = 'library';
-                $storagePath = $fileSource . '/' . $decodedFilename;
+                $fileSource = $file->file_source;
+
+                if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
+                    $disk = 'local';
+                    $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+                } elseif ($fileSource === 'bulk_scan') {
+                    $disk = 'library';
+                    $allFiles = Storage::disk($disk)->allFiles();
+                    $storagePath = null;
+                    foreach ($allFiles as $filePath) {
+                        if (basename($filePath) === $decodedFilename) {
+                            $storagePath = $filePath;
+                            break;
+                        }
+                    }
+                    if ($storagePath === null) {
+                        abort(404, 'File not found in library storage');
+                    }
+                } else {
+                    $disk = 'library';
+                    $storagePath = $fileSource . '/' . $decodedFilename;
+                }
             }
+        } else {
+            // Fallback: resolve the physical file path via file_registration_logs (same logic as AI extractor)
+            $absolutePath = $this->resolveFilePathFromLogs($publication, $decodedFilename);
+
+            if (!$absolutePath) {
+                return response()->json([
+                    'error' => 'File not found in database',
+                ], 404);
+            }
+
+            $storagePath = $absolutePath;
         }
 
-        if (!Storage::disk($disk)->exists($storagePath)) {
-            abort(404, 'File not found in storage');
+        if ($disk !== null) {
+            if (!Storage::disk($disk)->exists($storagePath)) {
+                // Fallback: try to resolve from registration logs if storage lookup failed
+                $absolutePath = $this->resolveFilePathFromLogs($publication, $decodedFilename);
+                if ($absolutePath && is_file($absolutePath)) {
+                    $disk = null;
+                    $storagePath = $absolutePath;
+                } else {
+                    abort(404, 'File not found in storage');
+                }
+            }
+        } elseif (!is_file($storagePath)) {
+            // Fallback: try logs when initial absolute path is not a file
+            $absolutePath = $this->resolveFilePathFromLogs($publication, $decodedFilename);
+            if ($absolutePath && is_file($absolutePath)) {
+                $storagePath = $absolutePath;
+            } else {
+                abort(404, 'File not found at resolved path');
+            }
         }
 
         try {
             // Read and parse FB2 XML
-            $xmlContent = Storage::disk($disk)->get($storagePath);
+            $xmlContent = $disk === null
+                ? file_get_contents($storagePath)
+                : Storage::disk($disk)->get($storagePath);
 
             // Load XML with namespace support
             libxml_use_internal_errors(true);
@@ -212,9 +247,20 @@ class FileViewController extends Controller
                     break;
 
                 case 'title':
-                    $html .= '<title>';
-                    $html .= $this->processFb2Node($child, $namespace);
-                    $html .= '</title>';
+                    // Combine all <p> children into a single H2 heading (e.g. "Бред I")
+                    $parts = [];
+                    foreach ($child->children($namespace) as $titleChild) {
+                        if ($titleChild->getName() === 'p') {
+                            $text = trim((string) $titleChild);
+                            if ($text !== '') {
+                                $parts[] = $text;
+                            }
+                        }
+                    }
+                    $titleText = implode(' ', $parts);
+                    if ($titleText !== '') {
+                        $html .= '<h2>' . htmlspecialchars($titleText) . '</h2>';
+                    }
                     break;
 
                 case 'p':
@@ -256,15 +302,6 @@ class FileViewController extends Controller
             ], 400);
         }
 
-        // Try to find the file (with case-insensitive fallback)
-        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
-
-        if (!$file) {
-            return response()->json([
-                'error' => 'File not found in database',
-            ], 404);
-        }
-
         // Verify publication exists and is accessible
         $pub = Publication::findOrFail($publication);
 
@@ -272,47 +309,78 @@ class FileViewController extends Controller
             throw new AuthorizationException('Cannot view this publication');
         }
 
-        // Get file path
-        if ($file->file_path) {
-            $disk = 'library';
-            $storagePath = $file->file_path;
-        } else {
-            $fileSource = $file->file_source;
+        // Try to find the file (with case-insensitive fallback)
+        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
 
-            if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
-                $disk = 'local';
-                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
-            } elseif ($fileSource === 'bulk_scan') {
-                // Legacy bulk_scan files: search recursively in library disk (for backwards compatibility)
-                $disk = 'library';
+        $disk = null;
+        $storagePath = null;
+        $fullPath = null;
 
-                // Search for the file in the library directory
-                $allFiles = Storage::disk($disk)->allFiles();
-                $storagePath = null;
+        if ($file) {
+            // Get file path, choosing disk based on path prefix
+            if ($file->file_path) {
+                $storagePath = $file->file_path;
 
-                foreach ($allFiles as $filePath) {
-                    if (basename($filePath) === $decodedFilename) {
-                        $storagePath = $filePath;
-                        break;
-                    }
-                }
-
-                if ($storagePath === null) {
-                    abort(404, 'File not found in library storage');
+                // If the path is under content/ it lives on the local disk, otherwise on the library disk
+                if (str_starts_with($storagePath, 'content/')) {
+                    $disk = 'local';
+                } else {
+                    $disk = 'library';
                 }
             } else {
-                // New bulk scanned file: file_source is the relative directory path on library disk
-                $disk = 'library';
-                $storagePath = $fileSource . '/' . $decodedFilename;
+                $fileSource = $file->file_source;
+
+                if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
+                    $disk = 'local';
+                    $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+                } elseif ($fileSource === 'bulk_scan') {
+                    // Legacy bulk_scan files: search recursively in library disk (for backwards compatibility)
+                    $disk = 'library';
+
+                    // Search for the file in the library directory
+                    $allFiles = Storage::disk($disk)->allFiles();
+                    $storagePath = null;
+
+                    foreach ($allFiles as $filePath) {
+                        if (basename($filePath) === $decodedFilename) {
+                            $storagePath = $filePath;
+                            break;
+                        }
+                    }
+
+                    if ($storagePath === null) {
+                        abort(404, 'File not found in library storage');
+                    }
+                } else {
+                    // New bulk scanned file: file_source is the relative directory path on library disk
+                    $disk = 'library';
+                    $storagePath = $fileSource . '/' . $decodedFilename;
+                }
+            }
+
+            if (!Storage::disk($disk)->exists($storagePath)) {
+                // Fallback: try to resolve from logs if storage lookup failed
+                $absolutePath = $this->resolveFilePathFromLogs($publication, $decodedFilename);
+                if ($absolutePath && is_file($absolutePath)) {
+                    $disk = null;
+                    $fullPath = $absolutePath;
+                } else {
+                    abort(404, 'File not found in storage');
+                }
+            } else {
+                // Get full path and convert using LibreOffice
+                $fullPath = Storage::disk($disk)->path($storagePath);
+            }
+        } else {
+            // Fallback: resolve the physical file path via file_registration_logs
+            $fullPath = $this->resolveFilePathFromLogs($publication, $decodedFilename);
+
+            if (!$fullPath || !is_file($fullPath)) {
+                return response()->json([
+                    'error' => 'File not found in database',
+                ], 404);
             }
         }
-
-        if (!Storage::disk($disk)->exists($storagePath)) {
-            abort(404, 'File not found in storage');
-        }
-
-        // Get full path and convert using LibreOffice
-        $fullPath = Storage::disk($disk)->path($storagePath);
 
         try {
             $html = $this->convertDocWithLibreOffice($fullPath);
@@ -360,15 +428,6 @@ class FileViewController extends Controller
             ], 400);
         }
 
-        // Try to find the file (with case-insensitive fallback)
-        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
-
-        if (!$file) {
-            return response()->json([
-                'error' => 'File not found in database',
-            ], 404);
-        }
-
         // Verify publication exists and is accessible
         $pub = Publication::findOrFail($publication);
 
@@ -376,41 +435,74 @@ class FileViewController extends Controller
             throw new AuthorizationException('Cannot view this publication');
         }
 
-        // Get file path
-        if ($file->file_path) {
-            $disk = 'library';
-            $storagePath = $file->file_path;
-        } else {
-            $fileSource = $file->file_source;
+        // Try to find the file (with case-insensitive fallback)
+        $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
 
-            if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
-                $disk = 'local';
-                $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
-            } elseif ($fileSource === 'bulk_scan') {
-                $disk = 'library';
-                $allFiles = Storage::disk($disk)->allFiles();
-                $storagePath = null;
-                foreach ($allFiles as $filePath) {
-                    if (basename($filePath) === $decodedFilename) {
-                        $storagePath = $filePath;
-                        break;
-                    }
-                }
-                if ($storagePath === null) {
-                    abort(404, 'File not found in library storage');
+        $disk = null;
+        $storagePath = null;
+        $fullPath = null;
+
+        if ($file) {
+            // Get file path, choosing disk based on path prefix
+            if ($file->file_path) {
+                $storagePath = $file->file_path;
+
+                // If the path is under content/ it lives on the local disk, otherwise on the library disk
+                if (str_starts_with($storagePath, 'content/')) {
+                    $disk = 'local';
+                } else {
+                    $disk = 'library';
                 }
             } else {
-                $disk = 'library';
-                $storagePath = $fileSource . '/' . $decodedFilename;
+                $fileSource = $file->file_source;
+
+                if (pathinfo($fileSource, PATHINFO_EXTENSION)) {
+                    $disk = 'local';
+                    $storagePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/' . $fileSource;
+                } elseif ($fileSource === 'bulk_scan') {
+                    $disk = 'library';
+                    $allFiles = Storage::disk($disk)->allFiles();
+                    $storagePath = null;
+                    foreach ($allFiles as $filePath) {
+                        if (basename($filePath) === $decodedFilename) {
+                            $storagePath = $filePath;
+                            break;
+                        }
+                    }
+                    if ($storagePath === null) {
+                        abort(404, 'File not found in library storage');
+                    }
+                } else {
+                    $disk = 'library';
+                    $storagePath = $fileSource . '/' . $decodedFilename;
+                }
+            }
+
+            if (!Storage::disk($disk)->exists($storagePath)) {
+                // Fallback: try to resolve from logs if storage lookup failed
+                $absolutePath = $this->resolveFilePathFromLogs($publication, $decodedFilename);
+                if ($absolutePath && is_file($absolutePath)) {
+                    $disk = null;
+                    $fullPath = $absolutePath;
+                } else {
+                    abort(404, 'File not found in storage');
+                }
+            } else {
+                $fullPath = Storage::disk($disk)->path($storagePath);
+            }
+        } else {
+            // Fallback: resolve the physical file path via file_registration_logs
+            $fullPath = $this->resolveFilePathFromLogs($publication, $decodedFilename);
+
+            if (!$fullPath || !is_file($fullPath)) {
+                return response()->json([
+                    'error' => 'File not found in database',
+                ], 404);
             }
         }
 
-        if (!Storage::disk($disk)->exists($storagePath)) {
-            abort(404, 'File not found in storage');
-        }
-
         try {
-            $fullPath = Storage::disk($disk)->path($storagePath);
+            $fullPath = $fullPath ?? Storage::disk($disk)->path($storagePath);
 
             // Try LibreOffice first as primary converter
             try {
@@ -916,5 +1008,42 @@ class FileViewController extends Controller
         return File::where('id_publication', $publication)
             ->where('file_name_low', mb_strtolower($decodedFilename))
             ->first();
+    }
+
+    /**
+     * Resolve a physical file path for a publication+filename using file_registration_logs.
+     * Mirrors the logic used in MetadataReviewForm::extractWithAI().
+     */
+    private function resolveFilePathFromLogs(int $publication, string $decodedFilename): ?string
+    {
+        $fileLog = DB::table('file_registration_logs')
+            ->where('publication_id', $publication)
+            ->where('file_path', 'like', '%' . addcslashes($decodedFilename, '%_') . '%')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$fileLog || !$fileLog->file_path) {
+            return null;
+        }
+
+        $fullPath = $fileLog->file_path;
+
+        // If already absolute (Unix or Windows), return as-is
+        if (preg_match('/^(\/|[A-Za-z]:[\\\\\/])/', $fullPath)) {
+            return $fullPath;
+        }
+
+        // Otherwise, try storage/app/content first, then storage/app
+        $candidate = storage_path('app/content/' . $fullPath);
+        if (is_file($candidate)) {
+            return $candidate;
+        }
+
+        $candidate = storage_path('app/' . $fullPath);
+        if (is_file($candidate)) {
+            return $candidate;
+        }
+
+        return null;
     }
 }

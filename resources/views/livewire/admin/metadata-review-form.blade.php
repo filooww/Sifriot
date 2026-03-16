@@ -109,47 +109,39 @@
                     :class="{ 'fixed inset-0 z-50 h-screen w-screen m-0 rounded-none border-0 flex flex-col': isFullscreen }"
                 >
                     <div class="flex-none flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                        <button
-                            type="button"
-                            wire:click="$toggle('showFilePreview')"
-                            class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                            <svg class="w-5 h-5 transition transform {{ $showFilePreview ?? false ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                             </svg>
                             <span>📄 {{ __('File Preview') }}</span>
-                        </button>
-                        
-                        <div class="flex items-center gap-2" x-show="$wire.showFilePreview">
-                            <button 
-                                @click="isFullscreen = !isFullscreen" 
-                                type="button"
-                                class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                title="{{ __('Toggle Fullscreen') }}"
-                            >
-                                <svg x-show="!isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M20 8V4m0 0h-4M4 16v4m0 0h4M20 16v4m0 0h-4"></path>
-                                </svg>
-                                <svg x-show="isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
                         </div>
+                        
+                        <button 
+                            @click="isFullscreen = !isFullscreen" 
+                            type="button"
+                            class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            title="{{ __('Toggle Fullscreen') }}"
+                        >
+                            <svg x-show="!isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M20 8V4m0 0h-4M4 16v4m0 0h4M20 16v4m0 0h-4"></path>
+                            </svg>
+                            <svg x-show="isFullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
                     </div>
 
-                    @if($showFilePreview ?? false)
-                        <div 
-                            class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden transition-all" 
-                            :class="{ 'flex-1': isFullscreen, 'h-[600px]': !isFullscreen }"
-                        >
-                            <livewire:publications.document-viewer
-                                :publicationId="$publication->id_publication"
-                                :fileName="$fileMetadata->file_name"
-                                :key="'metadata-viewer-' . $fileMetadata->id"
-                                class="h-full w-full"
-                            />
-                        </div>
-                    @endif
+                    <div 
+                        class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden transition-all" 
+                        :class="{ 'flex-1': isFullscreen, 'h-[600px]': !isFullscreen }"
+                    >
+                        <livewire:publications.document-viewer
+                            :publicationId="$publication->id_publication"
+                            :fileName="$fileMetadata->file_name"
+                            :key="'metadata-viewer-' . $fileMetadata->id"
+                            class="h-full w-full"
+                        />
+                    </div>
                 </div>
             @endif
 
