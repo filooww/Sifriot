@@ -845,79 +845,39 @@ class MetadataReviewDashboard extends Component
                 $extractedData = [];
 
                 if ($extractedMetadata->getTitle()) {
-                    $extractedData['title'] = [
-                        'value' => $extractedMetadata->getTitle(),
-                        'confidence' => 1.0,
-                    ];
+                    $extractedData['title'] = $extractedMetadata->getTitle();
                 }
 
                 $authors = $extractedMetadata->getAuthors();
                 if (!empty($authors)) {
-                    $extractedData['authors'] = array_map(
-                        fn($author) => [
-                            'value' => $author,
-                            'confidence' => 1.0,
-                        ],
-                        $authors
-                    );
+                    $extractedData['authors'] = $authors;
                 }
 
                 if ($extractedMetadata->getPublicationYear()) {
-                    $extractedData['publication_year'] = [
-                        'value' => $extractedMetadata->getPublicationYear(),
-                        'confidence' => 1.0,
-                    ];
+                    $extractedData['publication_year'] = $extractedMetadata->getPublicationYear();
                 }
 
                 if ($extractedMetadata->getPublisher()) {
-                    $extractedData['publisher'] = [
-                        'value' => $extractedMetadata->getPublisher(),
-                        'confidence' => 1.0,
-                    ];
-                }
-
-                if ($extractedMetadata->getIssuer()) {
-                    $extractedData['issuer'] = [
-                        'value' => $extractedMetadata->getIssuer(),
-                        'confidence' => 1.0,
-                    ];
+                    $extractedData['publisher'] = $extractedMetadata->getPublisher();
                 }
 
                 $genres = $extractedMetadata->getGenres();
                 if (!empty($genres)) {
-                    $extractedData['genres'] = array_map(
-                        fn($genre) => [
-                            'value' => $genre,
-                            'confidence' => 1.0,
-                        ],
-                        $genres
-                    );
+                    $extractedData['genres'] = $genres;
                 }
 
                 $themes = $extractedMetadata->getThemes();
                 if (!empty($themes)) {
-                    $extractedData['themes'] = array_map(
-                        fn($theme) => [
-                            'value' => $theme,
-                            'confidence' => 1.0,
-                        ],
-                        $themes
-                    );
+                    $extractedData['themes'] = $themes;
                 }
 
                 if ($extractedMetadata->getContentType()) {
-                    $extractedData['content_type'] = [
-                        'value' => $extractedMetadata->getContentType(),
-                        'confidence' => 1.0,
-                    ];
+                    $extractedData['content_type'] = $extractedMetadata->getContentType();
                     // attempt to resolve ID if possible, but simpler to just store value and let form handle it
                 }
 
                 if ($extractedMetadata->getSection()) {
-                    $extractedData['section'] = [
-                        'value' => $extractedMetadata->getSection(),
-                        'confidence' => 1.0,
-                    ];
+                    $extractedData['section'] = $extractedMetadata->getSection();
                 }
 
                 $extractedData['gemini_model'] = config('services.gemini.model', 'gemini-1.5-flash');

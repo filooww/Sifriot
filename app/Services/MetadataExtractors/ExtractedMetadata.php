@@ -20,9 +20,7 @@ class ExtractedMetadata
 
     private array $themes = [];
 
-    private ?string $section = null;
 
-    private ?string $issuer = null;
 
     private ?string $description = null;
 
@@ -97,13 +95,6 @@ class ExtractedMetadata
         return $this;
     }
 
-    public function setIssuer(?string $value): self
-    {
-        $this->issuer = $value;
-
-        return $this;
-    }
-
     public function setDescription(?string $value): self
     {
         $this->description = $value;
@@ -151,11 +142,6 @@ class ExtractedMetadata
         return $this->section;
     }
 
-    public function getIssuer(): ?string
-    {
-        return $this->issuer;
-    }
-
     public function getDescription(): ?string
     {
         return $this->description;
@@ -177,7 +163,6 @@ class ExtractedMetadata
             && empty($this->content_type)
             && empty($this->themes)
             && empty($this->section)
-            && empty($this->issuer)
             && empty($this->description);
     }
 
@@ -192,7 +177,6 @@ class ExtractedMetadata
             'content_type' => $this->content_type,
             'themes' => $this->themes,
             'section' => $this->section,
-            'issuer' => $this->issuer,
             'description' => $this->description,
         ];
     }

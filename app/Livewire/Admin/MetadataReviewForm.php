@@ -36,7 +36,7 @@ class MetadataReviewForm extends Component
 
     public string $publisher = '';
 
-    public string $issuer = '';
+
 
     public array $genres = [];
 
@@ -51,9 +51,6 @@ class MetadataReviewForm extends Component
     public bool $useExtracted = false;
 
     public bool $useManual = false;
-
-    // AI Suggestions text (for display badges)
-    public array $aiSuggestions = [];
 
     public ?string $extractionStatus = null;
 
@@ -175,7 +172,7 @@ class MetadataReviewForm extends Component
         'authors.*.value' => 'string|max:255',
         'publicationYear' => 'nullable|integer|min:1000|max:2100',
         'publisher' => 'nullable|string|max:255',
-        'issuer' => 'nullable|string|max:255',
+
         'genres' => 'array',
         'genres.*.value' => 'string|max:255',
         'themes' => 'array',
@@ -231,7 +228,7 @@ class MetadataReviewForm extends Component
 
             $this->publicationYear = $this->fileMetadata->getPublicationYear();
             $this->publisher = $this->fileMetadata->getPublisher() ?? '';
-            $this->issuer = $this->fileMetadata->getIssuer() ?? '';
+
 
             $genres = $this->fileMetadata->getGenres();
             if (!empty($genres)) {
@@ -464,16 +461,12 @@ class MetadataReviewForm extends Component
 
             if ($extracted->getPublisher()) {
                 $this->publisher = $extracted->getPublisher();
-                $this->aiSuggestions['publisher'] = $extracted->getPublisher();
                 // Only flag for creation if publisher doesn't exist
                 $exists = Publishing::where('publishing_low', mb_strtolower(trim($extracted->getPublisher())))->exists();
                 $this->createNewPublisher = !$exists;
             }
 
-            if ($extracted->getIssuer()) {
-                $this->issuer = $extracted->getIssuer();
-                $this->aiSuggestions['issuer'] = $extracted->getIssuer();
-            }
+
 
             $genres = $extracted->getGenres();
             if (!empty($genres)) {
@@ -497,13 +490,11 @@ class MetadataReviewForm extends Component
 
             // Resolve and set Content Type
             if ($extracted->getContentType()) {
-                $this->aiSuggestions['content_type'] = $extracted->getContentType();
                 $this->contentTypeId = $this->resolveContentTypeId($extracted->getContentType());
             }
 
             // Resolve and set Section
             if ($extracted->getSection()) {
-                $this->aiSuggestions['section'] = $extracted->getSection();
                 $sectionId = $this->resolveSectionId($extracted->getSection());
                 if ($sectionId) {
                     $this->selectedSections = [$sectionId];
@@ -773,51 +764,14 @@ class MetadataReviewForm extends Component
                 'status' => 'confirmed',
                 'confirmed_at' => now(),
                 'extracted_data' => [
-                    'title' => [
-                        'value' => $this->title,
-                        'confidence' => 1.0,
-                    ],
-                    'authors' => array_map(
-                        fn($author) => [
-                            'value' => trim($author),
-                            'confidence' => 1.0,
-                        ],
-                        $cleanedAuthors
-                    ),
-                    'publication_year' => $this->publicationYear ? [
-                        'value' => $this->publicationYear,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'publisher' => $this->publisher ? [
-                        'value' => $this->publisher,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'issuer' => $this->issuer ? [
-                        'value' => $this->issuer,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'genres' => array_map(
-                        fn($genre) => [
-                            'value' => trim($genre),
-                            'confidence' => 1.0,
-                        ],
-                        $cleanedGenres
-                    ),
-                    'themes' => array_map(
-                        fn($theme) => [
-                            'value' => trim($theme),
-                            'confidence' => 1.0,
-                        ],
-                        $cleanedThemes
-                    ),
-                    'content_type_id' => $this->contentTypeId ? [
-                        'value' => $this->contentTypeId,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'section_ids' => !empty($this->selectedSections) ? [
-                        'value' => $this->selectedSections,
-                        'confidence' => 1.0,
-                    ] : null,
+                    'title' => $this->title,
+                    'authors' => array_map(fn($author) => trim($author), $cleanedAuthors),
+                    'publication_year' => $this->publicationYear ?: null,
+                    'publisher' => $this->publisher ?: null,
+                    'genres' => array_map(fn($genre) => trim($genre), $cleanedGenres),
+                    'themes' => array_map(fn($theme) => trim($theme), $cleanedThemes),
+                    'content_type_id' => $this->contentTypeId ?: null,
+                    'section_ids' => !empty($this->selectedSections) ? $this->selectedSections : null,
                 ],
             ];
 
@@ -967,51 +921,14 @@ class MetadataReviewForm extends Component
             // (Don't change status to confirmed - just update the data)
             $this->fileMetadata->update([
                 'extracted_data' => [
-                    'title' => [
-                        'value' => $this->title,
-                        'confidence' => 1.0,
-                    ],
-                    'authors' => array_map(
-                        fn($author) => [
-                            'value' => trim($author),
-                            'confidence' => 1.0,
-                        ],
-                        $cleanedAuthors
-                    ),
-                    'publication_year' => $this->publicationYear ? [
-                        'value' => $this->publicationYear,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'publisher' => $this->publisher ? [
-                        'value' => $this->publisher,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'issuer' => $this->issuer ? [
-                        'value' => $this->issuer,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'genres' => array_map(
-                        fn($genre) => [
-                            'value' => trim($genre),
-                            'confidence' => 1.0,
-                        ],
-                        $cleanedGenres
-                    ),
-                    'themes' => array_map(
-                        fn($theme) => [
-                            'value' => trim($theme),
-                            'confidence' => 1.0,
-                        ],
-                        $cleanedThemes
-                    ),
-                    'content_type_id' => $this->contentTypeId ? [
-                        'value' => $this->contentTypeId,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'section_ids' => !empty($this->selectedSections) ? [
-                        'value' => $this->selectedSections,
-                        'confidence' => 1.0,
-                    ] : null,
+                    'title' => $this->title,
+                    'authors' => array_map(fn($author) => trim($author), $cleanedAuthors),
+                    'publication_year' => $this->publicationYear ?: null,
+                    'publisher' => $this->publisher ?: null,
+                    'genres' => array_map(fn($genre) => trim($genre), $cleanedGenres),
+                    'themes' => array_map(fn($theme) => trim($theme), $cleanedThemes),
+                    'content_type_id' => $this->contentTypeId ?: null,
+                    'section_ids' => !empty($this->selectedSections) ? $this->selectedSections : null,
                 ],
             ]);
 
@@ -1108,39 +1025,12 @@ class MetadataReviewForm extends Component
                 'status' => 'confirmed',
                 'confirmed_at' => now(),
                 'extracted_data' => [
-                    'title' => [
-                        'value' => $this->title,
-                        'confidence' => 1.0,
-                    ],
-                    'authors' => array_map(
-                        fn($author) => [
-                            'value' => trim($author),
-                            'confidence' => 1.0,
-                        ],
-                        $cleanedAuthors
-                    ),
-                    'publication_year' => $this->publicationYear ? [
-                        'value' => $this->publicationYear,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'publisher' => $this->publisher ? [
-                        'value' => $this->publisher,
-                        'confidence' => 1.0,
-                    ] : null,
-                    'genres' => array_map(
-                        fn($genre) => [
-                            'value' => trim($genre),
-                            'confidence' => 1.0,
-                        ],
-                        $cleanedGenres
-                    ),
-                    'themes' => array_map(
-                        fn($theme) => [
-                            'value' => trim($theme),
-                            'confidence' => 1.0,
-                        ],
-                        $cleanedThemes
-                    ),
+                    'title' => $this->title,
+                    'authors' => array_map(fn($author) => trim($author), $cleanedAuthors),
+                    'publication_year' => $this->publicationYear ?: null,
+                    'publisher' => $this->publisher ?: null,
+                    'genres' => array_map(fn($genre) => trim($genre), $cleanedGenres),
+                    'themes' => array_map(fn($theme) => trim($theme), $cleanedThemes),
                 ],
                 'extraction_method' => 'manual_entry',
             ]);

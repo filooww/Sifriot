@@ -364,15 +364,6 @@
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
-                
-                @if(isset($aiSuggestions['content_type']))
-                    <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                        <span>✨ {{ __('AI Suggestion') }}: </span>
-                        <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
-                            {{ $aiSuggestions['content_type'] }}
-                        </span>
-                    </div>
-                @endif
             </div>
 
             <div class="space-y-4 mt-4">
@@ -389,43 +380,12 @@
                 createNewModel="createNewPublisher"
                 createMethod="storePublisher"
             />
-                    @if(isset($aiSuggestions['publisher']))
-                        <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                             <span>✨ {{ __('AI Suggestion') }}: </span>
-                             <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
-                                 {{ $aiSuggestions['publisher'] }}
-                             </span>
-                        </div>
-                    @endif
                     @error('publisher')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Issuer Field -->
-                <div>
-                    <label for="issuer" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {{ __('Issuer') }}
-                    </label>
-                    <x-autocomplete-input
-                        wireModel="issuer"
-                        searchMethod="searchPublishers"
-                        :placeholder="__('Issuer name (Organization)')"
-                        :createNewLabel="__('Create new issuer')"
-                        createMethod="storePublisher"
-                    />
-                    @if(isset($aiSuggestions['issuer']))
-                        <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                             <span>✨ AI Suggestion: </span>
-                             <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
-                                 {{ $aiSuggestions['issuer'] }}
-                             </span>
-                        </div>
-                    @endif
-                    @error('issuer')
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
+
             </div>
         </div>
 
@@ -595,14 +555,6 @@
                             </div>
                         </div>
                     </div>
-                    @if(isset($aiSuggestions['section']))
-                        <div class="mt-2 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                            <span>✨ {{ __('AI Suggestion') }}: </span>
-                            <span class="font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
-                                {{ $aiSuggestions['section'] }}
-                            </span>
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -663,7 +615,7 @@
                     accept="image/jpeg,image/png,image/webp"
                     class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/20 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/30"
                 />
-                <p class="text-xs text-gray-500 dark:text-gray-400">JPG, PNG or WebP. Max 5MB.</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('JPG, PNG or WebP. Max 5MB.') }}</p>
 
                 @php
                     $currentCoverUrl = $this->getCurrentCoverImageUrl();
@@ -671,16 +623,16 @@
 
                 @if ($currentCoverUrl && !$coverImage)
                     <div class="mt-4">
-                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Cover Image:</p>
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Current Cover Image:') }}</p>
                         <div class="w-32 h-48 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                            <img src="{{ $currentCoverUrl }}" alt="Current cover" class="w-full h-full object-cover">
+                            <img src="{{ $currentCoverUrl }}" alt="{{ __('Current cover') }}" class="w-full h-full object-cover">
                         </div>
                     </div>
                 @elseif ($coverImage)
                     <div class="mt-4">
-                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Cover Preview:</p>
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('New Cover Preview:') }}</p>
                         <div class="w-32 h-48 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                            <img src="{{ $coverImage->temporaryUrl() }}" alt="Cover preview" class="w-full h-full object-cover">
+                            <img src="{{ $coverImage->temporaryUrl() }}" alt="{{ __('Cover preview') }}" class="w-full h-full object-cover">
                         </div>
                     </div>
                 @endif

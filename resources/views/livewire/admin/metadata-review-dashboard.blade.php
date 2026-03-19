@@ -356,15 +356,7 @@
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">
                                 {{ __('Format') }}
                             </th>
-                            <th class="px-6 py-3 text-left">
-                                <button wire:click="sort('status')"
-                                    class="text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                                    {{ __('Metadata Status') }}
-                                    @if ($sortBy === 'status')
-                                        <span class="inline-block">{{ $sortDirection === 'asc' ? '↑' : '↓' }}</span>
-                                    @endif
-                                </button>
-                            </th>
+
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">
                                 {{ __('Publication Status') }}
                             </th>
@@ -412,12 +404,7 @@
                                         {{ $this->getFileExtension($metadata->file_name) }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-3">
-                                    <span
-                                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-{{ $badgeInfo['color'] }}-100 dark:bg-{{ $badgeInfo['color'] }}-900/30 text-{{ $badgeInfo['color'] }}-800 dark:text-{{ $badgeInfo['color'] }}-200">
-                                        {{ $badgeInfo['icon'] }} {{ $badgeInfo['label'] }}
-                                    </span>
-                                </td>
+
                                 <td class="px-6 py-3">
                                     @if ($publication)
                                         <div class="flex items-center gap-2">
@@ -425,10 +412,9 @@
                                             <select
                                                 wire:change="togglePublicationStatus({{ $publication->id_publication }}, $event.target.value)"
                                                 class="text-sm font-medium border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white bg-white text-gray-900 hover:border-blue-400 dark:hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                                <option value="pending" {{ $publication->status === 'pending' ? 'selected' : '' }}>⏳ Pending</option>
-                                                <option value="published" {{ $publication->status === 'published' ? 'selected' : '' }}>🌐 Published</option>
-                                                <option value="hidden" {{ $publication->status === 'hidden' ? 'selected' : '' }}>
-                                                    🔒 Hidden</option>
+                                                <option value="pending" {{ $publication->status === 'pending' ? 'selected' : '' }}>{{ __('Pending') }}</option>
+                                                <option value="published" {{ $publication->status === 'published' ? 'selected' : '' }}>{{ __('Published') }}</option>
+                                                <option value="hidden" {{ $publication->status === 'hidden' ? 'selected' : '' }}>{{ __('Hidden') }}</option>
                                             </select>
                                         </div>
                                     @else
@@ -472,7 +458,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-8 text-center">
+                                <td colspan="6" class="px-6 py-8 text-center">
                                     <p class="text-gray-600 dark:text-gray-400">{{ __('No metadata found') }}</p>
                                 </td>
                             </tr>

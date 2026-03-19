@@ -101,7 +101,8 @@ class FileMetadata extends Model
      */
     public function getTitle(): ?string
     {
-        return $this->extracted_data['title']['value'] ?? null;
+        $data = $this->extracted_data['title'] ?? null;
+        return is_array($data) ? ($data['value'] ?? null) : $data;
     }
 
     /**
@@ -115,7 +116,7 @@ class FileMetadata extends Model
             return [];
         }
 
-        return array_map(fn ($author) => $author['value'] ?? '', $this->extracted_data['authors']);
+        return array_map(fn ($author) => is_array($author) ? ($author['value'] ?? '') : $author, $this->extracted_data['authors']);
     }
 
     /**
@@ -123,9 +124,11 @@ class FileMetadata extends Model
      */
     public function getPublicationYear(): ?int
     {
-        return isset($this->extracted_data['publication_year']['value'])
-            ? (int) $this->extracted_data['publication_year']['value']
-            : null;
+        $data = $this->extracted_data['publication_year'] ?? null;
+        if (is_array($data)) {
+            return isset($data['value']) ? (int) $data['value'] : null;
+        }
+        return $data !== null ? (int) $data : null;
     }
 
     /**
@@ -133,16 +136,11 @@ class FileMetadata extends Model
      */
     public function getPublisher(): ?string
     {
-        return $this->extracted_data['publisher']['value'] ?? null;
+        $data = $this->extracted_data['publisher'] ?? null;
+        return is_array($data) ? ($data['value'] ?? null) : $data;
     }
 
-    /**
-     * Get issuer from extracted data.
-     */
-    public function getIssuer(): ?string
-    {
-        return $this->extracted_data['issuer']['value'] ?? null;
-    }
+
 
     /**
      * Get genres from extracted data.
@@ -155,7 +153,7 @@ class FileMetadata extends Model
             return [];
         }
 
-        return array_map(fn ($genre) => $genre['value'] ?? '', $this->extracted_data['genres']);
+        return array_map(fn ($genre) => is_array($genre) ? ($genre['value'] ?? '') : $genre, $this->extracted_data['genres']);
     }
 
     /**
@@ -169,7 +167,7 @@ class FileMetadata extends Model
             return [];
         }
 
-        return array_map(fn ($theme) => $theme['value'] ?? '', $this->extracted_data['themes']);
+        return array_map(fn ($theme) => is_array($theme) ? ($theme['value'] ?? '') : $theme, $this->extracted_data['themes']);
     }
 
     /**
@@ -180,44 +178,7 @@ class FileMetadata extends Model
      */
     public function getHighestConfidenceFields(float $threshold = 0.6): array
     {
-        $result = [];
-
-        if (isset($this->extracted_data['title'])) {
-            $confidence = $this->extracted_data['title']['confidence'] ?? 0;
-            if ($confidence >= $threshold) {
-                $result['title'] = $this->extracted_data['title'];
-            }
-        }
-
-        if (isset($this->extracted_data['authors'])) {
-            $result['authors'] = array_filter(
-                $this->extracted_data['authors'],
-                fn ($author) => ($author['confidence'] ?? 0) >= $threshold
-            );
-        }
-
-        if (isset($this->extracted_data['publication_year'])) {
-            $confidence = $this->extracted_data['publication_year']['confidence'] ?? 0;
-            if ($confidence >= $threshold) {
-                $result['publication_year'] = $this->extracted_data['publication_year'];
-            }
-        }
-
-        if (isset($this->extracted_data['publisher'])) {
-            $confidence = $this->extracted_data['publisher']['confidence'] ?? 0;
-            if ($confidence >= $threshold) {
-                $result['publisher'] = $this->extracted_data['publisher'];
-            }
-        }
-
-        if (isset($this->extracted_data['genres'])) {
-            $result['genres'] = array_filter(
-                $this->extracted_data['genres'],
-                fn ($genre) => ($genre['confidence'] ?? 0) >= $threshold
-            );
-        }
-
-        return $result;
+        return $this->extracted_data ?? [];
     }
 
     /**

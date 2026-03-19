@@ -92,6 +92,19 @@ class GeminiMetadataExtractorService
      */
     private function buildPrompt(string $textContent): string
     {
+        $sectionsList = \App\Models\Section::with('parent')->get()->map(function($s) {
+            $name = $s->name_ru ?: $s->name_en;
+            if ($s->parent) {
+                $parentName = $s->parent->name_ru ?: $s->parent->name_en;
+                return "- {$parentName} > {$name}";
+            }
+            return "- {$name}";
+        })->implode("\n");
+
+        if (empty(trim($sectionsList))) {
+            $sectionsList = "- (No sections available)";
+        }
+
         return <<<PROMPT
 Extract bibliographic metadata from this document. If title/author not explicit, INFER from content.
 Prioritize returning values in **Russian** where applicable (content_type, themes, section, genres).
@@ -102,7 +115,6 @@ Return JSON matching this schema:
   "authors": ["strings"],
   "publication_year": int|null,
   "publisher": "string|null",
-  "issuer": "string|null (issuing organization if different from publisher)",
   "content_type": "string (must be one of: Книги, Журналы, Статьи, Другое)",
   "genres": ["strings"],
   "themes": ["strings (abstract content themes/topics)"],
@@ -111,12 +123,7 @@ Return JSON matching this schema:
 }
 
 Valid Sections (pick one best fit):
-- Избранное > Выбор редакции
-- Избранное > Новые поступления
-- Коллекции > По теме
-- Коллекции > По автору
-- Обзор > Недавние
-- Обзор > Популярные
+{$sectionsList}
 
 Document content:
 ---
@@ -279,10 +286,7 @@ PROMPT;
                 $metadata->setPublisher($data['publisher']);
             }
 
-            // Set issuer
-            if (! empty($data['issuer'])) {
-                $metadata->setIssuer($data['issuer']);
-            }
+
 
             // Set content type
             if (! empty($data['content_type'])) {
