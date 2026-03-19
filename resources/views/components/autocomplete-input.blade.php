@@ -61,11 +61,17 @@
         },
         syncToWire() {
             $wire.set('{{ $wireModel }}', this.search);
-            // Re-check existence on blur
+            // Re-check existence on blur if we don't already know it exists
             if (this.search.length >= 2) {
-                this.fetchResults().then(() => {
+                if (!this.exists) {
+                    this.fetchResults().then(() => {
+                        this.open = false;
+                    });
+                } else {
                     this.open = false;
-                });
+                }
+            } else {
+                this.open = false;
             }
         },
         toggleCreate() {
@@ -164,7 +170,7 @@
             <template x-for="(result, index) in results" :key="result.id">
                 <li
                     :ref="'result-' + index"
-                    @click="selectItem(result)"
+                    @mousedown.prevent="selectItem(result)"
                     :class="{
                         'bg-blue-50 dark:bg-blue-900/30': index === currentIndex,
                         'hover:bg-gray-50 dark:hover:bg-gray-700': index !== currentIndex
@@ -187,7 +193,7 @@
                 @if (auth()->user()->role === 'admin')
                     <template x-if="search.length >= 2 && results.length === 0 && !exists">
                         <li
-                            @click="createNew()"
+                            @mousedown.prevent="createNew()"
                             class="px-3 py-2 cursor-pointer text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-sm font-medium border-t border-gray-200 dark:border-gray-700 flex items-center gap-2"
                         >
                             <span class="text-blue-500">

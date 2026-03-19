@@ -104,20 +104,21 @@
             @endphp
             @if($publication)
                 <div 
-                    x-data="{ isFullscreen: false }" 
+                    x-data="{ isFullscreen: false, isPreviewOpen: true }" 
                     class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 transition-all duration-300"
                     :class="{ 'fixed inset-0 z-50 h-screen w-screen m-0 rounded-none border-0 flex flex-col': isFullscreen }"
                 >
-                    <div class="flex-none flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                    <div class="flex-none flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer" @click="if(!isFullscreen) isPreviewOpen = !isPreviewOpen">
                         <div class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            <!-- Dropdown arrow -->
+                            <svg class="w-5 h-5 transition-transform duration-200" :class="{ '-rotate-90': !isPreviewOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                             <span>📄 {{ __('File Preview') }}</span>
                         </div>
                         
                         <button 
-                            @click="isFullscreen = !isFullscreen" 
+                            @click.stop="isFullscreen = !isFullscreen; if(isFullscreen) isPreviewOpen = true" 
                             type="button"
                             class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             title="{{ __('Toggle Fullscreen') }}"
@@ -132,6 +133,8 @@
                     </div>
 
                     <div 
+                        x-show="isPreviewOpen"
+                        x-transition
                         class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden transition-all" 
                         :class="{ 'flex-1': isFullscreen, 'h-[600px]': !isFullscreen }"
                     >
@@ -189,9 +192,10 @@
         <div>
             <!-- Metadata Form -->
             <form class="space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Form Section: Basic Info -->
-        <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 📝 {{ __('Basic Information') }}
             </h3>
             <div class="space-y-4">
@@ -256,11 +260,11 @@
         </div>
 
         <!-- Form Section: Publication Details -->
-        <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 📚 {{ __('Publication Details') }}
             </h3>
-            <div class="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <!-- Publication Year -->
                 <div>
                     <label for="publicationYear" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -310,7 +314,7 @@
                             <template x-if="selectedType.icon && !isEmoji(selectedType.icon)">
                                 <span class="w-5 h-5 text-blue-600 dark:text-blue-400" x-html="document.querySelector('[data-icon=\'' + selectedType.icon + '\']')?.innerHTML || ''"></span>
                             </template>
-                                    <span x-text="selectedType.name_en"></span>
+                                    <span x-text="selectedType['name_' + '{{ app()->getLocale() }}'] || selectedType.name_en"></span>
                                 </span>
                             </template>
                             <template x-if="!selectedType">
@@ -355,7 +359,7 @@
                                         <x-dynamic-component :component="'heroicon-o-' . $ctIcon" class="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                     @endif
                                 @endif
-                                <span class="text-gray-900 dark:text-white">{{ $contentType->name_en }}</span>
+                                <span class="text-gray-900 dark:text-white">{{ $contentType->{'name_' . app()->getLocale()} ?? $contentType->name_en }}</span>
                             </button>
                         @endforeach
 
@@ -366,7 +370,7 @@
                 </div>
             </div>
 
-            <div class="space-y-4 mt-4">
+            <div class="space-y-4 mt-5">
                 <!-- Publisher Field -->
                 <div>
                     <label for="publisher" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -383,15 +387,14 @@
                     @error('publisher')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
-                </div>
-
-
             </div>
-        </div>
+            </div> <!-- End of Publication Details Card -->
+        </div> <!-- End of first row grid -->
 
+        <div class="space-y-6 mt-6">
         <!-- Form Section: Categorization -->
-        <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 🏷️ {{ __('Categorization') }}
             </h3>
             <div class="space-y-4">
@@ -448,6 +451,7 @@
                                     searchMethod="searchThemes"
                                     :placeholder="__('Theme')"
                                     :createNewLabel="__('Create new theme')"
+                                    createNewModel="createNewThemes.{{ $index }}"
                                     createMethod="storeTheme"
                                 />
                                 <button
@@ -475,9 +479,9 @@
         </div>
 
         <!-- Form Section: Sections -->
-        <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                📚 {{ __('Sections') }}
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                📑 {{ __('Sections') }}
             </h3>
             <div class="space-y-4">
                 <!-- Sections Field -->
@@ -558,13 +562,16 @@
                 </div>
             </div>
         </div>
+        </div> <!-- End of second row grid -->
 
         <!-- Form Section: Media & Additional Info -->
-        <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 🖼️ {{ __('Media & Additional Info') }}
             </h3>
-            <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Left Column -->
+                <div class="md:col-span-2 space-y-4">
 
         <!-- Description Field -->
         <div>
@@ -602,6 +609,10 @@
             </div>
         @endif
 
+                </div>
+                
+                <!-- Right Column -->
+                <div class="space-y-5">
         <!-- Cover Image Field -->
         <div>
             <label for="coverImage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -641,7 +652,8 @@
                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                 @enderror
             </div>
-            </div>
+                </div> <!-- End Right Column -->
+            </div> <!-- End Grid -->
         </div>
 
         <!-- Action Buttons Section -->

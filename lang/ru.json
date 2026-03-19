@@ -370,5 +370,8 @@
     "Select Content Type": "Выберите тип контента",
     "Pending": "В ожидании",
     "Published": "Опубликовано",
-    "Hidden": "Скрыто"
+    "Hidden": "Скрыто",
+    "Edit Metadata": "Редактировать метаданные",
+    "Ready to read?": "Готовы к чтению?",
+    "View Full Publication": "Смотреть полную публикацию"
 }

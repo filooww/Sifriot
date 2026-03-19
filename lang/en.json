@@ -381,5 +381,8 @@
     "Select Content Type": "Select Content Type",
     "Pending": "Pending",
     "Published": "Published",
-    "Hidden": "Hidden"
+    "Hidden": "Hidden",
+    "Edit Metadata": "Edit Metadata",
+    "Ready to read?": "Ready to read?",
+    "View Full Publication": "View Full Publication"
 }

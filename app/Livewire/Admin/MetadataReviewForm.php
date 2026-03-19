@@ -84,6 +84,8 @@ class MetadataReviewForm extends Component
 
     public array $createNewGenres = [];
 
+    public array $createNewThemes = [];
+
     public bool $createNewPublisher = false;
 
     /**
@@ -483,8 +485,12 @@ class MetadataReviewForm extends Component
             $themes = $extracted->getThemes();
             if (!empty($themes)) {
                 $this->themes = [];
+                $this->createNewThemes = [];
                 foreach ($themes as $theme) {
                     $this->themes[] = ['id' => uniqid(), 'value' => $theme];
+                    // Only flag for creation if theme doesn't exist
+                    $exists = \App\Models\Theme::where('theme_low', mb_strtolower(trim($theme)))->exists();
+                    $this->createNewThemes[] = !$exists;
                 }
             }
 
@@ -651,6 +657,7 @@ class MetadataReviewForm extends Component
     public function addTheme(): void
     {
         $this->themes[] = ['id' => uniqid(), 'value' => ''];
+        $this->createNewThemes[] = false;
     }
 
     /**
@@ -659,7 +666,9 @@ class MetadataReviewForm extends Component
     public function removeTheme(int $index): void
     {
         unset($this->themes[$index]);
+        unset($this->createNewThemes[$index]);
         $this->themes = array_values($this->themes);
+        $this->createNewThemes = array_values($this->createNewThemes);
     }
 
     /**
@@ -714,10 +723,22 @@ class MetadataReviewForm extends Component
             // Save publisher if provided
             if (!empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
+                // Legacy support
                 $publisher = Publishing::firstOrCreate(
                     ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
                 );
                 $publication->update(['id_publishing' => $publisher->id_publishing]);
+                
+                // Normalized support
+                $newPublisher = \App\Models\Publisher::firstOrCreate(
+                    ['name_en' => $trimmedPublisher],
+                    ['slug' => \Illuminate\Support\Str::slug($trimmedPublisher)]
+                );
+                
+                // Add to selectedPublishers so it is synced below
+                if (!in_array($newPublisher->id, $this->selectedPublishers)) {
+                    $this->selectedPublishers[] = $newPublisher->id;
+                }
             }
 
             // Save genres to normalized tables
@@ -728,6 +749,17 @@ class MetadataReviewForm extends Component
                 );
                 $publication->genres()->syncWithoutDetaching([$genre->id]);
             }
+
+            // Save themes to normalized tables
+            foreach ($cleanedThemes as $themeName) {
+                $trimmedTheme = trim($themeName);
+                $theme = \App\Models\Theme::firstOrCreate(
+                    ['theme' => $trimmedTheme], 
+                    ['theme_low' => mb_strtolower($trimmedTheme)]
+                );
+                $publication->themes()->syncWithoutDetaching([$theme->id_theme]);
+            }
+
 
             // Sync sections
             if (!empty($this->selectedSections)) {
@@ -884,10 +916,22 @@ class MetadataReviewForm extends Component
             // Save publisher if provided
             if (!empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
+                // Legacy support
                 $publisher = Publishing::firstOrCreate(
                     ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
                 );
                 $publication->update(['id_publishing' => $publisher->id_publishing]);
+                
+                // Normalized support
+                $newPublisher = \App\Models\Publisher::firstOrCreate(
+                    ['name_en' => $trimmedPublisher],
+                    ['slug' => \Illuminate\Support\Str::slug($trimmedPublisher)]
+                );
+                
+                // Add to selectedPublishers so it is synced below
+                if (!in_array($newPublisher->id, $this->selectedPublishers)) {
+                    $this->selectedPublishers[] = $newPublisher->id;
+                }
             }
 
             // Save genres to normalized tables
@@ -898,6 +942,17 @@ class MetadataReviewForm extends Component
                 );
                 $publication->genres()->syncWithoutDetaching([$genre->id]);
             }
+
+            // Save themes to normalized tables
+            foreach ($cleanedThemes as $themeName) {
+                $trimmedTheme = trim($themeName);
+                $theme = \App\Models\Theme::firstOrCreate(
+                    ['theme' => $trimmedTheme], 
+                    ['theme_low' => mb_strtolower($trimmedTheme)]
+                );
+                $publication->themes()->syncWithoutDetaching([$theme->id_theme]);
+            }
+
 
             // Sync sections
             $publication->sections()->sync($this->selectedSections);
@@ -937,11 +992,11 @@ class MetadataReviewForm extends Component
             // Reset coverImage to clear the temporary file
             $this->coverImage = null;
 
-            $this->dispatch('notify', message: 'Metadata updated successfully', type: 'success')->to('admin.metadata-review-dashboard');
-            $this->dispatch('refresh-metadata-queue')->to('admin.metadata-review-dashboard');
-
-            // Close modal
-            $this->dispatch('close-metadata-modal')->to('admin.metadata-review-dashboard');
+            session()->flash('notify', [
+                'message' => 'Metadata updated successfully',
+                'type' => 'success'
+            ]);
+            $this->redirectRoute('dashboard', navigate: true);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to update metadata', ['error' => $e->getMessage()]);
@@ -966,6 +1021,10 @@ class MetadataReviewForm extends Component
                 array_column($this->genres, 'value'),
                 fn($genre) => !empty(trim($genre))
             );
+            $cleanedThemes = array_filter(
+                array_column($this->themes, 'value'),
+                fn($theme) => !empty(trim($theme))
+            );
 
             // Get or create Publication (from FileMetadata's relationship)
             $publication = $this->fileMetadata->file()->first()?->publication
@@ -987,10 +1046,22 @@ class MetadataReviewForm extends Component
             // Save publisher if provided
             if (!empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
+                // Legacy support
                 $publisher = Publishing::firstOrCreate(
                     ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
                 );
                 $publication->update(['id_publishing' => $publisher->id_publishing]);
+                
+                // Normalized support
+                $newPublisher = \App\Models\Publisher::firstOrCreate(
+                    ['name_en' => $trimmedPublisher],
+                    ['slug' => \Illuminate\Support\Str::slug($trimmedPublisher)]
+                );
+                
+                // Add to selectedPublishers so it is synced below
+                if (!in_array($newPublisher->id, $this->selectedPublishers)) {
+                    $this->selectedPublishers[] = $newPublisher->id;
+                }
             }
 
             // Save genres to normalized tables
@@ -1001,6 +1072,17 @@ class MetadataReviewForm extends Component
                 );
                 $publication->genres()->syncWithoutDetaching([$genre->id]);
             }
+
+            // Save themes to normalized tables
+            foreach ($cleanedThemes as $themeName) {
+                $trimmedTheme = trim($themeName);
+                $theme = \App\Models\Theme::firstOrCreate(
+                    ['theme' => $trimmedTheme], 
+                    ['theme_low' => mb_strtolower($trimmedTheme)]
+                );
+                $publication->themes()->syncWithoutDetaching([$theme->id_theme]);
+            }
+
 
             // Sync sections
             $publication->sections()->sync($this->selectedSections);
@@ -1031,6 +1113,8 @@ class MetadataReviewForm extends Component
                     'publisher' => $this->publisher ?: null,
                     'genres' => array_map(fn($genre) => trim($genre), $cleanedGenres),
                     'themes' => array_map(fn($theme) => trim($theme), $cleanedThemes),
+                    'content_type_id' => $this->contentTypeId ?: null,
+                    'section_ids' => !empty($this->selectedSections) ? $this->selectedSections : null,
                 ],
                 'extraction_method' => 'manual_entry',
             ]);
@@ -1053,11 +1137,11 @@ class MetadataReviewForm extends Component
             $this->coverImage = null;
 
             // Close modal and refresh parent queue
-            $this->dispatch('refresh-metadata-queue')->to('admin.metadata-review-dashboard');
-            $this->dispatch('notify', message: 'Metadata saved successfully!', type: 'success')->to('admin.metadata-review-dashboard');
-
-            // Close the modal
-            $this->dispatch('close-metadata-modal')->to('admin.metadata-review-dashboard');
+            session()->flash('notify', [
+                'message' => 'Metadata saved successfully!',
+                'type' => 'success'
+            ]);
+            $this->redirectRoute('dashboard', navigate: true);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to save manual metadata entry', [
@@ -1085,8 +1169,10 @@ class MetadataReviewForm extends Component
         $this->authors = [''];
         $this->publicationYear = null;
         $this->publisher = '';
-        $this->genres = [''];
-        $this->theme = '';
+        $this->genres = [['id' => uniqid(), 'value' => '']];
+        $this->createNewGenres = [false];
+        $this->themes = [['id' => uniqid(), 'value' => '']];
+        $this->createNewThemes = [false];
         $this->contentTypeId = null;
         $this->coverImage = null;
     }
@@ -1357,9 +1443,17 @@ class MetadataReviewForm extends Component
         abort_if(!auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
+        
+        // Legacy system
         $publisher = Publishing::firstOrCreate(
             ['publishing' => $trimmedName],
             ['publishing_low' => mb_strtolower($trimmedName)]
+        );
+        
+        // Normalized system
+        \App\Models\Publisher::firstOrCreate(
+            ['name_en' => $trimmedName],
+            ['slug' => \Illuminate\Support\Str::slug($trimmedName)]
         );
 
         return [
