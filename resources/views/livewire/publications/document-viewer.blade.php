@@ -270,41 +270,58 @@
                                     </button>
                                 </div>
                             </div>
-                            <script src="https://cdn.jsdelivr.net/npm/djvu@0.8.3/dist/djvu.js"></script>
+                            <!-- DjVu.js library (global `DjVu`) + viewer bundle -->
+                            <script src="https://djvu.js.org/assets/dist/djvu.js"></script>
+                            <script src="https://djvu.js.org/assets/dist/djvu_viewer.js"></script>
                             <script>
                                 (function() {
                                     function initViewer() {
-                                        if (typeof DjVu === 'undefined') {
-                                            setTimeout(initViewer, 100);
-                                            return;
-                                        }
-                                        
                                         const viewerId = 'djvu-viewer-{{ $publicationId }}';
                                         const pageInfoId = 'djvu-page-{{ $publicationId }}';
-                                        if (!document.getElementById(viewerId)) return;
-                                        
-                                        let viewer = null;
+                                        let attempts = 0;
+                                        const maxAttempts = 50; // ~5s
+                                        const intervalMs = 100;
 
-                                        fetch('{{ $fileUrl }}')
-                                            .then(response => {
-                                                if (!response.ok) {
-                                                    throw new Error('HTTP ' + response.status);
+                                        function tryInit() {
+                                            attempts++;
+
+                                            if (typeof DjVu === 'undefined') {
+                                                if (attempts >= maxAttempts) {
+                                                    console.error('DjVu library failed to load (DjVu is undefined).');
+                                                    document.getElementById(viewerId).innerHTML =
+                                                        '<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading DJVU viewer library") }}</p><p class="text-sm mt-2 text-gray-500">{{ __("Please try refreshing the page") }}</p></div></div>';
+                                                    document.getElementById(pageInfoId).textContent = '{{ __("Error") }}';
+                                                    return;
                                                 }
-                                                return response.arrayBuffer();
-                                            })
-                                            .then(buffer => {
-                                                const doc = new DjVu.Document(buffer);
+                                                setTimeout(tryInit, intervalMs);
+                                                return;
+                                            }
+
+                                            if (!document.getElementById(viewerId)) return;
+
+                                            let viewer = null;
+
+                                            try {
                                                 viewer = new DjVu.Viewer();
                                                 viewer.render(document.getElementById(viewerId));
-                                                viewer.loadDocument(doc);
 
                                                 function updatePageInfo() {
-                                                    if (viewer) {
-                                                        const pageNum = viewer.getCurrentPageNumber();
-                                                        const totalPages = doc.getPagesQuantity();
-                                                        document.getElementById(pageInfoId).textContent =
-                                                            '{{ __("Page") }} ' + pageNum + ' / ' + totalPages;
-                                                    }
+                                                    if (!viewer) return;
+
+                                                    const pageNum =
+                                                        typeof viewer.getPageNumber === 'function'
+                                                            ? viewer.getPageNumber()
+                                                            : (typeof viewer.getCurrentPageNumber === 'function' ? viewer.getCurrentPageNumber() : null);
+
+                                                    const totalPages =
+                                                        (typeof viewer.getPagesQuantity === 'function'
+                                                            ? viewer.getPagesQuantity()
+                                                            : (typeof viewer.getPageCount === 'function' ? viewer.getPageCount() : null));
+
+                                                    if (pageNum === null) return;
+
+                                                    document.getElementById(pageInfoId).textContent =
+                                                        '{{ __("Page") }} ' + pageNum + (totalPages ? ' / ' + totalPages : '');
                                                 }
 
                                                 window['djvuPrev{{ $publicationId }}'] = () => {
@@ -317,13 +334,37 @@
                                                     updatePageInfo();
                                                 };
 
-                                                updatePageInfo();
-                                            })
-                                            .catch(error => {
-                                                console.error('Error loading DJVU:', error);
+                                                // Update page number automatically when viewer reports changes (if supported by this version).
+                                                if (DjVu?.Viewer?.Events?.PAGE_NUMBER_CHANGED && typeof viewer.on === 'function') {
+                                                    viewer.on(DjVu.Viewer.Events.PAGE_NUMBER_CHANGED, updatePageInfo);
+                                                }
+
+                                                const loadPromise = (typeof viewer.loadDocumentByUrl === 'function')
+                                                    ? viewer.loadDocumentByUrl('{{ $fileUrl }}')
+                                                    : fetch('{{ $fileUrl }}')
+                                                        .then(response => {
+                                                            if (!response.ok) {
+                                                                throw new Error('HTTP ' + response.status);
+                                                            }
+                                                            return response.arrayBuffer();
+                                                        })
+                                                        .then(buffer => viewer.loadDocument(buffer));
+
+                                                Promise.resolve(loadPromise)
+                                                    .then(() => updatePageInfo())
+                                                    .catch(error => {
+                                                        console.error('Error loading DJVU:', error);
+                                                        document.getElementById(viewerId).innerHTML =
+                                                            '<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading DJVU file") }}</p><p class="text-sm mt-2 text-gray-500">' + error.message + '</p></div></div>';
+                                                    });
+                                            } catch (e) {
+                                                console.error('Error initializing DJVU viewer:', e);
                                                 document.getElementById(viewerId).innerHTML =
-                                                    '<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading DJVU file") }}</p><p class="text-sm mt-2 text-gray-500">' + error.message + '</p></div></div>';
-                                            });
+                                                    '<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading DJVU file") }}</p><p class="text-sm mt-2 text-gray-500">' + (e?.message ?? e) + '</p></div></div>';
+                                            }
+                                        }
+
+                                        tryInit();
                                     }
                                     initViewer();
                                 })();

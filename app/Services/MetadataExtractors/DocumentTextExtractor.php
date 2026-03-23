@@ -12,7 +12,7 @@ class DocumentTextExtractor
     /**
      * Supported file extensions.
      */
-    private const SUPPORTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'epub', 'fb2', 'txt'];
+    private const SUPPORTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'epub', 'fb2', 'txt', 'djvu'];
 
     /**
      * Minimum characters per page threshold for PDF text detection.
@@ -54,6 +54,9 @@ class DocumentTextExtractor
                 'epub' => $this->extractFromEpub($filePath),
                 'fb2' => $this->extractFromFb2($filePath),
                 'txt' => $this->extractFromTxt($filePath),
+                // Best-effort: we don't have a reliable pure-PHP DjVu OCR/text extractor.
+                // For AI extraction we still try to provide useful context via the filename.
+                'djvu' => $this->extractFromDjvu($filePath),
                 default => '',
             };
 
@@ -371,6 +374,34 @@ class DocumentTextExtractor
         }
 
         return $this->normalizeEncoding($content);
+    }
+
+    /**
+     * Best-effort "text" extraction for DJVU:
+     * derive a prompt-friendly string from the filename.
+     *
+     * Example:
+     *   "Vaynrub_Frontovye-sudby.853171.djvu" -> "Vaynrub Frontovye - sudby"
+     */
+    private function extractFromDjvu(string $filePath): string
+    {
+        $filename = pathinfo($filePath, PATHINFO_FILENAME);
+        if ($filename === '') {
+            return '';
+        }
+
+        $filename = $this->normalizeEncoding($filename);
+
+        // Common pattern in your dataset: "...<name>.<digits>.djvu"
+        // Strip trailing numeric identifiers from the filename.
+        $filename = preg_replace('/(\.|_)?\d+$/u', '', $filename) ?? $filename;
+
+        // Make separators more "text-like" for the LLM.
+        $filename = str_replace(['_', '.'], [' ', ' '], $filename);
+        $filename = preg_replace('/\s+/u', ' ', $filename) ?? $filename;
+        $filename = trim($filename);
+
+        return $filename;
     }
 
     /**

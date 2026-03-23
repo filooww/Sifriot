@@ -76,6 +76,7 @@ class DocumentTextExtractorTest extends TestCase
         $this->assertTrue($this->extractor->supportsFile('/path/to/file.epub'));
         $this->assertTrue($this->extractor->supportsFile('/path/to/file.fb2'));
         $this->assertTrue($this->extractor->supportsFile('/path/to/file.txt'));
+        $this->assertTrue($this->extractor->supportsFile('/path/to/file.djvu'));
     }
 
     public function test_supports_file_returns_false_for_unsupported_formats(): void
@@ -114,6 +115,23 @@ class DocumentTextExtractorTest extends TestCase
             $this->assertEmpty($text);
         } finally {
             unlink($tmpFile);
+        }
+    }
+
+    public function test_extract_from_djvu_returns_non_empty_string_from_filename(): void
+    {
+        $baseName = 'My_Author-Title.123456';
+        $tmpFile = sys_get_temp_dir() . '/' . $baseName . '_' . uniqid() . '.djvu';
+        file_put_contents($tmpFile, '');
+
+        try {
+            $text = $this->extractor->extractText($tmpFile, 5000);
+
+            $this->assertNotEmpty($text);
+            $this->assertStringContainsString('My', $text);
+            $this->assertStringNotContainsString('123456', $text); // trailing numeric ids should be stripped
+        } finally {
+            @unlink($tmpFile);
         }
     }
 }
