@@ -270,12 +270,30 @@
                                     </button>
                                 </div>
                             </div>
-                            <!-- DjVu.js library (global `DjVu`) + viewer bundle -->
-                            <script src="https://djvu.js.org/assets/dist/djvu.js"></script>
-                            <script src="https://djvu.js.org/assets/dist/djvu_viewer.js"></script>
+                            <script src="{{ asset('js/djvu.js') }}"></script>
+                            <script src="{{ asset('js/djvu_viewer.js') }}"></script>
                             <script>
                                 (function() {
+                                    let attempts = 0;
                                     function initViewer() {
+                                        if (typeof DjVu === 'undefined') {
+                                            attempts++;
+                                            if (attempts > 50) {
+                                                console.error('DjVu library failed to load');
+                                                const viewerEl = document.getElementById('djvu-viewer-{{ $publicationId }}');
+                                                if (viewerEl) {
+                                                    viewerEl.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading DJVU viewer") }}</p><p class="text-sm mt-2 text-gray-500">{{ __("Failed to load required viewer library.") }}</p></div></div>';
+                                                }
+                                                const pageEl = document.getElementById('djvu-page-{{ $publicationId }}');
+                                                if (pageEl) {
+                                                    pageEl.textContent = '{{ __("Error") }}';
+                                                }
+                                                return;
+                                            }
+                                            setTimeout(initViewer, 100);
+                                            return;
+                                        }
+                                        
                                         const viewerId = 'djvu-viewer-{{ $publicationId }}';
                                         const pageInfoId = 'djvu-page-{{ $publicationId }}';
                                         let attempts = 0;

@@ -20,7 +20,7 @@
         </div>
     @endif
 
-    <div class="grid gap-6 lg:grid-cols-2 lg:items-start">
+    <div class="space-y-6">
         <!-- Left column: file info, preview, extraction details -->
         <div class="space-y-6">
             <!-- File Info Header -->
