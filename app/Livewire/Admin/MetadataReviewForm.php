@@ -1000,7 +1000,7 @@ class MetadataReviewForm extends Component
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to update metadata', ['error' => $e->getMessage()]);
-            $this->dispatch('notify', message: 'Failed to update metadata: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+            $this->dispatch('notify', message: 'Failed to update metadata: ' . $e->getMessage(), type: 'error');
         }
     }
 
@@ -1148,7 +1148,7 @@ class MetadataReviewForm extends Component
                 'error' => $e->getMessage(),
                 'file_metadata_id' => $this->fileMetadata->id ?? null,
             ]);
-            $this->dispatch('notify', message: 'Failed to save metadata: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+            $this->dispatch('notify', message: 'Failed to save metadata: ' . $e->getMessage(), type: 'error');
         }
     }
 
