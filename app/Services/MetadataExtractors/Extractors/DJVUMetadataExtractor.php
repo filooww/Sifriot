@@ -78,7 +78,7 @@ class DJVUMetadataExtractor extends AbstractMetadataExtractor
         $filename = $this->cleanText($filename);
 
         if ($filename) {
-            $metadata->setTitle($filename, 0.3);
+            $metadata->setTitle($filename);
 
             // Try to extract author from "Title - Author" pattern
             if (str_contains($filename, '-')) {
@@ -86,7 +86,7 @@ class DJVUMetadataExtractor extends AbstractMetadataExtractor
                 if (count($parts) === 2) {
                     $author = $this->cleanText($parts[1]);
                     if ($author && strlen($author) < 100) {
-                        $metadata->addAuthor($author, 0.2);
+                        $metadata->addAuthor($author);
                     }
                 }
             }

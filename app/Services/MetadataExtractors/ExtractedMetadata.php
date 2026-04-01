@@ -20,7 +20,7 @@ class ExtractedMetadata
 
     private array $themes = [];
 
-
+    private ?string $section = null;
 
     private ?string $description = null;
 

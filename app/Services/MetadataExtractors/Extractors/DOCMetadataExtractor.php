@@ -71,17 +71,17 @@ class DOCMetadataExtractor extends AbstractMetadataExtractor
             if ($properties) {
                 $title = $properties->getTitle();
                 if ($title) {
-                    $metadata->setTitle($this->cleanText($title), 0.5);
+                    $metadata->setTitle($this->cleanText($title));
                 }
 
                 $creator = $properties->getCreator();
                 if ($creator) {
-                    $metadata->addAuthor($this->cleanText($creator), 0.5);
+                    $metadata->addAuthor($this->cleanText($creator));
                 }
 
                 $subject = $properties->getSubject();
                 if ($subject) {
-                    $metadata->setPublisher($this->cleanText($subject), 0.3);
+                    $metadata->setPublisher($this->cleanText($subject));
                 }
             }
         } catch (\Exception $e) {
@@ -104,7 +104,7 @@ class DOCMetadataExtractor extends AbstractMetadataExtractor
         $filename = $this->cleanText($filename);
 
         if ($filename) {
-            $metadata->setTitle($filename, 0.2);
+            $metadata->setTitle($filename);
 
             // Try to extract author from common pattern: "Title - Author"
             if (str_contains($filename, '-')) {
@@ -112,7 +112,7 @@ class DOCMetadataExtractor extends AbstractMetadataExtractor
                 if (count($parts) === 2) {
                     $author = $this->cleanText($parts[1]);
                     if ($author && strlen($author) < 100) {
-                        $metadata->addAuthor($author, 0.15);
+                        $metadata->addAuthor($author);
                     }
                 }
             }

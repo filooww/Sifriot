@@ -84,7 +84,10 @@ class FileRegistrationForm extends Component
 
             // Determine storage path: month-year/content_type (e.g., 02-2026/books)
             $monthYear = now()->format('m-Y'); // e.g., 02-2026
-            $storagePath = $monthYear.'/'.$contentType->folder_name;
+            $folderName = $contentType->folder_name
+                ?: ($contentType->slug
+                    ?: strtolower(preg_replace('/[^a-z0-9]+/i', '_', $contentType->name_en ?? 'other')));
+            $storagePath = $monthYear.'/'.$folderName;
 
             // Ensure the directory exists before storing the file
             if (! Storage::disk('library')->exists($storagePath)) {
@@ -144,7 +147,7 @@ class FileRegistrationForm extends Component
                 }
             });
 
-            session()->flash('message', __('File uploaded successfully. Metadata extraction started...'));
+            session()->flash('message', __('File uploaded successfully. You can start metadata extraction now'));
             $this->dispatch('file-uploaded-successfully');
             $this->reset(['publicationTitle', 'contentTypeId', 'uploadedFile']);
 

@@ -125,7 +125,7 @@ class EPUBMetadataExtractor extends AbstractMetadataExtractor
                 if ($element->getName() === 'title') {
                     $title = $this->cleanText((string) $element);
                     if ($title) {
-                        $metadata->setTitle($title, 0.95);
+                        $metadata->setTitle($title);
                         break;
                     }
                 }
@@ -136,7 +136,7 @@ class EPUBMetadataExtractor extends AbstractMetadataExtractor
                 if ($element->getName() === 'creator') {
                     $author = $this->cleanText((string) $element);
                     if ($author) {
-                        $metadata->addAuthor($author, 0.95);
+                        $metadata->addAuthor($author);
                     }
                 }
             }
@@ -146,7 +146,7 @@ class EPUBMetadataExtractor extends AbstractMetadataExtractor
                 if ($element->getName() === 'publisher') {
                     $publisher = $this->cleanText((string) $element);
                     if ($publisher) {
-                        $metadata->setPublisher($publisher, 0.95);
+                        $metadata->setPublisher($publisher);
                         break;
                     }
                 }
@@ -159,7 +159,7 @@ class EPUBMetadataExtractor extends AbstractMetadataExtractor
                     if ($dateStr) {
                         $year = $this->extractYear($dateStr);
                         if ($year) {
-                            $metadata->setPublicationYear($year, 0.9);
+                            $metadata->setPublicationYear($year);
                             break;
                         }
                     }

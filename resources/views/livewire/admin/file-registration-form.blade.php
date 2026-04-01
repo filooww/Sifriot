@@ -66,7 +66,7 @@
                                         <x-dynamic-component :component="'heroicon-o-' . $ctIcon" class="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                     @endif
                                 @endif
-                                <span>{{ app()->getLocale() === 'ru' ? $type->name_ru : (app()->getLocale() === 'he' ? $type->name_he : $type->name_en) }}</span>
+                                <span>{{ (app()->getLocale() === 'ru' && $type->name_ru) ? $type->name_ru : ((app()->getLocale() === 'he' && $type->name_he) ? $type->name_he : $type->name_en) }}</span>
                             </span>
                         </template>
                     @endforeach
@@ -112,7 +112,7 @@
                                 <x-dynamic-component :component="'heroicon-o-' . $ctIcon" class="h-5 w-5 text-blue-600 dark:text-blue-400" />
                             @endif
                         @endif
-                        <span class="text-gray-900 dark:text-white">{{ app()->getLocale() === 'ru' ? $type->name_ru : (app()->getLocale() === 'he' ? $type->name_he : $type->name_en) }}</span>
+                        <span class="text-gray-900 dark:text-white">{{ (app()->getLocale() === 'ru' && $type->name_ru) ? $type->name_ru : ((app()->getLocale() === 'he' && $type->name_he) ? $type->name_he : $type->name_en) }}</span>
                     </button>
                 @endforeach
             </div>

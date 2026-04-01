@@ -101,7 +101,7 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
             if ($name === 'book-title') {
                 $title = $this->cleanText((string) $element);
                 if ($title) {
-                    $metadata->setTitle($title, 0.95);
+                    $metadata->setTitle($title);
                 }
             }
 
@@ -109,7 +109,7 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
             if ($name === 'author') {
                 $author = $this->extractAuthorName($element);
                 if ($author) {
-                    $metadata->addAuthor($author, 0.95);
+                    $metadata->addAuthor($author);
                 }
             }
 
@@ -117,7 +117,7 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
             if ($name === 'publisher') {
                 $publisher = $this->cleanText((string) $element);
                 if ($publisher) {
-                    $metadata->setPublisher($publisher, 0.95);
+                    $metadata->setPublisher($publisher);
                 }
             }
 
@@ -127,7 +127,7 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
                 if ($dateStr) {
                     $year = $this->extractYear($dateStr);
                     if ($year) {
-                        $metadata->setPublicationYear($year, 0.9);
+                        $metadata->setPublicationYear($year);
                     }
                 }
             }
@@ -136,7 +136,7 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
             if ($name === 'year') {
                 $year = (int) $element;
                 if ($year > 1000 && $year <= date('Y')) {
-                    $metadata->setPublicationYear($year, 0.95);
+                    $metadata->setPublicationYear($year);
                 }
             }
 
@@ -144,7 +144,7 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
             if ($name === 'genre') {
                 $genre = $this->cleanText((string) $element);
                 if ($genre) {
-                    $metadata->addGenre($genre, 0.9);
+                    $metadata->addGenre($genre);
                 }
             }
         }
@@ -191,14 +191,14 @@ class FB2MetadataExtractor extends AbstractMetadataExtractor
         $filename = $this->cleanText($filename);
 
         if ($filename) {
-            $metadata->setTitle($filename, 0.2);
+            $metadata->setTitle($filename);
 
             if (str_contains($filename, '-')) {
                 $parts = explode('-', $filename, 2);
                 if (count($parts) === 2) {
                     $author = $this->cleanText($parts[1]);
                     if ($author && strlen($author) < 100) {
-                        $metadata->addAuthor($author, 0.15);
+                        $metadata->addAuthor($author);
                     }
                 }
             }

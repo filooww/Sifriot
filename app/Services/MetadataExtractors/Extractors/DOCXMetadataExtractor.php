@@ -79,7 +79,7 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
                 if ($element->getName() === 'title') {
                     $title = $this->cleanText((string) $element);
                     if ($title) {
-                        $metadata->setTitle($title, 0.85);
+                        $metadata->setTitle($title);
                     }
                 }
             }
@@ -89,7 +89,7 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
                 if ($element->getName() === 'creator') {
                     $author = $this->cleanText((string) $element);
                     if ($author) {
-                        $metadata->addAuthor($author, 0.85);
+                        $metadata->addAuthor($author);
                     }
                 }
             }
@@ -145,7 +145,7 @@ class DOCXMetadataExtractor extends AbstractMetadataExtractor
             if (! empty($paragraphs)) {
                 $firstPara = $paragraphs[0];
                 if (strlen($firstPara) < 200) {
-                    $metadata->setTitle($firstPara, 0.5);
+                    $metadata->setTitle($firstPara);
                 }
             }
         } catch (\Exception $e) {

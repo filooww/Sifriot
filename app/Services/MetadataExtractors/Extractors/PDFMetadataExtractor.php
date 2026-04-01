@@ -37,7 +37,7 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
                 if (! $metadata->getPublicationYear()) {
                     $year = $this->extractYear($text);
                     if ($year) {
-                        $metadata->setPublicationYear($year, 0.5);
+                        $metadata->setPublicationYear($year);
                     }
                 }
             }
@@ -74,7 +74,7 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
             if (isset($details['Title'])) {
                 $title = $this->cleanText($details['Title'][0] ?? '');
                 if ($title) {
-                    $metadata->setTitle($title, 0.9);
+                    $metadata->setTitle($title);
                 }
             }
 
@@ -83,7 +83,7 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
                 $author = $this->cleanText($details['Author'][0] ?? '');
                 if ($author) {
                     foreach ($this->parseAuthors($author) as $parsedAuthor) {
-                        $metadata->addAuthor($parsedAuthor, 0.9);
+                        $metadata->addAuthor($parsedAuthor);
                     }
                 }
             }
@@ -94,7 +94,7 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
                 if ($date) {
                     $year = $this->extractYear($date);
                     if ($year) {
-                        $metadata->setPublicationYear($year, 0.7);
+                        $metadata->setPublicationYear($year);
                     }
                 }
             }
@@ -103,7 +103,7 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
             if (isset($details['Subject'])) {
                 $subject = $this->cleanText($details['Subject'][0] ?? '');
                 if ($subject && ! $metadata->getPublisher()) {
-                    $metadata->setPublisher($subject, 0.4);
+                    $metadata->setPublisher($subject);
                 }
             }
         } catch (\Exception $e) {
@@ -152,7 +152,7 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
 
         if ($filename) {
             // Use filename as title suggestion
-            $metadata->setTitle($filename, 0.3);
+            $metadata->setTitle($filename);
 
             // Try to extract author from filename (common pattern: "Title - Author")
             if (str_contains($filename, '-')) {
@@ -160,7 +160,7 @@ class PDFMetadataExtractor extends AbstractMetadataExtractor
                 if (count($parts) === 2) {
                     $author = $this->cleanText($parts[1]);
                     if ($author && strlen($author) < 100) {
-                        $metadata->addAuthor($author, 0.2);
+                        $metadata->addAuthor($author);
                     }
                 }
             }

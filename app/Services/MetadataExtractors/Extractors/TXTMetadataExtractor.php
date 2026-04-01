@@ -92,7 +92,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
         // Try to extract title from first line
         $firstLine = $this->cleanText($lines[0]);
         if ($firstLine && strlen($firstLine) < 200) {
-            $metadata->setTitle($firstLine, 0.3);
+            $metadata->setTitle($firstLine);
         }
 
         // Search first few lines for author patterns
@@ -103,7 +103,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
             if (preg_match('/\bby\s+([A-Z][^,\n]+)/i', $line, $matches)) {
                 $author = $this->cleanText($matches[1]);
                 if ($author && strlen($author) < 100) {
-                    $metadata->addAuthor($author, 0.35);
+                    $metadata->addAuthor($author);
                 }
             }
 
@@ -111,7 +111,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
             if (preg_match('/author\s*:\s*([^,\n]+)/i', $line, $matches)) {
                 $author = $this->cleanText($matches[1]);
                 if ($author && strlen($author) < 100) {
-                    $metadata->addAuthor($author, 0.35);
+                    $metadata->addAuthor($author);
                 }
             }
 
@@ -119,7 +119,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
             if (! $metadata->getTitle() && preg_match('/title\s*:\s*([^,\n]+)/i', $line, $matches)) {
                 $title = $this->cleanText($matches[1]);
                 if ($title) {
-                    $metadata->setTitle($title, 0.35);
+                    $metadata->setTitle($title);
                 }
             }
         }
@@ -129,7 +129,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
             $filename = pathinfo($filePath, PATHINFO_FILENAME);
             $filename = $this->cleanText($filename);
             if ($filename) {
-                $metadata->setTitle($filename, 0.2);
+                $metadata->setTitle($filename);
             }
         }
 
@@ -147,7 +147,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
         $filename = $this->cleanText($filename);
 
         if ($filename) {
-            $metadata->setTitle($filename, 0.2);
+            $metadata->setTitle($filename);
 
             // Try "Title - Author" pattern
             if (str_contains($filename, '-')) {
@@ -155,7 +155,7 @@ class TXTMetadataExtractor extends AbstractMetadataExtractor
                 if (count($parts) === 2) {
                     $author = $this->cleanText($parts[1]);
                     if ($author && strlen($author) < 100) {
-                        $metadata->addAuthor($author, 0.15);
+                        $metadata->addAuthor($author);
                     }
                 }
             }

@@ -130,6 +130,7 @@
     "Max file size: 500MB": "Максимальный размер файла: 500МБ",
     "Allowed formats: PDF, EPUB, TXT, DOCX": "Разрешённые форматы: PDF, EPUB, TXT, DOCX",
     "File uploaded successfully": "Файл успешно загружен",
+    "File uploaded successfully. You can start metadata extraction now": "Файл успешно загружен. Вы можете начать извлечение метаданных сейчас",
     "File registered successfully": "Файл успешно зарегистрирован",
     "This file is already registered": "Этот файл уже зарегистрирован",
     "Invalid file type": "Недопустимый тип файла",
