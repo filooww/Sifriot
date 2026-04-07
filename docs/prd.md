@@ -941,32 +941,6 @@ Build a complete, modern library management system that enables administrators t
 - IV4: Scan progress updates visible in real-time via Livewire
 - IV5: Canceling scan stops new jobs and doesn't corrupt existing data
 
----
-
-### Story 1.8: Automatic Metadata Extraction with Admin Confirmation
-
-**As an** administrator,
-**I want** the system to automatically extract metadata from uploaded files,
-**so that** I don't have to manually enter titles, authors, and publication dates.
-
-**Acceptance Criteria:**
-1. Metadata extraction runs as background queue job after file registration or upload
-2. Extracts: Title, Author(s), Publication Year, Publisher, ISBN/DOI (if available)
-3. Extraction rules configurable per content type (Books use ISBN patterns, Articles use DOI patterns, etc.)
-4. Extracted metadata presented to admin for review and confirmation
-5. Admin can accept, edit, or reject extracted metadata
-6. Extraction status tracked (Pending, Processed, Failed, Confirmed)
-7. Manual metadata entry always available as fallback
-8. Extraction errors logged with file context for debugging
-9. Extraction supports multiple document formats (PDF text extraction, DOCX metadata, EPUB metadata)
-
-**Integration Verification:**
-- IV1: Metadata extraction jobs process without blocking user requests
-- IV2: Failed extraction doesn't prevent publication creation (falls back to manual entry)
-- IV3: Extracted metadata populates correct fields in publication form
-- IV4: Extraction works identically for registered files and uploaded files
-
----
 
 ### Story 1.6A: Folder Browser and File Discovery Interface
 
@@ -1028,39 +1002,7 @@ Build a complete, modern library management system that enables administrators t
 - IV3: Re-linking file immediately updates publication status and clears warning
 - IV4: Watch folders detect new files within configured interval (e.g., 1 hour)
 
----
 
-### Story 1.6C: Folder Structure Metadata Mapping Rules
-
-**As an** administrator,
-**I want** to define rules that extract metadata from folder paths automatically,
-**so that** the system can suggest categories and metadata based on file location.
-
-**Acceptance Criteria:**
-1. Admin interface for creating/editing folder metadata mapping rules
-2. Rule definition includes: Path Pattern (regex or glob), Target Metadata Fields, Values
-3. Example rule: Pattern: `/books/sci-fi/**/*.pdf` → Type: "Book", Category: "Science Fiction", Genre: "Sci-Fi"
-4. Supported metadata targets: Content Type, Category, Genre, Publication Status, Custom Fields
-5. Pattern syntax supports wildcards: `*` (any file), `**` (recursive folders), `{term1,term2}` (alternatives)
-6. Admin can test rule against existing files to preview matches
-7. Rule test shows: "This rule matches 1,247 files" with sample file list
-8. Multiple rules can be defined with priority ordering (drag-to-reorder)
-9. Rules evaluated in priority order (first match wins)
-10. During file registration/scan, matching rules auto-populate metadata suggestions
-11. Admin can always override auto-suggested metadata
-12. Rules can be enabled/disabled without deletion
-13. Rule edit history tracked (created by, modified by, timestamps)
-14. Bulk apply rules: "Apply Rule #3 to all unprocessed files in /books/sci-fi"
-15. Rule validation prevents invalid patterns or circular logic
-
-**Integration Verification:**
-- IV1: Rules apply correctly during single file registration (Story 1.6)
-- IV2: Rules apply correctly during bulk folder scanning (Story 1.7)
-- IV3: Rule changes don't retroactively affect already-processed publications
-- IV4: Complex path patterns (nested folders, multiple wildcards) match correctly
-- IV5: Rule priority ordering works as expected (higher priority rules override lower)
-
----
 
 ### Story 1.9: Custom Content Types and Dynamic Fields
 
@@ -1290,30 +1232,7 @@ Build a complete, modern library management system that enables administrators t
 - IV2: Dashboard statistics match actual database counts (verified in tests)
 - IV3: Dashboard widgets responsive and functional on mobile devices
 
----
 
-### Story 1.19: Configurable Metadata Extraction Rules
-
-**As an** administrator,
-**I want** to configure metadata extraction rules per content type,
-**so that** the system accurately extracts relevant metadata from different document types.
-
-**Acceptance Criteria:**
-1. Admin interface for managing extraction rules (per content type)
-2. Rule types: Regex patterns, Delimiter-based extraction, Metadata field mapping
-3. Admin can define: Start delimiter, End delimiter, Regex pattern, Target field
-4. Example rules provided for common patterns (ISBN for books, DOI for articles, ISSN for magazines)
-5. Admin can test extraction rules on sample files before saving
-6. Rules prioritized (order of execution configurable)
-7. Failed extraction logged with rule that failed for debugging
-8. Admin can enable/disable individual rules without deleting
-
-**Integration Verification:**
-- IV1: Custom extraction rules apply correctly to uploaded files
-- IV2: Rule testing interface accurately previews extraction results
-- IV3: Changes to extraction rules don't affect already-extracted metadata (only new uploads)
-
----
 
 ### Story 1.20: User Profile and Preferences
 
