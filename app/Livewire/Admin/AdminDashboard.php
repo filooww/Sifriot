@@ -164,7 +164,7 @@ class AdminDashboard extends Component
         }
 
         // Eager load all relationships for admin
-        $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files', 'sections', 'authors', 'publishers', 'contentType']);
+        $query->with(['issueType', 'magazine', 'part', 'files', 'sections', 'authors', 'publishers', 'contentType']);
 
         // Apply alphabetical sort if set
         if ($this->filterAlphabeticalSort) {

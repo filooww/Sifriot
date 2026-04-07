@@ -108,8 +108,6 @@ class MetadataReviewDashboard extends Component
         $this->geminiConfigured = !empty(config('services.gemini.api_key'));
 
         // Auto-heal: Ensure all visible publications have metadata records
-        // This is a "lazy" check - we could optimize to only check "missing" ones if performance is an issue,
-        // but for now, we'll rely on the service to handle existence checks efficiently.
         $this->ensureMetadataExists($metadataService);
 
         Log::info('MetadataReviewDashboard mounted', [
@@ -125,40 +123,31 @@ class MetadataReviewDashboard extends Component
     protected function ensureMetadataExists(FileMetadataService $metadataService): void
     {
         // 1. Cleanup zombies (metadata pointing to deleted publications)
-        // This ensures that if a publication was deleted, its metadata is also removed
-        $deletedCount = FileMetadata::whereNotExists(function ($subQuery) {
-            $subQuery->select(DB::raw(1))
-                ->from('publications')
-                ->whereRaw('publications.id_publication = CAST(SUBSTRING_INDEX(file_metadatas.file_id, "-", 1) AS UNSIGNED)')
-                ->whereNull('deleted_at');
-        })->delete();
+        $deletedCount = FileMetadata::whereNotNull('publication_id')
+            ->whereNotExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('publications')
+                    ->whereColumn('publications.id_publication', 'file_metadatas.publication_id')
+                    ->whereNull('deleted_at');
+            })->delete();
 
         if ($deletedCount > 0) {
             Log::info("MetadataReviewDashboard: Cleaned up {$deletedCount} zombie metadata records.");
         }
 
-        // Get IDs of publications that match current broad criteria (e.g. not deleted)
-        // We limit this to recent or active ones to avoid scanning the entire DB on every load if it's huge.
-        // For now, let's just check the ones that would be visible.
-
-        // Optimization: querying ALL might be heavy. Let's query "orphans" directly here.
-        // The FileMetadata.file_id is formatted as "pubID-filename".
-        // The relation whereDoesntHave('fileMetadata') fails because keys don't match directly.
-        // So we manually find publications IDs that are NOT present as prefixes in file_metadatas.
-
+        // 2. Find publications without metadata
         $orphans = Publication::query()
-            ->whereNull('deleted_at') // Explicitly exclude soft-deleted
+            ->whereNull('deleted_at')
             ->whereNotExists(function ($query) {
                 $query->select(DB::raw(1))
                     ->from('file_metadatas')
-                    ->whereRaw('file_metadatas.file_id LIKE CONCAT(publications.id_publication, "-%")');
+                    ->whereColumn('file_metadatas.publication_id', 'publications.id_publication');
             })
             ->get();
 
         if ($orphans->isNotEmpty()) {
             $count = $metadataService->syncMetadataForPublications($orphans);
             if ($count > 0) {
-                // If we created new records, we should probably notify or log
                 Log::info("MetadataReviewDashboard: Auto-generated {$count} missing metadata records.");
                 session()->flash('notify', [
                     'message' => "Detected and fixed {$count} publications with missing metadata.",
@@ -243,6 +232,94 @@ class MetadataReviewDashboard extends Component
     }
 
     /**
+     * Helper to apply publication-based filters using joins on publication_id
+     */
+    private function applyPublicationFilters($query): void
+    {
+        // Ensure we only show metadata for non-deleted publications
+        $query->whereExists(function ($subQuery) {
+            $subQuery->select(DB::raw(1))
+                ->from('publications')
+                ->whereColumn('publications.id_publication', 'file_metadatas.publication_id')
+                ->whereNull('deleted_at');
+        });
+
+        // Publication section filter
+        if (!empty($this->filterSections)) {
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('section_publication as sp')
+                    ->whereColumn('sp.publication_id', 'file_metadatas.publication_id')
+                    ->whereIn('sp.section_id', $this->filterSections);
+            });
+        }
+
+        // Publication author filter
+        if (!empty($this->filterAuthors)) {
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('author_publication as ap')
+                    ->whereColumn('ap.id_publication', 'file_metadatas.publication_id')
+                    ->whereIn('ap.id_author', $this->filterAuthors);
+            });
+        }
+
+        // Publication date range filter
+        if ($this->filterDateFrom && $this->filterDateTo) {
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('publications')
+                    ->whereColumn('publications.id_publication', 'file_metadatas.publication_id')
+                    ->whereBetween('upload_date', [$this->filterDateFrom, $this->filterDateTo]);
+            });
+        } elseif ($this->filterDateFrom) {
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('publications')
+                    ->whereColumn('publications.id_publication', 'file_metadatas.publication_id')
+                    ->where('upload_date', '>=', $this->filterDateFrom);
+            });
+        } elseif ($this->filterDateTo) {
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('publications')
+                    ->whereColumn('publications.id_publication', 'file_metadatas.publication_id')
+                    ->where('upload_date', '<=', $this->filterDateTo);
+            });
+        }
+
+        // Publication genre filter
+        if (!empty($this->filterGenres)) {
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('genre_publication as gp')
+                    ->whereColumn('gp.publication_id', 'file_metadatas.publication_id')
+                    ->whereIn('gp.genre_id', $this->filterGenres);
+            });
+        }
+
+        // Publication text size filter
+        if ($this->filterTextSizeRange !== [0, 500000]) {
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('publications')
+                    ->whereColumn('publications.id_publication', 'file_metadatas.publication_id')
+                    ->whereBetween('word_count', [$this->filterTextSizeRange[0], $this->filterTextSizeRange[1]]);
+            });
+        }
+
+        // Publication status filter
+        if (!empty($this->filterPublicationStatus)) {
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('publications')
+                    ->whereColumn('publications.id_publication', 'file_metadatas.publication_id')
+                    ->whereIn('status', $this->filterPublicationStatus);
+            });
+        }
+    }
+
+    /**
      * Get statistics for metadata statuses
      * Stats now respect all active filters except statusFilter itself
      */
@@ -251,14 +328,6 @@ class MetadataReviewDashboard extends Component
         // Helper to build base query with all filters except status
         $getBaseQuery = function () {
             $query = FileMetadata::query();
-
-            // Ensure we only count metadata for non-deleted publications
-            $query->whereExists(function ($subQuery) {
-                $subQuery->select(DB::raw(1))
-                    ->from('publications')
-                    ->whereRaw('publications.id_publication = CAST(SUBSTRING_INDEX(file_metadatas.file_id, "-", 1) AS UNSIGNED)')
-                    ->whereNull('deleted_at');
-            });
 
             // Text search
             if ($this->search) {
@@ -288,80 +357,8 @@ class MetadataReviewDashboard extends Component
                 }
             }
 
-            // Apply publication filters
-            if (!empty($this->filterSections)) {
-                $query->whereRaw("
-                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                        SELECT DISTINCT p.id_publication
-                        FROM publications p
-                        JOIN section_publication sp ON p.id_publication = sp.publication_id
-                        WHERE sp.section_id IN (?)
-                    )
-                ", [$this->filterSections]);
-            }
-
-            if (!empty($this->filterAuthors)) {
-                $query->whereRaw("
-                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                        SELECT DISTINCT p.id_publication
-                        FROM publications p
-                        JOIN publication_authors pa ON p.id_publication = pa.publication_id
-                        WHERE pa.author_id IN (?)
-                    )
-                ", [$this->filterAuthors]);
-            }
-
-            if ($this->filterDateFrom && $this->filterDateTo) {
-                $query->whereRaw("
-                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                        SELECT id_publication FROM publications
-                        WHERE upload_date BETWEEN ? AND ?
-                    )
-                ", [$this->filterDateFrom, $this->filterDateTo]);
-            } elseif ($this->filterDateFrom) {
-                $query->whereRaw("
-                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                        SELECT id_publication FROM publications
-                        WHERE upload_date >= ?
-                    )
-                ", [$this->filterDateFrom]);
-            } elseif ($this->filterDateTo) {
-                $query->whereRaw("
-                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                        SELECT id_publication FROM publications
-                        WHERE upload_date <= ?
-                    )
-                ", [$this->filterDateTo]);
-            }
-
-            if (!empty($this->filterGenres)) {
-                $query->whereRaw("
-                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                        SELECT DISTINCT p.id_publication
-                        FROM publications p
-                        JOIN publication_genre pg ON p.id_publication = pg.publication_id
-                        WHERE pg.genre_id IN (?)
-                    )
-                ", [$this->filterGenres]);
-            }
-
-            if ($this->filterTextSizeRange !== [0, 500000]) {
-                $query->whereRaw("
-                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                        SELECT id_publication FROM publications
-                        WHERE word_count BETWEEN ? AND ?
-                    )
-                ", [$this->filterTextSizeRange[0], $this->filterTextSizeRange[1]]);
-            }
-
-            if (!empty($this->filterPublicationStatus)) {
-                $query->whereRaw("
-                    CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                        SELECT id_publication FROM publications
-                        WHERE status IN (?)
-                    )
-                ", [$this->filterPublicationStatus]);
-            }
+            // Apply publication-based filters
+            $this->applyPublicationFilters($query);
 
             return $query;
         };
@@ -380,7 +377,7 @@ class MetadataReviewDashboard extends Component
      */
     private function getFileMetadataList()
     {
-        $query = FileMetadata::query();
+        $query = FileMetadata::query()->with('publication');
 
         // Text search - search in file names and extracted data
         if ($this->search) {
@@ -416,99 +413,8 @@ class MetadataReviewDashboard extends Component
             }
         }
 
-        // Apply publication filters using direct publication_id from file_id
-        // Note: file_id format is "publication_id-filename.ext", so we extract the ID
-
-        // Helper to extract publication ID from file_id
-        $extractPubId = fn($fileId) => (int) (explode('-', $fileId)[0] ?? 0);
-
-        // Ensure we only show metadata for non-deleted publications
-        $query->whereExists(function ($subQuery) {
-            $subQuery->select(DB::raw(1))
-                ->from('publications')
-                ->whereRaw('publications.id_publication = CAST(SUBSTRING_INDEX(file_metadatas.file_id, "-", 1) AS UNSIGNED)')
-                ->whereNull('deleted_at');
-        });
-
-        // Publication section filter
-        if (!empty($this->filterSections)) {
-            $query->whereRaw("
-                CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                    SELECT DISTINCT p.id_publication
-                    FROM publications p
-                    JOIN section_publication sp ON p.id_publication = sp.publication_id
-                    WHERE sp.section_id IN (?)
-                )
-            ", [$this->filterSections]);
-        }
-
-        // Publication author filter
-        if (!empty($this->filterAuthors)) {
-            $query->whereRaw("
-                CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                    SELECT DISTINCT p.id_publication
-                    FROM publications p
-                    JOIN publication_authors pa ON p.id_publication = pa.publication_id
-                    WHERE pa.author_id IN (?)
-                )
-            ", [$this->filterAuthors]);
-        }
-
-        // Publication date range filter
-        if ($this->filterDateFrom && $this->filterDateTo) {
-            $query->whereRaw("
-                CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                    SELECT id_publication FROM publications
-                    WHERE upload_date BETWEEN ? AND ?
-                )
-            ", [$this->filterDateFrom, $this->filterDateTo]);
-        } elseif ($this->filterDateFrom) {
-            $query->whereRaw("
-                CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                    SELECT id_publication FROM publications
-                    WHERE upload_date >= ?
-                )
-            ", [$this->filterDateFrom]);
-        } elseif ($this->filterDateTo) {
-            $query->whereRaw("
-                CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                    SELECT id_publication FROM publications
-                    WHERE upload_date <= ?
-                )
-            ", [$this->filterDateTo]);
-        }
-
-        // Publication genre filter
-        if (!empty($this->filterGenres)) {
-            $query->whereRaw("
-                CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                    SELECT DISTINCT p.id_publication
-                    FROM publications p
-                    JOIN publication_genre pg ON p.id_publication = pg.publication_id
-                    WHERE pg.genre_id IN (?)
-                )
-            ", [$this->filterGenres]);
-        }
-
-        // Publication text size filter
-        if ($this->filterTextSizeRange !== [0, 500000]) {
-            $query->whereRaw("
-                CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                    SELECT id_publication FROM publications
-                    WHERE word_count BETWEEN ? AND ?
-                )
-            ", [$this->filterTextSizeRange[0], $this->filterTextSizeRange[1]]);
-        }
-
-        // Publication status filter
-        if (!empty($this->filterPublicationStatus)) {
-            $query->whereRaw("
-                CAST(SUBSTRING_INDEX(file_id, '-', 1) AS UNSIGNED) IN (
-                    SELECT id_publication FROM publications
-                    WHERE status IN (?)
-                )
-            ", [$this->filterPublicationStatus]);
-        }
+        // Apply publication-based filters using proper joins
+        $this->applyPublicationFilters($query);
 
         // Apply sorting with qualified column names to avoid ambiguity
         $qualifiedColumn = in_array($this->sortBy, ['created_at', 'updated_at'])
@@ -516,8 +422,6 @@ class MetadataReviewDashboard extends Component
             : $this->sortBy;
         $query->orderBy($qualifiedColumn, $this->sortDirection);
 
-        // Note: publication() is not an Eloquent relationship due to composite file_id format,
-        // so we don't use with('publication'). The blade template loads it on-demand.
         return $query->paginate($this->perPage);
     }
 
@@ -636,23 +540,15 @@ class MetadataReviewDashboard extends Component
 
         foreach ($this->selectedItems as $id) {
             $metadata = FileMetadata::find($id);
-            if (!$metadata || !$metadata->file_id) {
+            if (!$metadata || !$metadata->publication_id) {
                 $failed++;
 
                 continue;
             }
 
-            // Extract publication ID from file_id format: "123-filename.pdf"
-            $parts = explode('-', $metadata->file_id, 2);
-            $publicationId = (int) ($parts[0] ?? 0);
+            $publicationId = $metadata->publication_id;
 
-            if ($publicationId === 0) {
-                $failed++;
-
-                continue;
-            }
-
-            // Get the file path from file_registration_logs (files table doesn't have file_path)
+            // Get the file path from file_registration_logs
             $fileLog = DB::table('file_registration_logs')
                 ->where('publication_id', $publicationId)
                 ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%')
@@ -662,9 +558,8 @@ class MetadataReviewDashboard extends Component
             if (!$fileLog || !$fileLog->file_path) {
                 Log::warning('File path not found for bulk re-extraction', [
                     'id' => $id,
-                    'file_id' => $metadata->file_id,
-                    'file_name' => $metadata->file_name,
                     'publication_id' => $publicationId,
+                    'file_name' => $metadata->file_name,
                 ]);
                 $failed++;
 
@@ -673,7 +568,7 @@ class MetadataReviewDashboard extends Component
 
             // Update status and queue for extraction
             $metadata->update(['status' => 'pending']);
-            ExtractMetadataFromFile::dispatch($metadata->file_id, $fileLog->file_path, 1);
+            ExtractMetadataFromFile::dispatch($metadata->publication_id, $fileLog->file_path, 1);
             $count++;
         }
 
@@ -752,21 +647,18 @@ class MetadataReviewDashboard extends Component
                     continue;
                 }
 
-                // Extract publication ID from file_id format: "123-filename.pdf"
-                $parts = explode('-', $metadata->file_id, 2);
-                $publicationId = (int) ($parts[0] ?? 0);
+                $publicationId = $metadata->publication_id;
 
-                if ($publicationId === 0) {
-                    Log::channel('folder_scan')->warning('Invalid publication ID in file_id', [
+                if (!$publicationId) {
+                    Log::channel('folder_scan')->warning('Missing publication_id in metadata', [
                         'id' => $id,
-                        'file_id' => $metadata->file_id,
                     ]);
                     $failed++;
 
                     continue;
                 }
 
-                // Get file path from file_registration_logs (same pattern as reExtractSelected)
+                // Get file path from file_registration_logs
                 $fileLog = DB::table('file_registration_logs')
                     ->where('publication_id', $publicationId)
                     ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%')
@@ -776,7 +668,6 @@ class MetadataReviewDashboard extends Component
                 if (!$fileLog || !$fileLog->file_path) {
                     Log::channel('folder_scan')->warning('File path not found for AI extraction', [
                         'id' => $id,
-                        'file_id' => $metadata->file_id,
                         'file_name' => $metadata->file_name,
                         'publication_id' => $publicationId,
                     ]);
@@ -792,7 +683,6 @@ class MetadataReviewDashboard extends Component
                 if (empty($fullPath)) {
                     $filePath = '';
                 } elseif (preg_match('/^(\/|[A-Za-z]:)/', $fullPath)) {
-                    // Already an absolute path (Unix or Windows)
                     $filePath = $fullPath;
                 } else {
                     $filePath = storage_path('app/content/' . $fullPath);
@@ -804,7 +694,7 @@ class MetadataReviewDashboard extends Component
                 if (!file_exists($filePath)) {
                     Log::channel('folder_scan')->warning('File not found for AI extraction', [
                         'id' => $id,
-                        'file_id' => $metadata->file_id,
+                        'publication_id' => $publicationId,
                         'path' => $filePath,
                     ]);
                     $failed++;
@@ -816,7 +706,6 @@ class MetadataReviewDashboard extends Component
                 try {
                     $text = $textExtractor->extractText($filePath, $maxChars);
                 } catch (\RuntimeException $e) {
-                    // User-friendly error (e.g., image-based PDF)
                     Log::channel('folder_scan')->warning('Text extraction blocked', [
                         'file_metadata_id' => $metadata->id,
                         'file_name' => $metadata->file_name,
@@ -873,7 +762,6 @@ class MetadataReviewDashboard extends Component
 
                 if ($extractedMetadata->getContentType()) {
                     $extractedData['content_type'] = $extractedMetadata->getContentType();
-                    // attempt to resolve ID if possible, but simpler to just store value and let form handle it
                 }
 
                 if ($extractedMetadata->getSection()) {
@@ -923,34 +811,18 @@ class MetadataReviewDashboard extends Component
     public function reExtractSingle(int $id): void
     {
         $metadata = FileMetadata::find($id);
-        if (!$metadata || !$metadata->file_id) {
+        if (!$metadata || !$metadata->publication_id) {
             $this->dispatch('notify', message: 'Metadata not found', type: 'error');
 
             return;
         }
 
-        // Extract publication ID from file_id format: "123-filename.pdf"
-        $parts = explode('-', $metadata->file_id, 2);
-        $publicationId = (int) ($parts[0] ?? 0);
+        $publicationId = $metadata->publication_id;
 
-        if ($publicationId === 0) {
-            Log::warning('Invalid publication ID extracted from file_id', [
-                'file_id' => $metadata->file_id,
-            ]);
-            $this->dispatch('notify', message: 'Invalid publication ID', type: 'error');
-
-            return;
-        }
-
-        // Get the file path from file_registration_logs (files table doesn't have file_path)
+        // Get the file path from file_registration_logs
         $fileLog = DB::table('file_registration_logs')
             ->where('publication_id', $publicationId)
-            ->where('file_path', 'like', '%' . DB::raw('CONCAT(\'%-\', ?)') . '%', [$metadata->file_name])
-            ->orWhere(function ($query) use ($publicationId, $metadata) {
-                // Alternative: match by publication_id and filename pattern
-                $query->where('publication_id', $publicationId)
-                    ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%');
-            })
+            ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%')
             ->orderBy('created_at', 'desc')
             ->first();
 
@@ -958,7 +830,6 @@ class MetadataReviewDashboard extends Component
             Log::warning('File path not found in file_registration_logs', [
                 'publication_id' => $publicationId,
                 'file_name' => $metadata->file_name,
-                'file_id' => $metadata->file_id,
             ]);
             $this->dispatch('notify', message: 'File path not found', type: 'error');
 
@@ -967,7 +838,7 @@ class MetadataReviewDashboard extends Component
 
         // All validations passed - proceed with re-extraction
         $metadata->update(['status' => 'pending']);
-        ExtractMetadataFromFile::dispatch($metadata->file_id, $fileLog->file_path, 1);
+        ExtractMetadataFromFile::dispatch($metadata->publication_id, $fileLog->file_path, 1);
         $this->dispatch('notify', message: 'Re-extraction queued', type: 'success');
     }
 
@@ -976,18 +847,19 @@ class MetadataReviewDashboard extends Component
      */
     public function deleteMetadata(int $id): void
     {
-        $metadata = FileMetadata::find($id);
+        $metadata = FileMetadata::with('publication')->find($id);
 
         if ($metadata) {
             // Full cleanup of all related records
-            if ($metadata->publication) {
-                $pubId = $metadata->publication->id_publication;
+            $publication = $metadata->publication;
+            if ($publication) {
+                $pubId = $publication->id_publication;
                 // Delete file registration logs
                 FileRegistrationLog::where('publication_id', $pubId)->delete();
                 // Delete file records
                 File::where('id_publication', $pubId)->delete();
                 // Delete the publication
-                $metadata->publication->forceDelete();
+                $publication->forceDelete();
             }
 
             $metadata->delete();
@@ -1009,14 +881,15 @@ class MetadataReviewDashboard extends Component
         $count = 0;
 
         foreach ($this->selectedItems as $id) {
-            $metadata = FileMetadata::find($id);
+            $metadata = FileMetadata::with('publication')->find($id);
             if ($metadata) {
                 // Full cleanup of all related records
-                if ($metadata->publication) {
-                    $pubId = $metadata->publication->id_publication;
+                $publication = $metadata->publication;
+                if ($publication) {
+                    $pubId = $publication->id_publication;
                     FileRegistrationLog::where('publication_id', $pubId)->delete();
                     File::where('id_publication', $pubId)->delete();
-                    $metadata->publication->forceDelete();
+                    $publication->forceDelete();
                 }
                 $metadata->delete();
                 $count++;

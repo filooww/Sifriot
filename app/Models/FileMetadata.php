@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FileMetadata extends Model
 {
@@ -14,7 +15,7 @@ class FileMetadata extends Model
     protected $table = 'file_metadatas';
 
     protected $fillable = [
-        'file_id',
+        'publication_id',
         'file_name',
         'status',
         'extracted_data',
@@ -37,63 +38,11 @@ class FileMetadata extends Model
     ];
 
     /**
-     * Get the files associated with this metadata.
-     * Returns files matching publication_id and file_name from the file_id.
+     * Get the publication this metadata belongs to.
      */
-    public function file(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function publication(): BelongsTo
     {
-        // Extract publication ID from file_id (format: "123-filename.pdf")
-        if (! $this->file_id) {
-            return $this->hasMany(File::class, 'id_publication', 'id_publication')->whereRaw('1=0');
-        }
-
-        $parts = explode('-', $this->file_id, 2);
-        $publicationId = (int) ($parts[0] ?? 0);
-
-        if ($publicationId === 0) {
-            return $this->hasMany(File::class, 'id_publication', 'id_publication')->whereRaw('1=0');
-        }
-
-        return $this->hasMany(File::class, 'id_publication', 'id_publication')
-            ->where('id_publication', $publicationId)
-            ->where('file_name', $this->file_name);
-    }
-
-    /**
-     * Get the publication associated with this metadata.
-     * Note: file_id format is "publication_id-filename.ext"
-     * Since we don't have a traditional foreign key, we extract the publication ID from file_id.
-     *
-     * @return \App\Models\Publication|null
-     */
-    public function getPublication()
-    {
-        // Extract publication ID from file_id (format: "123-filename.pdf")
-        if (! $this->file_id) {
-            return null;
-        }
-
-        $parts = explode('-', $this->file_id);
-        $publicationId = (int) ($parts[0] ?? 0);
-
-        if ($publicationId === 0) {
-            return null;
-        }
-
-        // Return the publication or null
-        return Publication::find($publicationId);
-    }
-
-    /**
-     * Magic accessor for publication property
-     */
-    public function __get($key)
-    {
-        if ($key === 'publication') {
-            return $this->getPublication();
-        }
-
-        return parent::__get($key);
+        return $this->belongsTo(Publication::class, 'publication_id', 'id_publication');
     }
 
     /**

@@ -176,9 +176,9 @@ class PublicationList extends Component
         // For guests, eager load only basic relationships
         // For authenticated users, load all relationships including files
         if ($this->isGuest) {
-            $query->with(['publishing', 'authorGroup', 'issueType', 'sections']);
+            $query->with(['issueType', 'sections']);
         } else {
-            $query->with(['publishing', 'authorGroup', 'themeSet', 'issueType', 'magazine', 'part', 'files', 'sections']);
+            $query->with(['issueType', 'magazine', 'part', 'files', 'sections']);
         }
 
         // Apply alphabetical sort if set

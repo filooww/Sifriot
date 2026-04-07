@@ -26,9 +26,8 @@ class PublicationPreview extends Component
     {
         $this->publication = Publication::with([
             'authors',
-            'publishing',
             'genres',
-            'themeSet',
+            'themes',
             'files',
             'contentType',
             'customFieldValues.customField',

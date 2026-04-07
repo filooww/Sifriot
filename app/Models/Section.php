@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Traits\HasLocalizedName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Section extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasLocalizedName, SoftDeletes;
 
     protected $fillable = [
         'parent_id',
@@ -59,14 +60,5 @@ class Section extends Model
         );
     }
 
-    /**
-     * Get the localized section name based on current locale.
-     */
-    public function getLocalizedNameAttribute(): string
-    {
-        $locale = app()->getLocale();
-        $column = 'name_'.$locale;
 
-        return $this->$column ?? $this->name_en;
-    }
 }

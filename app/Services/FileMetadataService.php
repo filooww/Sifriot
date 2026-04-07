@@ -17,13 +17,9 @@ class FileMetadataService
      */
     public function syncMetadataForPublication(Publication $publication): ?FileMetadata
     {
-        // 1. Check if metadata already exists
-        // We look for any FileMetadata where the file_id starts with "{$publication->id}-"
-        // Note: This relies on the convention that file_id = "pubID-filename"
-        
-        // Optimize: Check if any metadata exists for this publication ID prefix
-        $exists = FileMetadata::where('file_id', 'like', "{$publication->id_publication}-%")->exists();
-        
+        // 1. Check if metadata already exists for this publication
+        $exists = FileMetadata::where('publication_id', $publication->id_publication)->exists();
+
         if ($exists) {
             return null; // Already exists, nothing to do
         }
@@ -46,15 +42,13 @@ class FileMetadataService
         }
 
         // 3. Create the missing metadata record
-        $fileId = "{$publication->id_publication}-{$file->file_name}";
-        
         Log::info("Creating missing metadata for publication {$publication->id_publication}", [
-            'file_id' => $fileId,
+            'publication_id' => $publication->id_publication,
             'file_name' => $file->file_name
         ]);
 
         return FileMetadata::create([
-            'file_id' => $fileId,
+            'publication_id' => $publication->id_publication,
             'file_name' => $file->file_name,
             'status' => 'pending',
             'extracted_data' => [], // Empty initially

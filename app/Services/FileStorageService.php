@@ -4,20 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Contracts\FileStorageServiceInterface;
-use App\Models\FileRegistrationLog;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * File Storage Service
  *
- * Implementation of FileStorageServiceInterface that wraps Laravel's Storage facade.
- * This abstraction allows us to:
- * - Test controllers without mocking facades
- * - Switch storage implementations easily
- * - Centralize storage logic in one place
+ * Centralizes storage logic (folder browsing, validation) that goes
+ * beyond simple Storage facade calls. Basic get/exists/download/path/allFiles
+ * are thin wrappers for convenience in Livewire components via DI.
  */
-class FileStorageService implements FileStorageServiceInterface
+class FileStorageService
 {
     /**
      * Get file content from storage

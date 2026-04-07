@@ -39,7 +39,8 @@ class ExtractMetadataForRegisteredFiles extends Command
         // If not forcing re-extraction, only get files without metadata
         if (! $force) {
             $query->leftJoin('file_metadatas', function ($join) {
-                $join->on(\Illuminate\Support\Facades\DB::raw("CONCAT(files.id_publication, '-', files.file_name)"), '=', 'file_metadatas.file_id');
+                $join->on('file_metadatas.publication_id', '=', 'files.id_publication')
+                    ->on('file_metadatas.file_name', '=', 'files.file_name');
             })
                 ->whereNull('file_metadatas.id');
         }
@@ -83,7 +84,7 @@ class ExtractMetadataForRegisteredFiles extends Command
 
                     // Dispatch extraction job
                     ExtractMetadataFromFile::dispatch(
-                        "{$file->id_publication}-{$file->file_name}",
+                        (int) $file->id_publication,
                         $fullPath,
                         (int) $file->content_type_id,
                         $file->mime_type

@@ -99,7 +99,7 @@
 
             <!-- File Content Preview -->
             @php
-                $publicationId = (int) explode('-', $fileMetadata->file_id)[0];
+                $publicationId = $fileMetadata->publication_id;
                 $publication = \App\Models\Publication::with('files')->find($publicationId);
             @endphp
             @if($publication)

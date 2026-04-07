@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Traits\HasLocalizedName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Publisher extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasLocalizedName, SoftDeletes;
 
     protected $fillable = [
         'name_en',
@@ -36,14 +37,5 @@ class Publisher extends Model
         )->withTimestamps();
     }
 
-    /**
-     * Get the localized publisher name based on current locale.
-     */
-    public function getLocalizedNameAttribute(): string
-    {
-        $locale = app()->getLocale();
-        $column = 'name_'.$locale;
 
-        return $this->$column ?? $this->name_en;
-    }
 }

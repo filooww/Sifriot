@@ -4,48 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Contracts\FileStorageServiceInterface;
-use App\Contracts\LoggerServiceInterface;
 use App\Models\File;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/**
- * Download Controller
- *
- * This controller demonstrates the proper use of Dependency Injection.
- * Notice how we inject services through the constructor instead of using facades.
- * This makes the controller:
- * - Easier to test (we can pass mock services)
- * - Clearer about its dependencies (you can see what it needs)
- * - Less tightly coupled to specific implementations
- */
 class DownloadController extends Controller
 {
     /**
-     * Constructor - Dependency Injection in action
-     *
-     * Laravel's Service Container automatically creates these services
-     * and passes them to the constructor based on the type hints.
-     *
-     * @param  FileStorageServiceInterface  $storage  The file storage service
-     * @param  LoggerServiceInterface  $logger  The logger service
-     */
-    public function __construct(
-        private FileStorageServiceInterface $storage,
-        private LoggerServiceInterface $logger,
-    ) {}
-
-    /**
      * Download a file.
-     *
-     * Note: The logic here is the same, but now it uses injected services
-     * instead of facades. This is much more testable and maintainable.
      */
     public function download(int $publication, string $filename): Response|StreamedResponse
     {
         // Decode URL-safe base64-encoded filename (handles Cyrillic characters)
-        // Add back padding and convert URL-safe characters back to standard base64
         $base64 = str_pad(strtr($filename, '-_', '+/'), strlen($filename) % 4, '=', STR_PAD_RIGHT);
         $decodedFilename = base64_decode($base64, true);
 
@@ -58,8 +30,6 @@ class DownloadController extends Controller
             ->where('file_name', $decodedFilename)
             ->firstOrFail();
 
-        // Get the file path from storage
-        // Use 'library' disk for bulk scanned files, 'local' disk for uploaded files
         $fileSource = $file->file_source;
 
         // Check if file_source contains a full path (uploaded file) or directory path (bulk scanned)
@@ -68,12 +38,9 @@ class DownloadController extends Controller
             $disk = 'local';
             $filePath = str_starts_with($fileSource, 'content/') ? $fileSource : 'content/'.$fileSource;
         } elseif ($fileSource === 'bulk_scan') {
-            // Legacy bulk_scan files: search recursively in library disk (for backwards compatibility)
+            // Legacy bulk_scan files: search recursively in library disk
             $disk = 'library';
-
-            // Search for the file in the library directory
-            // Using $this->storage instead of Storage facade
-            $allFiles = $this->storage->allFiles($disk);
+            $allFiles = Storage::disk($disk)->allFiles();
             $filePath = null;
 
             foreach ($allFiles as $path) {
@@ -84,11 +51,10 @@ class DownloadController extends Controller
             }
 
             if ($filePath === null) {
-                // Using $this->logger instead of Log facade
-                $this->logger->error('Bulk scanned file not found in library for download', [
+                Log::error('Bulk scanned file not found in library for download', [
                     'publication_id' => $publication,
                     'filename' => $decodedFilename,
-                    'searched_in' => $this->storage->path($disk, ''),
+                    'searched_in' => Storage::disk($disk)->path(''),
                 ]);
                 abort(404, 'File not found in library storage');
             }
@@ -98,15 +64,11 @@ class DownloadController extends Controller
             $filePath = $fileSource.'/'.$decodedFilename;
         }
 
-        // Check if file exists in storage
-        // Using $this->storage instead of Storage facade
-        if (! $this->storage->exists($disk, $filePath)) {
+        if (! Storage::disk($disk)->exists($filePath)) {
             abort(404, 'File not found in storage');
         }
 
-        // Log download event
-        // Using $this->logger instead of Log facade
-        $this->logger->info('File downloaded', [
+        Log::info('File downloaded', [
             'publication_id' => $publication,
             'file_name' => $decodedFilename,
             'disk' => $disk,
@@ -115,8 +77,6 @@ class DownloadController extends Controller
             'ip' => request()->ip(),
         ]);
 
-        // Download the file with the original filename
-        // Using $this->storage instead of Storage facade
-        return $this->storage->download($disk, $filePath, $decodedFilename);
+        return Storage::disk($disk)->download($filePath, $decodedFilename);
     }
 }

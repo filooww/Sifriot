@@ -63,9 +63,9 @@ class GlobalSearch extends Component
 
         // Eager load relationships based on user authentication
         if (Auth::check()) {
-            $publications->with(['publishing', 'authorGroup', 'issueType', 'files', 'themes']);
+            $publications->with(['issueType', 'files', 'themes']);
         } else {
-            $publications->with(['publishing', 'authorGroup', 'issueType']);
+            $publications->with(['issueType']);
         }
 
         return $publications
@@ -92,9 +92,9 @@ class GlobalSearch extends Component
 
         // Eager load relationships based on user authentication
         if (Auth::check()) {
-            $publications->with(['publishing', 'authorGroup', 'issueType', 'files', 'themes']);
+            $publications->with(['issueType', 'files', 'themes']);
         } else {
-            $publications->with(['publishing', 'authorGroup', 'issueType']);
+            $publications->with(['issueType']);
         }
 
         return $publications

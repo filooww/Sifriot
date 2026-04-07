@@ -25,11 +25,8 @@ class PublicationDetail extends Component
         // Load publication with relationships
         $this->publication = Publication::query()
             ->with([
-                'publishing',
-                'authorGroup',
                 'issueType',
                 'magazine',
-                'themeSet',
                 'part',
                 'authors',
                 'themes',

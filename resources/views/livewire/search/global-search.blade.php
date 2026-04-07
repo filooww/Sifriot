@@ -54,14 +54,14 @@
                     <div class="font-semibold text-gray-900 dark:text-gray-100">
                         {!! $this->highlightSearchTerms($publication->title, $searchQuery) !!}
                     </div>
-                    @if($publication->authorGroup)
+                    @if($publication->authors->first())
                     <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {{ __('Author') }}: {{ $publication->authorGroup->author ?? __('Unknown') }}
+                        {{ __('Author') }}: {{ $publication->authors->first()?->author ?? __('Unknown') }}
                     </div>
                     @endif
-                    @if($publication->publishing)
+                    @if($publication->publishers->count() > 0)
                     <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                        {{ $publication->publishing->publishing ?? '' }}
+                        {{ $publication->publishers->first()->name_en ?? '' }}
                     </div>
                     @endif
                 </a>

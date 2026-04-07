@@ -13,7 +13,6 @@ use App\Models\FileMetadata;
 use App\Models\Genre;
 use App\Models\Publication;
 use App\Models\Publisher;
-use App\Models\Publishing;
 use App\Services\MetadataExtractors\DocumentTextExtractor;
 use App\Services\MetadataExtractors\GeminiMetadataExtractorService;
 use Illuminate\Support\Facades\DB;
@@ -100,7 +99,7 @@ class MetadataReviewForm extends Component
                 $this->validate(['coverImage' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120']);
 
                 // Get publication
-                $publication = Publication::with('files')->find((int) strtok($this->fileMetadata->file_id, "-"));
+                $publication = Publication::with('files')->find($this->fileMetadata->publication_id);
                 if (!$publication) {
                     throw new \Exception('Publication not found');
                 }
@@ -260,7 +259,7 @@ class MetadataReviewForm extends Component
         // Load description from publication if confirmed
         if ($this->fileMetadata->status === 'confirmed') {
             // Use with('files') to eager-load files relationship including cover images
-            $publication = Publication::with('files')->find((int) strtok($this->fileMetadata->file_id, "-"));
+            $publication = Publication::with('files')->find($this->fileMetadata->publication_id);
             if ($publication) {
                 $this->description = $publication->description ?? '';
                 $this->contentTypeId = $publication->content_type_id;
@@ -290,8 +289,8 @@ class MetadataReviewForm extends Component
             ->get();
 
         // Load existing values if publication exists
-        if ($this->fileMetadata && $this->fileMetadata->file_id) {
-            $publication = Publication::find((int) strtok($this->fileMetadata->file_id, "-"));
+        if ($this->fileMetadata && $this->fileMetadata->publication_id) {
+            $publication = Publication::find($this->fileMetadata->publication_id);
             if ($publication) {
                 foreach ($this->customFields as $field) {
                     $value = $publication->customFieldValues()
@@ -311,11 +310,11 @@ class MetadataReviewForm extends Component
      */
     private function loadSectionsAndPublishers(): void
     {
-        if (!$this->fileMetadata || !$this->fileMetadata->file_id) {
+        if (!$this->fileMetadata || !$this->fileMetadata->publication_id) {
             return;
         }
 
-        $publication = Publication::with(['sections', 'publishers'])->find((int) strtok($this->fileMetadata->file_id, "-"));
+        $publication = Publication::with(['sections', 'publishers'])->find($this->fileMetadata->publication_id);
         if (!$publication) {
             return;
         }
@@ -344,7 +343,7 @@ class MetadataReviewForm extends Component
             return null;
         }
 
-        $publication = Publication::with('files')->find((int) strtok($this->fileMetadata->file_id, "-"));
+        $publication = Publication::with('files')->find($this->fileMetadata->publication_id);
         if (!$publication) {
             return null;
         }
@@ -386,11 +385,10 @@ class MetadataReviewForm extends Component
         $this->isExtractingWithAI = true;
 
         try {
-            // Extract publication ID from file_id format: "123-filename.pdf"
-            $parts = explode('-', $this->fileMetadata->file_id, 2);
-            $publicationId = (int) ($parts[0] ?? 0);
+            // Get publication ID
+            $publicationId = $this->fileMetadata->publication_id;
 
-            if ($publicationId === 0) {
+            if (!$publicationId) {
                 throw new \Exception('Invalid publication ID');
             }
 
@@ -464,7 +462,7 @@ class MetadataReviewForm extends Component
             if ($extracted->getPublisher()) {
                 $this->publisher = $extracted->getPublisher();
                 // Only flag for creation if publisher doesn't exist
-                $exists = Publishing::where('publishing_low', mb_strtolower(trim($extracted->getPublisher())))->exists();
+                $exists = Publisher::where('slug', mb_strtolower(trim($extracted->getPublisher())))->exists();
                 $this->createNewPublisher = !$exists;
             }
 
@@ -704,8 +702,7 @@ class MetadataReviewForm extends Component
             );
 
             // Get or create Publication (from FileMetadata's relationship)
-            $publication = $this->fileMetadata->file()->first()?->publication
-                ?? Publication::find((int) strtok($this->fileMetadata->file_id, "-"));
+            $publication = $this->fileMetadata->publication;
 
             if (!$publication) {
                 throw new \Exception('Publication not found for this file metadata');
@@ -723,21 +720,15 @@ class MetadataReviewForm extends Component
             // Save publisher if provided
             if (!empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
-                // Legacy support
-                $publisher = Publishing::firstOrCreate(
-                    ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
+                $publisher = Publisher::firstOrCreate(
+                    ['slug' => mb_strtolower($trimmedPublisher)],
+                    ['name_en' => $trimmedPublisher]
                 );
-                $publication->update(['id_publishing' => $publisher->id_publishing]);
-                
-                // Normalized support
-                $newPublisher = \App\Models\Publisher::firstOrCreate(
-                    ['name_en' => $trimmedPublisher],
-                    ['slug' => \Illuminate\Support\Str::slug($trimmedPublisher)]
-                );
-                
+                $publication->publishers()->syncWithoutDetaching([$publisher->id]);
+
                 // Add to selectedPublishers so it is synced below
-                if (!in_array($newPublisher->id, $this->selectedPublishers)) {
-                    $this->selectedPublishers[] = $newPublisher->id;
+                if (!in_array($publisher->id, $this->selectedPublishers)) {
+                    $this->selectedPublishers[] = $publisher->id;
                 }
             }
 
@@ -754,12 +745,11 @@ class MetadataReviewForm extends Component
             foreach ($cleanedThemes as $themeName) {
                 $trimmedTheme = trim($themeName);
                 $theme = \App\Models\Theme::firstOrCreate(
-                    ['theme' => $trimmedTheme], 
+                    ['theme' => $trimmedTheme],
                     ['theme_low' => mb_strtolower($trimmedTheme)]
                 );
                 $publication->themes()->syncWithoutDetaching([$theme->id_theme]);
             }
-
 
             // Sync sections
             if (!empty($this->selectedSections)) {
@@ -770,9 +760,6 @@ class MetadataReviewForm extends Component
             if (!empty($this->selectedPublishers)) {
                 $publication->publishers()->sync($this->selectedPublishers);
             }
-
-            // Note: Cover image is auto-saved via updatedCoverImage() hook when user selects file
-            // No need to save it again here
 
             // Update publication with new metadata and set status to pending
             $publication->update([
@@ -828,7 +815,7 @@ class MetadataReviewForm extends Component
 
             // Close modal and refresh parent queue
             $this->dispatch('refresh-metadata-queue')->to('admin.metadata-review-dashboard');
-            
+
             session()->flash('notify', [
                 'message' => 'Metadata confirmed and saved successfully!',
                 'type' => 'success'
@@ -897,8 +884,7 @@ class MetadataReviewForm extends Component
             );
 
             // Get or create Publication
-            $publication = $this->fileMetadata->file()->first()?->publication
-                ?? Publication::find((int) strtok($this->fileMetadata->file_id, "-"));
+            $publication = $this->fileMetadata->publication;
 
             if (!$publication) {
                 throw new \Exception('Publication not found for this file metadata');
@@ -916,21 +902,15 @@ class MetadataReviewForm extends Component
             // Save publisher if provided
             if (!empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
-                // Legacy support
-                $publisher = Publishing::firstOrCreate(
-                    ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
+                $publisher = Publisher::firstOrCreate(
+                    ['slug' => mb_strtolower($trimmedPublisher)],
+                    ['name_en' => $trimmedPublisher]
                 );
-                $publication->update(['id_publishing' => $publisher->id_publishing]);
-                
-                // Normalized support
-                $newPublisher = \App\Models\Publisher::firstOrCreate(
-                    ['name_en' => $trimmedPublisher],
-                    ['slug' => \Illuminate\Support\Str::slug($trimmedPublisher)]
-                );
-                
+                $publication->publishers()->syncWithoutDetaching([$publisher->id]);
+
                 // Add to selectedPublishers so it is synced below
-                if (!in_array($newPublisher->id, $this->selectedPublishers)) {
-                    $this->selectedPublishers[] = $newPublisher->id;
+                if (!in_array($publisher->id, $this->selectedPublishers)) {
+                    $this->selectedPublishers[] = $publisher->id;
                 }
             }
 
@@ -1027,8 +1007,7 @@ class MetadataReviewForm extends Component
             );
 
             // Get or create Publication (from FileMetadata's relationship)
-            $publication = $this->fileMetadata->file()->first()?->publication
-                ?? Publication::find((int) strtok($this->fileMetadata->file_id, "-"));
+            $publication = $this->fileMetadata->publication;
 
             if (!$publication) {
                 throw new \Exception('Publication not found for this file metadata');
@@ -1046,21 +1025,15 @@ class MetadataReviewForm extends Component
             // Save publisher if provided
             if (!empty($this->publisher)) {
                 $trimmedPublisher = trim($this->publisher);
-                // Legacy support
-                $publisher = Publishing::firstOrCreate(
-                    ['publishing' => $trimmedPublisher, 'publishing_low' => mb_strtolower($trimmedPublisher)]
+                $publisher = Publisher::firstOrCreate(
+                    ['slug' => mb_strtolower($trimmedPublisher)],
+                    ['name_en' => $trimmedPublisher]
                 );
-                $publication->update(['id_publishing' => $publisher->id_publishing]);
-                
-                // Normalized support
-                $newPublisher = \App\Models\Publisher::firstOrCreate(
-                    ['name_en' => $trimmedPublisher],
-                    ['slug' => \Illuminate\Support\Str::slug($trimmedPublisher)]
-                );
-                
+                $publication->publishers()->syncWithoutDetaching([$publisher->id]);
+
                 // Add to selectedPublishers so it is synced below
-                if (!in_array($newPublisher->id, $this->selectedPublishers)) {
-                    $this->selectedPublishers[] = $newPublisher->id;
+                if (!in_array($publisher->id, $this->selectedPublishers)) {
+                    $this->selectedPublishers[] = $publisher->id;
                 }
             }
 
@@ -1237,16 +1210,16 @@ class MetadataReviewForm extends Component
             return [];
         }
 
-        return Publishing::query()
+        return Publisher::query()
             ->where(function ($q) use ($query) {
-                $q->where('publishing', 'like', "%{$query}%")
-                    ->orWhere('publishing_low', 'like', '%' . mb_strtolower($query) . '%');
+                $q->where('name_en', 'like', "%{$query}%")
+                    ->orWhere('slug', 'like', '%' . mb_strtolower($query) . '%');
             })
             ->limit(10)
             ->get()
             ->map(fn($pub) => [
-                'id' => $pub->id_publishing,
-                'name' => $pub->publishing,
+                'id' => $pub->id,
+                'name' => $pub->name_en,
             ])
             ->toArray();
     }
@@ -1443,22 +1416,15 @@ class MetadataReviewForm extends Component
         abort_if(!auth()->user() || auth()->user()->role !== 'admin', 403, 'Unauthorized');
 
         $trimmedName = trim($name);
-        
-        // Legacy system
-        $publisher = Publishing::firstOrCreate(
-            ['publishing' => $trimmedName],
-            ['publishing_low' => mb_strtolower($trimmedName)]
-        );
-        
-        // Normalized system
-        \App\Models\Publisher::firstOrCreate(
-            ['name_en' => $trimmedName],
-            ['slug' => \Illuminate\Support\Str::slug($trimmedName)]
+
+        $publisher = Publisher::firstOrCreate(
+            ['slug' => \Illuminate\Support\Str::slug($trimmedName)],
+            ['name_en' => $trimmedName]
         );
 
         return [
-            'id' => $publisher->id_publishing,
-            'name' => $publisher->publishing,
+            'id' => $publisher->id,
+            'name' => $publisher->name_en,
         ];
     }
 

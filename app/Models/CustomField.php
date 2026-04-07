@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Traits\HasLocalizedName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CustomField extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasLocalizedName, SoftDeletes;
+
+    protected const LOCALIZED_NAME_PREFIX = 'label';
+
+    /**
+     * Alias for localized_name, used in blade views as ->localized_label.
+     * The HasLocalizedName trait provides ->localized_name / ->localizedName.
+     */
+    public function getLocalizedLabelAttribute(): string
+    {
+        return $this->localizedName;
+    }
 
     protected $fillable = [
         'content_type_id',
@@ -54,16 +66,7 @@ class CustomField extends Model
         return $this->hasMany(CustomFieldValue::class);
     }
 
-    /**
-     * Get the localized label based on the current app locale.
-     */
-    public function getLocalizedLabelAttribute(): string
-    {
-        $locale = app()->getLocale();
-        $labelKey = "label_{$locale}";
 
-        return $this->$labelKey ?? $this->label_en;
-    }
 
     /**
      * Scope a query to only include public custom fields.

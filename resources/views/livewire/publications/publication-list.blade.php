@@ -86,10 +86,10 @@
                                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $publication->title }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {{ $publication->authorGroup->author_set ?? 'N/A' }}
+                                        {{ $publication->authors->first()->author ?? 'N/A' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {{ $publication->publishing->publishing ?? 'N/A' }}
+                                        {{ $publication->publishers->first()->name_en ?? 'N/A' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ $publication->issue_year }}

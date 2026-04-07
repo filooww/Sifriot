@@ -4,30 +4,42 @@ declare(strict_types=1);
 
 namespace App\Services\MetadataExtractors;
 
+/**
+ * Data Transfer Object for extracted metadata.
+ *
+ * Used as a Builder: extractors call setters/adders to populate fields,
+ * consumers call getters to read the final result.
+ *
+ * Pattern: Builder -- incremental construction of a complex data object.
+ * The fluent interface (returning $this) allows method chaining.
+ *
+ * @property-read string|null $title
+ * @property-read array<string> $authors
+ * @property-read int|null $publicationYear
+ * @property-read string|null $publisher
+ * @property-read array<string> $genres
+ * @property-read string|null $contentType
+ * @property-read array<string> $themes
+ * @property-read string|null $section
+ * @property-read string|null $description
+ */
 class ExtractedMetadata
 {
     private ?string $title = null;
-
     private array $authors = [];
-
     private ?int $publication_year = null;
-
     private ?string $publisher = null;
-
     private array $genres = [];
-
     private ?string $content_type = null;
-
     private array $themes = [];
-
     private ?string $section = null;
-
     private ?string $description = null;
+
+    // --- Setters (Builder interface) ---
 
     public function setTitle(?string $value): self
     {
         $this->title = $value;
-
         return $this;
     }
 
@@ -36,7 +48,6 @@ class ExtractedMetadata
         if (! empty($name)) {
             $this->authors[] = $name;
         }
-
         return $this;
     }
 
@@ -48,18 +59,15 @@ class ExtractedMetadata
         }
 
         $year = (int) $value;
-        // Validation: 1000 to Current Year + 5
         if ($year >= 1000 && $year <= (int) date('Y') + 5) {
             $this->publication_year = $year;
         }
-
         return $this;
     }
 
     public function setPublisher(?string $value): self
     {
         $this->publisher = $value;
-
         return $this;
     }
 
@@ -68,14 +76,12 @@ class ExtractedMetadata
         if (! empty($name)) {
             $this->genres[] = $name;
         }
-
         return $this;
     }
 
     public function setContentType(?string $value): self
     {
         $this->content_type = $value;
-
         return $this;
     }
 
@@ -84,74 +90,34 @@ class ExtractedMetadata
         if (! empty($name)) {
             $this->themes[] = $name;
         }
-
         return $this;
     }
 
     public function setSection(?string $value): self
     {
         $this->section = $value;
-
         return $this;
     }
 
     public function setDescription(?string $value): self
     {
         $this->description = $value;
-
         return $this;
     }
 
-    public function getTitle(): ?string
-    {
-        return $this->title;
-    }
+    // --- Getters ---
 
-    public function getAuthors(): array
-    {
-        return $this->authors;
-    }
+    public function getTitle(): ?string { return $this->title; }
+    public function getAuthors(): array { return $this->authors; }
+    public function getPublicationYear(): ?int { return $this->publication_year; }
+    public function getPublisher(): ?string { return $this->publisher; }
+    public function getGenres(): array { return $this->genres; }
+    public function getContentType(): ?string { return $this->content_type; }
+    public function getThemes(): array { return $this->themes; }
+    public function getSection(): ?string { return $this->section; }
+    public function getDescription(): ?string { return $this->description; }
 
-    public function getPublicationYear(): ?int
-    {
-        return $this->publication_year;
-    }
-
-    public function getPublisher(): ?string
-    {
-        return $this->publisher;
-    }
-
-    public function getGenres(): array
-    {
-        return $this->genres;
-    }
-
-    public function getContentType(): ?string
-    {
-        return $this->content_type;
-    }
-
-    public function getThemes(): array
-    {
-        return $this->themes;
-    }
-
-    public function getSection(): ?string
-    {
-        return $this->section;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
-
-    public function getHighestConfidenceFields(float $threshold = 0.6): array
-    {
-        // Deprecated method kept for interface compatibility if needed, but returns simple array
-        return $this->toArray();
-    }
+    // --- Utility ---
 
     public function isEmpty(): bool
     {
@@ -179,10 +145,5 @@ class ExtractedMetadata
             'section' => $this->section,
             'description' => $this->description,
         ];
-    }
-
-    public function getConfidenceScores(): array
-    {
-        return [];
     }
 }

@@ -24,7 +24,6 @@ class Publication extends Model
     protected $fillable = [
         'title',
         'title_low',
-        'id_publishing',
         'id_part',
         'issue_year',
         'id_issue_type',
@@ -33,20 +32,14 @@ class Publication extends Model
         'status',
         'original_folder_path',
         'content_type_id',
-        'actuality',
-        'id_theme_set',
-        'id_author_set',
         'description',
         'word_count',
-        'metadata_previous_values',
     ];
 
     protected $casts = [
         'upload_date' => 'date',
-        'actuality' => 'integer',
         'word_count' => 'integer',
         'status' => 'string',
-        'metadata_previous_values' => 'array',
     ];
 
     protected $appends = [
@@ -55,11 +48,6 @@ class Publication extends Model
     ];
 
     // Relationships
-    public function publishing(): BelongsTo
-    {
-        return $this->belongsTo(Publishing::class, 'id_publishing', 'id_publishing');
-    }
-
     public function part(): BelongsTo
     {
         return $this->belongsTo(Part::class, 'id_part', 'id_part');
@@ -73,16 +61,6 @@ class Publication extends Model
     public function magazine(): BelongsTo
     {
         return $this->belongsTo(Magazine::class, 'id_magazine', 'id_magazine');
-    }
-
-    public function themeSet(): BelongsTo
-    {
-        return $this->belongsTo(ThemeSet::class, 'id_theme_set', 'id_theme_set');
-    }
-
-    public function authorGroup(): BelongsTo
-    {
-        return $this->belongsTo(AuthorGroup::class, 'id_author_set', 'id_author_group');
     }
 
     public function files(): HasMany
@@ -133,7 +111,7 @@ class Publication extends Model
 
     public function fileMetadata(): HasMany
     {
-        return $this->hasMany(FileMetadata::class, 'file_id', 'id_publication');
+        return $this->hasMany(FileMetadata::class, 'publication_id', 'id_publication');
     }
 
     // Boot method for model lifecycle hooks
@@ -213,46 +191,24 @@ class Publication extends Model
         )->withTimestamps();
     }
 
-    // Accessors for cover image and genres (Task 7)
-    protected function coverImageUrl(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                $cover = $this->coverImage()->first();
-                if (! $cover || ! $cover->file_name) {
-                    return null;
-                }
-
-                // Generate public URL for cover image (no auth required)
-                $encodedFilename = rtrim(strtr(base64_encode($cover->file_name), '+/', '-_'), '=');
-
-                return route('covers.serve', [
-                    'publication' => $this->id_publication,
-                    'filename' => $encodedFilename,
-                ]);
-            }
-        );
-    }
-
     /**
-     * Get the relative file path for cover image (used in templates with Storage::url())
+     * Get cover image URL for this publication.
+     * Uses pre-loaded files relationship if available to avoid N+1 queries.
      */
     protected function coverImagePath(): Attribute
     {
         return Attribute::make(
             get: function () {
-                // Check if files relationship is already loaded, otherwise load it
-                if (! $this->relationLoaded('files')) {
-                    $cover = $this->coverImage()->first();
-                } else {
+                if ($this->relationLoaded('files')) {
                     $cover = $this->files->where('file_type', 'cover')->first();
+                } else {
+                    $cover = $this->coverImage()->first();
                 }
 
                 if (! $cover || ! $cover->file_name) {
                     return null;
                 }
 
-                // Generate public URL for cover image (no auth required)
                 $encodedFilename = rtrim(strtr(base64_encode($cover->file_name), '+/', '-_'), '=');
 
                 return route('covers.serve', [

@@ -242,9 +242,24 @@ class MetadataReviewQueue extends Component
         $count = 0;
         foreach ($this->selectedItems as $id) {
             $metadata = FileMetadata::find($id);
-            if ($metadata && $metadata->file_id) {
-                ExtractMetadataFromFile::dispatch($metadata->file_id, $metadata->file_name, 1);
-                $count++;
+            if ($metadata && $metadata->publication_id) {
+                $file = \App\Models\File::where('id_publication', $metadata->publication_id)
+                    ->where('file_name', $metadata->file_name)
+                    ->first();
+
+                if ($file) {
+                    $filePath = $file->file_source.'/'.$file->file_name;
+                    $fullPath = \Storage::disk('library')->path($filePath);
+
+                    ExtractMetadataFromFile::dispatch(
+                        $metadata->publication_id,
+                        $fullPath,
+                        $file->publication->content_type_id ?? 1,
+                        $file->mime_type ?? 'application/octet-stream'
+                    );
+
+                    $count++;
+                }
             }
         }
 
@@ -259,11 +274,10 @@ class MetadataReviewQueue extends Component
     public function reExtractSingle(int $id): void
     {
         $metadata = FileMetadata::find($id);
-        if ($metadata && $metadata->file_id) {
+        if ($metadata && $metadata->publication_id) {
             // Get file path from files table
-            [$publicationId, $fileName] = explode('-', $metadata->file_id, 2);
-            $file = \App\Models\File::where('id_publication', $publicationId)
-                ->where('file_name', $fileName)
+            $file = \App\Models\File::where('id_publication', $metadata->publication_id)
+                ->where('file_name', $metadata->file_name)
                 ->first();
 
             if ($file) {
@@ -271,7 +285,7 @@ class MetadataReviewQueue extends Component
                 $fullPath = \Storage::disk('library')->path($filePath);
 
                 ExtractMetadataFromFile::dispatch(
-                    $metadata->file_id,
+                    $metadata->publication_id,
                     $fullPath,
                     $file->publication->content_type_id ?? 1,
                     $file->mime_type ?? 'application/octet-stream'

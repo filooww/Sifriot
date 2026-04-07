@@ -41,13 +41,13 @@ class ExtractMetadataFromFile implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param  string  $fileId  File identifier
+     * @param  int  $publicationId  Publication ID
      * @param  string  $filePath  Absolute path to file
      * @param  string|int  $contentTypeId  Content type ID
      * @param  string|null  $mimeType  MIME type of file
      */
     public function __construct(
-        public string $fileId,
+        public int $publicationId,
         public string $filePath,
         public int|string $contentTypeId,
         public ?string $mimeType = null
@@ -63,8 +63,10 @@ class ExtractMetadataFromFile implements ShouldQueue
         $startTime = microtime(true);
 
         try {
+            $fileName = basename($this->filePath);
+
             Log::channel('folder_scan')->info('Starting metadata extraction', [
-                'file_id' => $this->fileId,
+                'publication_id' => $this->publicationId,
                 'file_path' => $this->filePath,
                 'content_type_id' => $this->contentTypeId,
             ]);
@@ -75,14 +77,15 @@ class ExtractMetadataFromFile implements ShouldQueue
             }
 
             // Step 2: Get file info
-            $fileName = basename($this->filePath);
             $mimeType = $this->mimeType ?? mime_content_type($this->filePath);
 
             // Step 3: Create or update FileMetadata record (mark as pending)
             $fileMetadata = FileMetadata::updateOrCreate(
-                ['file_id' => $this->fileId],
                 [
+                    'publication_id' => $this->publicationId,
                     'file_name' => $fileName,
+                ],
+                [
                     'status' => 'pending',
                     'extracted_at' => null,
                 ]
@@ -90,7 +93,8 @@ class ExtractMetadataFromFile implements ShouldQueue
 
             Log::channel('folder_scan')->info('FileMetadata record created', [
                 'file_metadata_id' => $fileMetadata->id,
-                'file_id' => $this->fileId,
+                'publication_id' => $this->publicationId,
+                'file_name' => $fileName,
             ]);
 
             // Step 4: Create appropriate extractor
@@ -118,7 +122,7 @@ class ExtractMetadataFromFile implements ShouldQueue
 
             Log::channel('folder_scan')->info('Metadata extraction completed successfully', [
                 'file_metadata_id' => $fileMetadata->id,
-                'file_id' => $this->fileId,
+                'publication_id' => $this->publicationId,
                 'extractor' => $extractorClass,
                 'status' => $fileMetadata->status,
                 'duration_ms' => $duration,
@@ -136,7 +140,7 @@ class ExtractMetadataFromFile implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         Log::channel('folder_scan')->error('Metadata extraction job failed after all retries', [
-            'file_id' => $this->fileId,
+            'publication_id' => $this->publicationId,
             'file_path' => $this->filePath,
             'error' => $exception->getMessage(),
             'attempts' => $this->attempts(),
@@ -144,7 +148,10 @@ class ExtractMetadataFromFile implements ShouldQueue
 
         // Update FileMetadata with failed status
         try {
-            $fileMetadata = FileMetadata::where('file_id', $this->fileId)->first();
+            $fileName = basename($this->filePath);
+            $fileMetadata = FileMetadata::where('publication_id', $this->publicationId)
+                ->where('file_name', $fileName)
+                ->first();
             if ($fileMetadata) {
                 $fileMetadata->update([
                     'status' => 'failed',
@@ -154,7 +161,7 @@ class ExtractMetadataFromFile implements ShouldQueue
             }
         } catch (\Exception $e) {
             Log::error('Failed to update FileMetadata status after job failure', [
-                'file_id' => $this->fileId,
+                'publication_id' => $this->publicationId,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -178,7 +185,7 @@ class ExtractMetadataFromFile implements ShouldQueue
         $duration = round((microtime(true) - $startTime) * 1000, 2);
 
         Log::channel('folder_scan')->error('Metadata extraction failed', [
-            'file_id' => $this->fileId,
+            'publication_id' => $this->publicationId,
             'file_path' => $this->filePath,
             'error' => $e->getMessage(),
             'duration_ms' => $duration,
@@ -187,7 +194,10 @@ class ExtractMetadataFromFile implements ShouldQueue
 
         // Update FileMetadata with error
         try {
-            $fileMetadata = FileMetadata::where('file_id', $this->fileId)->first();
+            $fileName = basename($this->filePath);
+            $fileMetadata = FileMetadata::where('publication_id', $this->publicationId)
+                ->where('file_name', $fileName)
+                ->first();
             if ($fileMetadata) {
                 $fileMetadata->update([
                     'status' => 'failed',

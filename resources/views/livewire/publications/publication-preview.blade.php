@@ -90,13 +90,13 @@
                 @endif
 
                 <!-- Publisher & Year -->
-                @if ($publication->publishing || $publication->issue_year)
+                @if ($publication->publishers->count() > 0 || $publication->issue_year)
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                         <div class="grid grid-cols-2 gap-4">
-                            @if ($publication->publishing)
+                            @if ($publication->publishers->count() > 0)
                                 <div>
                                     <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{{ __('Publisher') }}</h4>
-                                    <p class="text-gray-900 dark:text-white">{{ $publication->publishing->publishing }}</p>
+                                    <p class="text-gray-900 dark:text-white">{{ $publication->publishers->first()->name_en }}</p>
                                 </div>
                             @endif
                             @if ($publication->issue_year)
@@ -141,7 +141,7 @@
                 @php
                     $genreData = $this->getDisplayGenres();
                 @endphp
-                @if ($genreData['genres']->count() > 0 || $publication->themeSet)
+                @if ($genreData['genres']->count() > 0 || $publication->themes->count() > 0)
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                         <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ __('Genres') }}</h3>
                         <div class="flex flex-wrap gap-2">
@@ -157,11 +157,11 @@
                                 </span>
                             @endif
 
-                            @if ($publication->themeSet)
+                            @foreach ($publication->themes as $theme)
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
-                                    🏷️ {{ $publication->themeSet->theme_set_en ?? 'Theme' }}
+                                    🏷️ {{ $theme->theme ?? 'Theme' }}
                                 </span>
-                            @endif
+                            @endforeach
                         </div>
                     </div>
                 @endif

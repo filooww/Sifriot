@@ -138,7 +138,7 @@ class PublicCatalog extends Component
         $query->whereNull('deleted_at');
 
         // Eager load basic relationships (including files for cover image display)
-        $query->with(['publishing', 'authorGroup', 'issueType', 'contentType', 'authors', 'files', 'sections', 'publishers']);
+        $query->with(['issueType', 'contentType', 'authors', 'files', 'sections', 'publishers']);
 
         // Apply alphabetical sort if set
         if ($this->filterAlphabeticalSort) {
