@@ -99,10 +99,18 @@
 
                 <!-- Admin Actions Bar -->
                 <div class="mb-6 flex flex-wrap gap-3 items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 flex-wrap">
                         <button wire:click="toggleDeleted"
                                 class="px-4 py-2 {{ $showDeleted ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300' }} rounded-md transition">
                             {{ $showDeleted ? __('Hide Deleted') : __('Show Deleted') }}
+                        </button>
+                        <button wire:click="toggleStatusFilter('published')"
+                                class="px-4 py-2 {{ in_array('published', $filterPublicationStatus) ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300' }} rounded-md transition">
+                            ✅ {{ __('Published') }}
+                        </button>
+                        <button wire:click="toggleStatusFilter('hidden')"
+                                class="px-4 py-2 {{ in_array('hidden', $filterPublicationStatus) ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300' }} rounded-md transition">
+                            🚫 {{ __('Hidden') }}
                         </button>
                     </div>
                     <div class="flex gap-2">

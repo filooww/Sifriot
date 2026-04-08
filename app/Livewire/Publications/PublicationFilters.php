@@ -8,6 +8,7 @@ use App\Models\Author;
 use App\Models\Section;
 use App\Models\ContentType;
 use App\Models\Publisher;
+use App\Models\Genre;
 use App\Models\Theme;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -25,6 +26,8 @@ class PublicationFilters extends Component
     public ?string $dateTo = null;
 
     public array $selectedGenres = [];
+
+    public array $selectedRealGenres = [];
 
     public array $textSizeRange = [0, 500000];
 
@@ -51,6 +54,7 @@ class PublicationFilters extends Component
         'dateFrom' => ['as' => 'from', 'except' => null],
         'dateTo' => ['as' => 'to', 'except' => null],
         'selectedGenres' => ['as' => 'genre', 'except' => []],
+        'selectedRealGenres' => ['as' => 'rgenre', 'except' => []],
         'selectedSections' => ['as' => 'sec', 'except' => []],
         'selectedPublishers' => ['as' => 'pub', 'except' => []],
         'textSizeRange' => ['as' => 'size', 'except' => [0, 500000]],
@@ -82,6 +86,11 @@ class PublicationFilters extends Component
     }
 
     public function updatedSelectedGenres(): void
+    {
+        $this->emitFilters();
+    }
+
+    public function updatedSelectedRealGenres(): void
     {
         $this->emitFilters();
     }
@@ -133,6 +142,7 @@ class PublicationFilters extends Component
         $this->dateFrom = null;
         $this->dateTo = null;
         $this->selectedGenres = [];
+        $this->selectedRealGenres = [];
         $this->selectedSections = [];
         $this->selectedPublishers = [];
         $this->textSizeRange = [0, 500000];
@@ -154,6 +164,7 @@ class PublicationFilters extends Component
             'dateFrom' => $this->dateFrom = null,
             'dateTo' => $this->dateTo = null,
             'genre' => $this->selectedGenres = array_values(array_diff($this->selectedGenres, [$value])),
+            'realGenre' => $this->selectedRealGenres = array_values(array_diff($this->selectedRealGenres, [$value])),
             'section' => $this->selectedSections = array_values(array_diff($this->selectedSections, [$value])),
             'publisher' => $this->selectedPublishers = array_values(array_diff($this->selectedPublishers, [$value])),
             'textSize' => $this->textSizeRange = [0, 500000],
@@ -220,6 +231,17 @@ class PublicationFilters extends Component
                     'type' => 'genre',
                     'value' => $genreId,
                     'label' => $theme->theme,
+                ];
+            }
+        }
+
+        foreach ($this->selectedRealGenres as $realGenreId) {
+            $genre = Genre::find($realGenreId);
+            if ($genre) {
+                $filters[] = [
+                    'type' => 'realGenre',
+                    'value' => $realGenreId,
+                    'label' => $genre->localizedName,
                 ];
             }
         }
@@ -330,11 +352,23 @@ class PublicationFilters extends Component
     }
 
     #[Computed]
-    public function genres(): array
+    public function themes(): array
     {
         return Theme::orderBy('theme')
             ->limit(50)
             ->get()
+            ->toArray();
+    }
+
+    #[Computed]
+    public function genres(): array
+    {
+        return Genre::orderBy('name_en')
+            ->get()
+            ->map(fn ($genre) => [
+                'id' => $genre->id,
+                'name' => $genre->localizedName,
+            ])
             ->toArray();
     }
 
@@ -373,6 +407,7 @@ class PublicationFilters extends Component
             'dateFrom' => $this->dateFrom,
             'dateTo' => $this->dateTo,
             'genres' => $this->selectedGenres,
+            'realGenres' => $this->selectedRealGenres,
             'sections' => $this->selectedSections,
             'publishers' => $this->selectedPublishers,
             'textSizeRange' => $this->textSizeRange,
@@ -389,3 +424,4 @@ class PublicationFilters extends Component
         return view('livewire.publications.publication-filters');
     }
 }
+

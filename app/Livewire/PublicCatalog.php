@@ -35,6 +35,8 @@ class PublicCatalog extends Component
 
     public array $filterGenres = [];
 
+    public array $filterRealGenres = [];
+
     public array $filterSections = [];
 
     public array $filterPublishers = [];
@@ -68,6 +70,7 @@ class PublicCatalog extends Component
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
         $this->filterDateTo = $filters['dateTo'] ?? null;
         $this->filterGenres = $filters['genres'] ?? [];
+        $this->filterRealGenres = $filters['realGenres'] ?? [];
         $this->filterSections = $filters['sections'] ?? [];
         $this->filterPublishers = $filters['publishers'] ?? [];
         $this->filterTextSizeRange = $filters['textSizeRange'] ?? [0, 500000];
@@ -121,6 +124,10 @@ class PublicCatalog extends Component
             ->when(! empty($this->filterGenres), function ($query) {
                 $query->whereHas('themes', fn ($q) => $q->whereIn('themes.id_theme', $this->filterGenres));
             })
+            // Apply real genre filter
+            ->when(! empty($this->filterRealGenres), function ($query) {
+                $query->whereHas('genres', fn ($q) => $q->whereIn('genres.id', $this->filterRealGenres));
+            })
             // Apply section filter
             ->when(! empty($this->filterSections), function ($query) {
                 $query->whereHas('sections', fn ($q) => $q->whereIn('sections.id', $this->filterSections));
@@ -173,3 +180,4 @@ class PublicCatalog extends Component
         ]);
     }
 }
+

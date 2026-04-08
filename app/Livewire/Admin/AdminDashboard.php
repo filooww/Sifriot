@@ -40,6 +40,8 @@ class AdminDashboard extends Component
 
     public array $filterGenres = [];
 
+    public array $filterRealGenres = [];
+
     public array $filterTextSizeRange = [0, 500000];
 
     public ?string $filterAlphabeticalSort = null;
@@ -54,6 +56,16 @@ class AdminDashboard extends Component
     public function toggleDeleted()
     {
         $this->showDeleted = ! $this->showDeleted;
+        $this->resetPage();
+    }
+
+    public function toggleStatusFilter(string $status): void
+    {
+        if (in_array($status, $this->filterPublicationStatus)) {
+            $this->filterPublicationStatus = array_values(array_diff($this->filterPublicationStatus, [$status]));
+        } else {
+            $this->filterPublicationStatus[] = $status;
+        }
         $this->resetPage();
     }
 
@@ -90,6 +102,7 @@ class AdminDashboard extends Component
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
         $this->filterDateTo = $filters['dateTo'] ?? null;
         $this->filterGenres = $filters['genres'] ?? [];
+        $this->filterRealGenres = $filters['realGenres'] ?? [];
         $this->filterTextSizeRange = $filters['textSizeRange'] ?? [0, 500000];
         $this->filterAlphabeticalSort = $filters['alphabeticalSort'] ?? null;
         $this->filterPublicationStatus = $filters['publicationStatus'] ?? [];
@@ -149,6 +162,10 @@ class AdminDashboard extends Component
             ->when(! empty($this->filterGenres), function ($query) {
                 $query->whereHas('themes', fn ($q) => $q->whereIn('themes.id_theme', $this->filterGenres));
             })
+            // Apply real genre filter
+            ->when(! empty($this->filterRealGenres), function ($query) {
+                $query->whereHas('genres', fn ($q) => $q->whereIn('genres.id', $this->filterRealGenres));
+            })
             // Apply text size filter
             ->when($this->filterTextSizeRange !== [0, 500000], function ($query) {
                 $query->whereBetween('word_count', [$this->filterTextSizeRange[0], $this->filterTextSizeRange[1]]);
@@ -207,3 +224,4 @@ class AdminDashboard extends Component
         ]);
     }
 }
+

@@ -84,13 +84,13 @@
                         </td>
                         <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                             <div class="flex items-center justify-end gap-1">
-                                <button wire:click="editContentType({{ $contentType->id }})"
+                                <button wire:click="editContentType({{ $contentType->id_content_type }})"
                                         class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-blue-900/50 dark:hover:text-blue-400"
                                         title="{{ __('Edit') }}">
                                     <x-heroicon-o-pencil-square class="h-5 w-5" />
                                 </button>
                                 @if(!$contentType->is_system)
-                                    <button wire:click="confirmDelete('content-type', {{ $contentType->id }})"
+                                    <button wire:click="confirmDelete('content-type', {{ $contentType->id_content_type }})"
                                             class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/50 dark:hover:text-red-400"
                                             title="{{ __('Delete') }}">
                                         <x-heroicon-o-trash class="h-5 w-5" />

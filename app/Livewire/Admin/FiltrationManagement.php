@@ -195,12 +195,12 @@ class FiltrationManagement extends Component
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $contentTypeId = $this->editingContentType?->id;
+        $contentTypeId = $this->editingContentType?->getKey();
         $validated = $this->validate([
             'ct_name_en' => 'required|string|max:255',
             'ct_name_ru' => 'nullable|string|max:255',
             'ct_name_he' => 'nullable|string|max:255',
-            'ct_slug' => "required|string|max:255|unique:content_types,slug,{$contentTypeId}",
+            'ct_slug' => "required|string|max:255|unique:content_types,slug,{$contentTypeId},id_content_type",
             'ct_icon' => 'nullable|string|max:255',
             'ct_folder_name' => 'nullable|string|max:255',
             'ct_is_system' => 'boolean',
@@ -291,7 +291,7 @@ class FiltrationManagement extends Component
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $genreId = $this->editingGenre?->id;
+        $genreId = $this->editingGenre?->getKey();
         $validated = $this->validate([
             'genre_name_en' => 'required|string|max:255',
             'genre_name_ru' => 'nullable|string|max:255',
@@ -451,7 +451,7 @@ class FiltrationManagement extends Component
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $sectionId = $this->editingSection?->id;
+        $sectionId = $this->editingSection?->getKey();
         $validated = $this->validate([
             'section_name_en' => 'required|string|max:255',
             'section_name_ru' => 'nullable|string|max:255',
@@ -617,7 +617,7 @@ class FiltrationManagement extends Component
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $publisherId = $this->editingPublisher?->id;
+        $publisherId = $this->editingPublisher?->getKey();
         $validated = $this->validate([
             'publisher_name_en' => 'required|string|max:255',
             'publisher_name_ru' => 'nullable|string|max:255',
@@ -692,10 +692,10 @@ class FiltrationManagement extends Component
                     'id' => $p->id_publication,
                     'title' => $p->title ?? __('Untitled'),
                 ])->toArray();
-                $this->replacementOptions = ContentType::where('id', '!=', $id)
+                $this->replacementOptions = ContentType::where('id_content_type', '!=', $id)
                     ->orderBy('name_en')
-                    ->get(['id', 'name_en'])
-                    ->map(fn($c) => ['id' => $c->id, 'name' => $c->name_en])
+                    ->get(['id_content_type', 'name_en'])
+                    ->map(fn($c) => ['id' => $c->id_content_type, 'name' => $c->name_en])
                     ->toArray();
                 break;
 

@@ -53,7 +53,7 @@
             >
                 <span class="flex items-center gap-2">
                     @foreach($contentTypes as $type)
-                        <template x-if="selectedId == {{ $type->id }}">
+                        <template x-if="selectedId == {{ $type->id_content_type }}">
                             <span class="flex items-center gap-2">
                                 @if($type->icon)
                                     @php
@@ -97,9 +97,9 @@
                 @foreach($contentTypes as $type)
                     <button
                         type="button"
-                        @click="selectedId = {{ $type->id }}; open = false"
+                        @click="selectedId = {{ $type->id_content_type }}; open = false"
                         class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2"
-                        :class="{ 'bg-blue-50 dark:bg-blue-900/30': selectedId == {{ $type->id }} }"
+                        :class="{ 'bg-blue-50 dark:bg-blue-900/30': selectedId == {{ $type->id_content_type }} }"
                     >
                         @if($type->icon)
                             @php

@@ -14,6 +14,8 @@ class ContentType extends Model
 {
     use HasFactory, HasLocalizedName, SoftDeletes;
 
+    protected $primaryKey = 'id_content_type';
+
     protected $fillable = [
         'name_en',
         'name_ru',
@@ -30,7 +32,7 @@ class ContentType extends Model
 
     public function publications(): HasMany
     {
-        return $this->hasMany(Publication::class);
+        return $this->hasMany(Publication::class, 'content_type_id', 'id_content_type');
     }
 
     public function customFields(): HasMany

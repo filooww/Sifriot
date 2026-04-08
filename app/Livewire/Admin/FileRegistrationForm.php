@@ -60,6 +60,11 @@ class FileRegistrationForm extends Component
 
             return;
         }
+
+        // Always set name from the uploaded file
+        if ($this->uploadedFile) {
+            $this->publicationTitle = pathinfo($this->uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
+        }
     }
 
     // registerFile removed
@@ -68,8 +73,8 @@ class FileRegistrationForm extends Component
     {
         $this->validate([
             'publicationTitle' => 'required|max:500',
-            'contentTypeId' => 'required|exists:content_types,id',
-            'uploadedFile' => 'required|file',
+            'contentTypeId' => 'required|exists:content_types,id_content_type',
+            'uploadedFile' => 'required|file|max:512000',
         ]);
 
         $filePath = null;
@@ -91,7 +96,7 @@ class FileRegistrationForm extends Component
 
             // Ensure the directory exists before storing the file
             if (! Storage::disk('library')->exists($storagePath)) {
-                Storage::disk('library')->makeDirectory($storagePath, 0755, true);
+                Storage::disk('library')->makeDirectory($storagePath);
             }
 
             // Store uploaded file in library disk (D:\oldI\LiteraCommon)
@@ -137,9 +142,8 @@ class FileRegistrationForm extends Component
 
                 // Dispatch metadata extraction job if enabled
                 if (config('library.extraction.enabled', true)) {
-                    $fileId = "{$publication->id_publication}-{$uniqueFilename}";
                     ExtractMetadataFromFile::dispatch(
-                        $fileId,
+                        $publication->id_publication,
                         $fullPath,
                         $this->contentTypeId,
                         $mimeType

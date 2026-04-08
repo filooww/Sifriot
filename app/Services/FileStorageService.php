@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\FileRegistrationLog;
 use Illuminate\Support\Facades\Storage;
 
 /**

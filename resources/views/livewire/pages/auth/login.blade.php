@@ -20,7 +20,13 @@ new #[Layout('layouts.guest')] class extends Component
 
         Session::regenerate();
 
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        // Route admin to dashboard, regular users to profile
+        $user = auth()->user();
+        if ($user && $user->isAdmin()) {
+            $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        } else {
+            $this->redirectIntended(default: route('profile', absolute: false), navigate: true);
+        }
     }
 }; ?>
 

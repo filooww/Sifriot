@@ -62,6 +62,9 @@ class MetadataReviewDashboard extends Component
     public array $filterGenres = [];
 
     #[Url]
+    public array $filterRealGenres = [];
+
+    #[Url]
     public array $filterTextSizeRange = [0, 500000];
 
     #[Url]
@@ -98,6 +101,7 @@ class MetadataReviewDashboard extends Component
         'filterDateFrom' => ['except' => null],
         'filterDateTo' => ['except' => null],
         'filterGenres' => ['except' => []],
+        'filterRealGenres' => ['except' => []],
         'filterTextSizeRange' => ['except' => [0, 500000]],
         'filterAlphabeticalSort' => ['except' => null],
         'filterPublicationStatus' => ['except' => []],
@@ -176,6 +180,7 @@ class MetadataReviewDashboard extends Component
         $this->filterDateFrom = $filters['dateFrom'] ?? null;
         $this->filterDateTo = $filters['dateTo'] ?? null;
         $this->filterGenres = $filters['genres'] ?? [];
+        $this->filterRealGenres = $filters['realGenres'] ?? [];
         $this->filterTextSizeRange = $filters['textSizeRange'] ?? [0, 500000];
         $this->filterAlphabeticalSort = $filters['alphabeticalSort'] ?? null;
         $this->filterPublicationStatus = $filters['publicationStatus'] ?? [];
@@ -222,6 +227,7 @@ class MetadataReviewDashboard extends Component
         $this->filterDateFrom = null;
         $this->filterDateTo = null;
         $this->filterGenres = [];
+        $this->filterRealGenres = [];
         $this->filterTextSizeRange = [0, 500000];
         $this->filterAlphabeticalSort = null;
         $this->filterPublicationStatus = [];
@@ -229,6 +235,19 @@ class MetadataReviewDashboard extends Component
         $this->selectAll = false;
         $this->resetPage();
         $this->dispatch('notify', message: 'Filters cleared', type: 'success');
+    }
+
+    /**
+     * Toggle publication status filter (published/hidden)
+     */
+    public function togglePublicationStatusFilter(string $status): void
+    {
+        if (in_array($status, $this->filterPublicationStatus)) {
+            $this->filterPublicationStatus = array_values(array_diff($this->filterPublicationStatus, [$status]));
+        } else {
+            $this->filterPublicationStatus[] = $status;
+        }
+        $this->resetPage();
     }
 
     /**
@@ -295,6 +314,16 @@ class MetadataReviewDashboard extends Component
                     ->from('genre_publication as gp')
                     ->whereColumn('gp.publication_id', 'file_metadatas.publication_id')
                     ->whereIn('gp.genre_id', $this->filterGenres);
+            });
+        }
+
+        // Publication real genre filter
+        if (!empty($this->filterRealGenres)) {
+            $query->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('genre_publication as gp2')
+                    ->whereColumn('gp2.publication_id', 'file_metadatas.publication_id')
+                    ->whereIn('gp2.genre_id', $this->filterRealGenres);
             });
         }
 
@@ -485,6 +514,7 @@ class MetadataReviewDashboard extends Component
             $this->dispatch('notify', message: 'No items selected', type: 'warning');
 
             return;
+
         }
 
         FileMetadata::whereIn('id', $this->selectedItems)
@@ -785,6 +815,7 @@ class MetadataReviewDashboard extends Component
                 ]);
 
             } catch (\Exception $e) {
+
                 Log::channel('folder_scan')->error('Bulk Gemini extraction failed', [
                     'id' => $id,
                     'error' => $e->getMessage(),

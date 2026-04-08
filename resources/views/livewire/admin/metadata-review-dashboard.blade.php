@@ -59,6 +59,19 @@
                         ⚠️ {{ __('Orphaned') }} ({{ $orphanedCount }})
                     </button>
                 @endif
+
+                {{-- Separator --}}
+                <span class="border-l border-gray-300 dark:border-gray-600 mx-2"></span>
+
+                {{-- Publication Status Filters --}}
+                <button wire:click="togglePublicationStatusFilter('published')"
+                    class="px-4 py-2 rounded-lg text-sm font-medium transition {{ in_array('published', $filterPublicationStatus) ? 'bg-green-600 text-white ring-2 ring-green-400' : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40' }}">
+                    ✅ {{ __('Published') }}
+                </button>
+                <button wire:click="togglePublicationStatusFilter('hidden')"
+                    class="px-4 py-2 rounded-lg text-sm font-medium transition {{ in_array('hidden', $filterPublicationStatus) ? 'bg-gray-600 text-white ring-2 ring-gray-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700' }}">
+                    🚫 {{ __('Hidden') }}
+                </button>
             </div>
 
             <!-- Search Bar -->

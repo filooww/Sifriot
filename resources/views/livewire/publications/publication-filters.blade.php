@@ -3,7 +3,7 @@
         contentType: true,
         author: false,
         date: false,
-        genre: false,
+        genre: true,
         section: false,
         publisher: false,
         textSize: false,
@@ -11,7 +11,8 @@
         status: false,
         extractionStatus: false,
         format: false,
-        extractionDate: false
+        extractionDate: false,
+        realGenre: false
     }
 }" class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 sticky top-4">
 
@@ -86,7 +87,7 @@
                     <input
                         type="checkbox"
                         wire:model.live="selectedContentTypes"
-                        value="{{ $contentType['id'] }}"
+                        value="{{ $contentType['id_content_type'] }}"
                         class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
                     >
                     <span class="flex items-center gap-1.5 text-sm">
@@ -203,7 +204,7 @@
 
         <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
 
-        {{-- Genre Filter --}}
+        {{-- Theme Filter --}}
         <div class="mb-3">
             <button
                 @click="openSections.genre = !openSections.genre"
@@ -213,7 +214,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                     </svg>
-                    <span>{{ __('Genre') }}</span>
+                    <span>{{ __('Theme') }}</span>
                 </div>
                 <svg
                     class="w-5 h-5 transition-transform duration-200"
@@ -226,15 +227,54 @@
                 </svg>
             </button>
             <div x-show="openSections.genre" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
-                @foreach($this->genres as $genre)
+                @foreach($this->themes as $theme)
                 <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
                     <input
                         type="checkbox"
                         wire:model.live="selectedGenres"
-                        value="{{ $genre['id_theme'] }}"
+                        value="{{ $theme['id_theme'] }}"
                         class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
                     >
-                    <span class="text-sm">{{ $genre['theme'] }}</span>
+                    <span class="text-sm">{{ $theme['theme'] }}</span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+
+        {{-- Genre Filter --}}
+        <div class="mb-3">
+            <button
+                @click="openSections.realGenre = !openSections.realGenre"
+                class="w-full flex items-center justify-between text-start font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+            >
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                    </svg>
+                    <span>{{ __('Genre') }}</span>
+                </div>
+                <svg
+                    class="w-5 h-5 transition-transform duration-200"
+                    :class="openSections.realGenre ? 'rotate-180' : ''"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="openSections.realGenre" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                @foreach($this->genres as $genreItem)
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="checkbox"
+                        wire:model.live="selectedRealGenres"
+                        value="{{ $genreItem['id'] }}"
+                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">{{ $genreItem['name'] }}</span>
                 </label>
                 @endforeach
             </div>
@@ -498,6 +538,8 @@
                         wire:model.live="statusFilter"
                         value="confirmed"
                         class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+
+
                     >
                     <span class="text-sm">✅ {{ __('Confirmed') }}</span>
                 </label>
