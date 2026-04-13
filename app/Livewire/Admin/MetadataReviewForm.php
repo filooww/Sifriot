@@ -15,8 +15,10 @@ use App\Models\Publication;
 use App\Models\Publisher;
 use App\Services\MetadataExtractors\DocumentTextExtractor;
 use App\Services\MetadataExtractors\GeminiMetadataExtractorService;
+use App\Services\PdfCoverExtractorService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -86,6 +88,10 @@ class MetadataReviewForm extends Component
     public array $createNewThemes = [];
 
     public bool $createNewPublisher = false;
+
+    public bool $showPdfCoverButton = false;
+
+    public bool $isGeneratingCover = false;
 
     /**
      * Updated hook: Auto-save cover image when uploaded
@@ -271,6 +277,9 @@ class MetadataReviewForm extends Component
 
         // Load custom fields if content type is selected
         $this->loadCustomFields();
+
+        // Check if PDF cover button should be shown
+        $this->checkPdfCoverEligibility();
     }
 
     /**
@@ -332,6 +341,161 @@ class MetadataReviewForm extends Component
     public function updatedContentTypeId(): void
     {
         $this->loadCustomFields();
+    }
+
+    /**
+     * Check if PDF cover button should be shown.
+     */
+    private function checkPdfCoverEligibility(): void
+    {
+        if (!$this->fileMetadata) {
+            $this->showPdfCoverButton = false;
+            return;
+        }
+
+        // Check if file is PDF
+        $extension = strtolower(pathinfo($this->fileMetadata->file_name, PATHINFO_EXTENSION));
+        if ($extension !== 'pdf') {
+            $this->showPdfCoverButton = false;
+            return;
+        }
+
+        // Check if cover already exists
+        $publication = Publication::with('files')->find($this->fileMetadata->publication_id);
+        if (!$publication) {
+            $this->showPdfCoverButton = false;
+            return;
+        }
+
+        $hasCover = $publication->files()
+            ->where('file_type', 'cover')
+            ->exists();
+
+        $this->showPdfCoverButton = !$hasCover;
+    }
+
+    /**
+     * Generate cover image from first page of PDF.
+     */
+    public function generatePdfCover(): void
+    {
+        if (!$this->fileMetadata || !$this->showPdfCoverButton) {
+            $this->dispatch('notify', message: 'Cannot generate cover for this file', type: 'error');
+            return;
+        }
+
+        $this->isGeneratingCover = true;
+
+        try {
+            // Get publication and file path
+            $publication = Publication::find($this->fileMetadata->publication_id);
+            if (!$publication) {
+                throw new \Exception('Publication not found');
+            }
+
+            // Get file path from file_registration_logs
+            $fileLog = DB::table('file_registration_logs')
+                ->where('publication_id', $publication->id_publication)
+                ->where('file_path', 'like', '%' . addcslashes($this->fileMetadata->file_name, '%_') . '%')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if (!$fileLog || !$fileLog->file_path) {
+                throw new \Exception('File path not found');
+            }
+
+            // Build absolute file path
+            $fullPath = $fileLog->file_path;
+            if (preg_match('/^(\/|[A-Za-z]:)/', $fullPath)) {
+                $filePath = $fullPath;
+            } else {
+                $filePath = storage_path('app/content/' . $fullPath);
+                if (!file_exists($filePath)) {
+                    $filePath = storage_path('app/' . $fullPath);
+                }
+            }
+
+            if (!file_exists($filePath)) {
+                throw new \Exception('PDF file not found: ' . $filePath);
+            }
+
+            // Extract first page as image
+            $coverExtractor = app(PdfCoverExtractorService::class);
+            $tempDir = storage_path('app/temp/');
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+
+            $tempImagePath = $tempDir . uniqid('pdf_cover_', true);
+            $imagePath = $coverExtractor->extractFirstPage($filePath, $tempImagePath);
+
+            if (!$imagePath || !file_exists($imagePath)) {
+                throw new \Exception('Failed to extract cover image from PDF');
+            }
+
+            // Store the image
+            $imageContent = file_get_contents($imagePath);
+            $extension = 'png';
+            $uniqueName = uniqid() . '_' . time() . '.' . $extension;
+            $storedPath = Storage::disk('public')->put('covers/' . $uniqueName, $imageContent);
+
+            // Clean up temp file
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+
+            // Delete existing cover images
+            $existingCovers = File::withTrashed()
+                ->where('id_publication', $publication->id_publication)
+                ->where('file_type', 'cover')
+                ->get();
+
+            foreach ($existingCovers as $existingCover) {
+                if ($existingCover->file_path && Storage::disk('public')->exists($existingCover->file_path)) {
+                    Storage::disk('public')->delete($existingCover->file_path);
+                }
+                File::withTrashed()
+                    ->where('id_publication', $existingCover->id_publication)
+                    ->where('file_name', $existingCover->file_name)
+                    ->forceDelete();
+            }
+
+            // Get next ord_num
+            $nextOrdNum = File::where('id_publication', $publication->id_publication)
+                ->max('ord_num') + 1;
+
+            // Create File record for cover image
+            $coverFilename = $coverExtractor->generateCoverFilename($this->fileMetadata->file_name);
+            File::create([
+                'id_publication' => $publication->id_publication,
+                'ord_num' => $nextOrdNum,
+                'file_name' => $coverFilename,
+                'file_name_low' => mb_strtolower($coverFilename),
+                'file_size' => (string) strlen($imageContent),
+                'file_size_bytes' => strlen($imageContent),
+                'mime_type' => 'image/png',
+                'file_type' => 'cover',
+                'file_path' => 'covers/' . $uniqueName,
+                'file_source' => 'pdf_auto_generated',
+            ]);
+
+            Log::info('PDF cover generated successfully', [
+                'publication_id' => $publication->id_publication,
+                'file_name' => $this->fileMetadata->file_name,
+                'cover_path' => 'covers/' . $uniqueName,
+            ]);
+
+            $this->showPdfCoverButton = false;
+            $this->dispatch('notify', message: 'Cover image generated successfully from PDF!', type: 'success');
+        } catch (\Exception $e) {
+            Log::error('Failed to generate PDF cover', [
+                'file_metadata_id' => $this->fileMetadata->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            $this->dispatch('notify', message: 'Failed to generate cover: ' . $e->getMessage(), type: 'error');
+        } finally {
+            $this->isGeneratingCover = false;
+        }
     }
 
     /**
