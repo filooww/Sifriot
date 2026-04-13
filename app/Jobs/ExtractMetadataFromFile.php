@@ -110,7 +110,6 @@ class ExtractMetadataFromFile implements ShouldQueue
                 'status' => $extractedMetadata->isEmpty() ? 'failed' : 'processed',
                 'extracted_data' => $this->sanitizeUtf8($extractedMetadata->toArray()),
                 'extraction_method' => $extractorClass,
-                'confidence_scores' => $extractedMetadata->getConfidenceScores(),
                 'extracted_at' => now(),
                 'error_message' => $extractedMetadata->isEmpty() ? 'No metadata extracted' : null,
             ]);

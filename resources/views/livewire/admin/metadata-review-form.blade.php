@@ -565,71 +565,40 @@
         </div> <!-- End of second row grid -->
 
         <!-- Form Section: Media & Additional Info -->
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
                 🖼️ {{ __('Media & Additional Info') }}
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Left Column -->
-                <div class="md:col-span-2 space-y-4">
 
-        <!-- Description Field -->
-        <div>
-            <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {{ __('Description') }}
-            </label>
-            <textarea
-                id="description"
-                wire:model="description"
-                rows="4"
-                placeholder="{{ __('Publication description or summary...') }}"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-            ></textarea>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Max 1000 characters') }}</p>
-            @error('description')
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <!-- Custom Fields Section -->
-        @if($contentTypeId && count($customFields) > 0)
-            <div class="border-t pt-4 mt-4 border-gray-200 dark:border-gray-700">
-                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
-                    ⚙️ {{ __('Custom Fields') }}
-                </h4>
-                <div class="space-y-4">
-                    @foreach($customFields as $field)
-                        <x-custom-field-input
-                            :field="$field"
-                            :value="$customFieldValues[$field->field_name] ?? null"
-                            wire-model="customFieldValues.{{ $field->field_name }}"
-                        />
-                    @endforeach
-                </div>
+            {{-- Description: full width --}}
+            <div class="mb-6">
+                <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {{ __('Description') }}
+                </label>
+                <textarea
+                    id="description"
+                    wire:model="description"
+                    rows="8"
+                    placeholder="{{ __('Publication description or summary...') }}"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white resize-y"
+                ></textarea>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Max 1000 characters') }}</p>
+                @error('description')
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
             </div>
-        @endif
 
-                </div>
-                
-                <!-- Right Column -->
-                <div class="space-y-5">
-        <!-- Cover Image Field -->
-        <div>
-            <label for="coverImage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {{ __('Cover Image') }}
-            </label>
-            <div class="space-y-3">
-
-                @if ($showPdfCoverButton)
-                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0">
-                                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium text-blue-900 dark:text-blue-200">
+            {{-- Cover image + custom fields row --}}
+            <div class="flex gap-6 items-start">
+                {{-- Cover Image: fixed width sidebar --}}
+                <div class="flex-shrink-0" style="width: 200px;">
+                    <label for="coverImage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ __('Cover Image') }}
+                    </label>
+                    <div class="space-y-3">
+                        @if ($showPdfCoverButton)
+                            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                                <p class="text-xs font-medium text-blue-900 dark:text-blue-200">
                                     {{ __('Generate Cover from PDF') }}
                                 </p>
                                 <p class="text-xs text-blue-700 dark:text-blue-300 mt-1">
@@ -640,14 +609,14 @@
                                     wire:click="generatePdfCover"
                                     wire:loading.attr="disabled"
                                     wire:target="generatePdfCover"
-                                    class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg transition"
+                                    class="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-medium rounded-lg transition"
                                 >
-                                    <div wire:loading.remove wire:target="generatePdfCover" class="flex items-center gap-2">
+                                    <div wire:loading.remove wire:target="generatePdfCover" class="flex items-center gap-1">
                                         <span>🖼️</span>
                                         <span>{{ __('Regenerate Cover') }}</span>
                                     </div>
-                                    <div wire:loading wire:target="generatePdfCover" class="flex items-center gap-2">
-                                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <div wire:loading wire:target="generatePdfCover" class="flex items-center gap-1">
+                                        <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
@@ -655,44 +624,59 @@
                                     </div>
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                @endif
-                <input
-                    type="file"
-                    id="coverImage"
-                    wire:model="coverImage"
-                    accept="image/jpeg,image/png,image/webp"
-                    class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/20 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/30"
-                />
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('JPG, PNG or WebP. Max 5MB.') }}</p>
+                        @endif
 
-                @php
-                    $currentCoverUrl = $this->getCurrentCoverImageUrl();
-                @endphp
+                        <input
+                            type="file"
+                            id="coverImage"
+                            wire:model="coverImage"
+                            accept="image/jpeg,image/png,image/webp"
+                            class="block w-full text-xs text-gray-500 dark:text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/20 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100"
+                        />
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('JPG, PNG or WebP. Max 5MB.') }}</p>
 
-                @if ($currentCoverUrl && !$coverImage)
-                    <div class="mt-4">
-                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Current Cover Image:') }}</p>
-                        <div class="w-32 h-48 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                            <img src="{{ $currentCoverUrl }}" alt="{{ __('Current cover') }}" class="w-full h-full object-cover">
-                        </div>
+                        @php $currentCoverUrl = $this->getCurrentCoverImageUrl(); @endphp
+
+                        @if ($currentCoverUrl && !$coverImage)
+                            <div>
+                                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('Current Cover Image:') }}</p>
+                                <div class="w-full rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600" style="height: 260px;">
+                                    <img src="{{ $currentCoverUrl }}" alt="{{ __('Current cover') }}" class="w-full h-full object-cover">
+                                </div>
+                            </div>
+                        @elseif ($coverImage)
+                            <div>
+                                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('New Cover Preview:') }}</p>
+                                <div class="w-full rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600" style="height: 260px;">
+                                    <img src="{{ $coverImage->temporaryUrl() }}" alt="{{ __('Cover preview') }}" class="w-full h-full object-cover">
+                                </div>
+                            </div>
+                        @endif
+
+                        @error('coverImage')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
                     </div>
-                @elseif ($coverImage)
-                    <div class="mt-4">
-                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('New Cover Preview:') }}</p>
-                        <div class="w-32 h-48 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                            <img src="{{ $coverImage->temporaryUrl() }}" alt="{{ __('Cover preview') }}" class="w-full h-full object-cover">
+                </div>
+
+                {{-- Custom Fields: takes remaining space --}}
+                @if($contentTypeId && count($customFields) > 0)
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
+                            ⚙️ {{ __('Custom Fields') }}
+                        </h4>
+                        <div class="space-y-4">
+                            @foreach($customFields as $field)
+                                <x-custom-field-input
+                                    :field="$field"
+                                    :value="$customFieldValues[$field->field_name] ?? null"
+                                    wire-model="customFieldValues.{{ $field->field_name }}"
+                                />
+                            @endforeach
                         </div>
                     </div>
                 @endif
             </div>
-                @error('coverImage')
-                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-                </div> <!-- End Right Column -->
-            </div> <!-- End Grid -->
         </div>
 
         <!-- Action Buttons Section -->

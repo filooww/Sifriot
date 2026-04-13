@@ -374,5 +374,18 @@
     "Hidden": "Скрыто",
     "Edit Metadata": "Редактировать метаданные",
     "Ready to read?": "Готовы к чтению?",
-    "View Full Publication": "Смотреть полную публикацию"
+    "View Full Publication": "Смотреть полную публикацию",
+    "Cover Image": "Обложка",
+    "Generate Cover from PDF": "Создать обложку из PDF",
+    "Extract the first page of this PDF as a cover image": "Извлечь первую страницу PDF в качестве обложки",
+    "Regenerate Cover": "Обновить обложку",
+    "Generating...": "Создание...",
+    "AI extraction unavailable": "ИИ-извлечение недоступно",
+    "Please fix the following errors:": "Пожалуйста, исправьте следующие ошибки:",
+    "Add Author": "Добавить автора",
+    "Add Genre": "Добавить жанр",
+    "Add Theme": "Добавить тему",
+    "Remove": "Удалить",
+    "Genre": "Жанр",
+    "Author name": "Имя автора"
 }
