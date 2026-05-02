@@ -29,13 +29,14 @@ class PdfCoverExtractorService
                 return $this->extractWithImagick($pdfPath, $outputPath);
             }
 
-            // Fallback to GD
+            // Fallback to ImageMagick convert command
             if ($this->isGdAvailable()) {
                 return $this->extractWithGd($pdfPath, $outputPath);
             }
 
-            Log::warning('No PDF to image conversion library available');
-            return null;
+            // Final fallback to FFmpeg
+            Log::info('Trying FFmpeg as fallback for PDF extraction');
+            return $this->extractWithFfmpeg($pdfPath, $outputPath);
         } catch (\Exception $e) {
             Log::error('Failed to extract PDF cover', [
                 'path' => $pdfPath,
@@ -54,11 +55,29 @@ class PdfCoverExtractorService
     }
 
     /**
-     * Check if GD extension is available.
+     * Check if ImageMagick convert command is available.
      */
     private function isGdAvailable(): bool
     {
-        return extension_loaded('gd');
+        $command = 'convert -version';
+        $output = [];
+        $returnCode = 0;
+        exec($command, $output, $returnCode);
+
+        return $returnCode === 0;
+    }
+
+    /**
+     * Check if FFmpeg command is available.
+     */
+    private function isFfmpegAvailable(): bool
+    {
+        $command = 'ffmpeg -version';
+        $output = [];
+        $returnCode = 0;
+        exec($command, $output, $returnCode);
+
+        return $returnCode === 0;
     }
 
     /**
@@ -127,6 +146,40 @@ class PdfCoverExtractorService
             return $imagePath;
         } catch (\Exception $e) {
             Log::error('GD/ImageMagick convert PDF extraction failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Extract first page using FFmpeg command (fallback option).
+     */
+    private function extractWithFfmpeg(string $pdfPath, string $outputPath): ?string
+    {
+        try {
+            // Use FFmpeg's command via exec
+            $imagePath = $outputPath . '.png';
+            $command = escapeshellcmd("ffmpeg -i '{$pdfPath}' -vframes 1 -q:v 2 {$imagePath}");
+
+            exec($command, $output, $returnCode);
+
+            if ($returnCode !== 0 || ! file_exists($imagePath)) {
+                Log::error('FFmpeg command failed', [
+                    'return_code' => $returnCode,
+                    'output' => implode("\n", $output),
+                ]);
+                return null;
+            }
+
+            Log::info('PDF cover extracted with FFmpeg', [
+                'pdf' => basename($pdfPath),
+                'image' => $imagePath,
+            ]);
+
+            return $imagePath;
+        } catch (\Exception $e) {
+            Log::error('FFmpeg PDF extraction failed', [
                 'error' => $e->getMessage(),
             ]);
             return null;
