@@ -384,5 +384,15 @@
     "Hidden": "Hidden",
     "Edit Metadata": "Edit Metadata",
     "Ready to read?": "Ready to read?",
-    "View Full Publication": "View Full Publication"
+    "View Full Publication": "View Full Publication",
+    "Cover Image": "Cover Image",
+    "Generate Cover from PDF": "Generate Cover from PDF",
+    "Extract the first page of this PDF as a cover image": "Extract the first page of this PDF as a cover image",
+    "Regenerate Cover": "Regenerate Cover",
+    "Generate Cover": "Generate Cover",
+    "Generating...": "Generating...",
+    "Requires Imagick or ImageMagick to be installed": "Requires Imagick or ImageMagick to be installed",
+    "Delete Cover": "Delete Cover",
+    "Are you sure you want to delete this cover image?": "Are you sure you want to delete this cover image?",
+    "Cover image deleted successfully": "Cover image deleted successfully"
 }

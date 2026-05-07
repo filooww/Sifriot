@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Storage;
 
 class PdfCoverExtractorService
 {
+    private ?string $imagemagickCommand = null;
+
     /**
      * Extract the first page of a PDF and save it as an image.
      *
@@ -26,17 +28,23 @@ class PdfCoverExtractorService
         try {
             // Try Imagick first (preferred for quality)
             if ($this->isImagickAvailable()) {
+                Log::info('Using Imagick for PDF extraction');
                 return $this->extractWithImagick($pdfPath, $outputPath);
             }
 
             // Fallback to ImageMagick convert command
-            if ($this->isGdAvailable()) {
-                return $this->extractWithGd($pdfPath, $outputPath);
+            if ($this->isImageMagickAvailable()) {
+                Log::info('Using ImageMagick convert for PDF extraction');
+                return $this->extractWithImageMagick($pdfPath, $outputPath);
             }
 
-            // Final fallback to FFmpeg
-            Log::info('Trying FFmpeg as fallback for PDF extraction');
-            return $this->extractWithFfmpeg($pdfPath, $outputPath);
+            // No PDF extraction tools available
+            Log::error('No PDF extraction tools available. Please install Imagick PHP extension or ImageMagick.', [
+                'path' => $pdfPath,
+                'imagick_available' => $this->isImagickAvailable(),
+                'imagemagick_available' => $this->isImageMagickAvailable(),
+            ]);
+            return null;
         } catch (\Exception $e) {
             Log::error('Failed to extract PDF cover', [
                 'path' => $pdfPath,
@@ -57,27 +65,40 @@ class PdfCoverExtractorService
     /**
      * Check if ImageMagick convert command is available.
      */
-    private function isGdAvailable(): bool
+    private function isImageMagickAvailable(): bool
     {
-        $command = 'convert -version';
-        $output = [];
-        $returnCode = 0;
-        exec($command, $output, $returnCode);
+        // Try both magick (ImageMagick 7+) and convert (ImageMagick 6)
+        $commands = [
+            'magick -version',
+            'convert -version',
+        ];
 
-        return $returnCode === 0;
-    }
+        foreach ($commands as $command) {
+            $output = [];
+            $returnCode = 0;
+            exec($command, $output, $returnCode);
 
-    /**
-     * Check if FFmpeg command is available.
-     */
-    private function isFfmpegAvailable(): bool
-    {
-        $command = 'ffmpeg -version';
-        $output = [];
-        $returnCode = 0;
-        exec($command, $output, $returnCode);
+            if ($returnCode === 0) {
+                $this->imagemagickCommand = str_replace(' -version', '', $command);
+                return true;
+            }
+        }
 
-        return $returnCode === 0;
+        // Try full Windows path with proper quoting
+        $windowsPath = 'C:\\Program Files\\ImageMagick-7.1.2-Q16-HDRI\\magick.exe';
+        if (file_exists($windowsPath)) {
+            $command = "\"{$windowsPath}\" -version";
+            $output = [];
+            $returnCode = 0;
+            exec($command, $output, $returnCode);
+
+            if ($returnCode === 0) {
+                $this->imagemagickCommand = "\"{$windowsPath}\"";
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -86,6 +107,14 @@ class PdfCoverExtractorService
     private function extractWithImagick(string $pdfPath, string $outputPath): ?string
     {
         try {
+            // Set Ghostscript path for Windows if needed
+            if (PHP_OS_FAMILY === 'Windows') {
+                $gsPath = '"C:\\Program Files\\gs\\gs10.07.0\\bin\\gswin64c.exe"';
+                if (file_exists(str_replace('"', '', $gsPath))) {
+                    putenv('GS_PATH=' . $gsPath);
+                }
+            }
+
             $imagick = new \Imagick($pdfPath.'[0]'); // [0] = first page only
 
             // Set resolution for better quality
@@ -119,67 +148,89 @@ class PdfCoverExtractorService
     }
 
     /**
-     * Extract first page using GD with ImageMagick convert command.
+     * Extract first page using ImageMagick convert command.
      */
-    private function extractWithGd(string $pdfPath, string $outputPath): ?string
+    private function extractWithImageMagick(string $pdfPath, string $outputPath): ?string
     {
         try {
-            // Use ImageMagick's convert command via exec
             $imagePath = $outputPath . '.png';
-            $command = escapeshellcmd("convert -density 150 -quality 90 '{$pdfPath}[0]' {$imagePath}");
 
-            exec($command, $output, $returnCode);
+            // Build command for Windows
+            if (PHP_OS_FAMILY === 'Windows') {
+                $command = sprintf(
+                    '%s -density 150 -quality 90 "%s[0]" "%s"',
+                    $this->imagemagickCommand,
+                    $pdfPath,
+                    $imagePath
+                );
 
-            if ($returnCode !== 0 || ! file_exists($imagePath)) {
-                Log::error('ImageMagick convert command failed', [
-                    'return_code' => $returnCode,
-                    'output' => implode("\n", $output),
-                ]);
+                // Use proc_open for better Windows compatibility
+                $descriptorspec = [
+                    0 => ['pipe', 'r'],  // stdin
+                    1 => ['pipe', 'w'],  // stdout
+                    2 => ['pipe', 'w'],  // stderr
+                ];
+
+                $process = proc_open($command, $descriptorspec, $pipes);
+
+                if (is_resource($process)) {
+                    $stdout = stream_get_contents($pipes[1]);
+                    $stderr = stream_get_contents($pipes[2]);
+                    fclose($pipes[0]);
+                    fclose($pipes[1]);
+                    fclose($pipes[2]);
+
+                    $returnCode = proc_close($process);
+
+                    if ($returnCode !== 0 || ! file_exists($imagePath)) {
+                        Log::error('ImageMagick convert command failed', [
+                            'command' => $command,
+                            'return_code' => $returnCode,
+                            'stderr' => $stderr,
+                            'stdout' => $stdout,
+                        ]);
+                        return null;
+                    }
+
+                    Log::info('PDF cover extracted with ImageMagick convert', [
+                        'pdf' => basename($pdfPath),
+                        'image' => $imagePath,
+                    ]);
+
+                    return $imagePath;
+                }
+
+                Log::error('Failed to open ImageMagick process');
                 return null;
-            }
+            } else {
+                // Unix/Linux systems
+                $command = sprintf(
+                    '%s -density 150 -quality 90 %s[0] %s',
+                    $this->imagemagickCommand,
+                    escapeshellarg($pdfPath),
+                    escapeshellarg($imagePath)
+                );
 
-            Log::info('PDF cover extracted with ImageMagick convert', [
-                'pdf' => basename($pdfPath),
-                'image' => $imagePath,
-            ]);
+                exec($command, $output, $returnCode);
 
-            return $imagePath;
-        } catch (\Exception $e) {
-            Log::error('GD/ImageMagick convert PDF extraction failed', [
-                'error' => $e->getMessage(),
-            ]);
-            return null;
-        }
-    }
+                if ($returnCode !== 0 || ! file_exists($imagePath)) {
+                    Log::error('ImageMagick convert command failed', [
+                        'command' => $command,
+                        'return_code' => $returnCode,
+                        'output' => implode("\n", $output),
+                    ]);
+                    return null;
+                }
 
-    /**
-     * Extract first page using FFmpeg command (fallback option).
-     */
-    private function extractWithFfmpeg(string $pdfPath, string $outputPath): ?string
-    {
-        try {
-            // Use FFmpeg's command via exec
-            $imagePath = $outputPath . '.png';
-            $command = escapeshellcmd("ffmpeg -i '{$pdfPath}' -vframes 1 -q:v 2 {$imagePath}");
-
-            exec($command, $output, $returnCode);
-
-            if ($returnCode !== 0 || ! file_exists($imagePath)) {
-                Log::error('FFmpeg command failed', [
-                    'return_code' => $returnCode,
-                    'output' => implode("\n", $output),
+                Log::info('PDF cover extracted with ImageMagick convert', [
+                    'pdf' => basename($pdfPath),
+                    'image' => $imagePath,
                 ]);
-                return null;
+
+                return $imagePath;
             }
-
-            Log::info('PDF cover extracted with FFmpeg', [
-                'pdf' => basename($pdfPath),
-                'image' => $imagePath,
-            ]);
-
-            return $imagePath;
         } catch (\Exception $e) {
-            Log::error('FFmpeg PDF extraction failed', [
+            Log::error('ImageMagick PDF extraction failed', [
                 'error' => $e->getMessage(),
             ]);
             return null;

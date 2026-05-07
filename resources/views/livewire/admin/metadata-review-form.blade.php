@@ -613,7 +613,7 @@
                                 >
                                     <div wire:loading.remove wire:target="generatePdfCover" class="flex items-center gap-1">
                                         <span>🖼️</span>
-                                        <span>{{ __('Regenerate Cover') }}</span>
+                                        <span>{{ __('Generate Cover') }}</span>
                                     </div>
                                     <div wire:loading wire:target="generatePdfCover" class="flex items-center gap-1">
                                         <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -623,6 +623,9 @@
                                         <span>{{ __('Generating...') }}</span>
                                     </div>
                                 </button>
+                                <p class="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                                    {{ __('Requires Imagick or ImageMagick to be installed') }}
+                                </p>
                             </div>
                         @endif
 
@@ -639,7 +642,18 @@
 
                         @if ($currentCoverUrl && !$coverImage)
                             <div>
-                                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('Current Cover Image:') }}</p>
+                                <div class="flex justify-between items-center mb-1">
+                                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ __('Current Cover Image:') }}</p>
+                                    <button
+                                        type="button"
+                                        wire:click="deleteCoverImage"
+                                        wire:loading.attr="disabled"
+                                        wire:target="deleteCoverImage"
+                                        class="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline"
+                                    >
+                                        {{ __('Delete Cover') }}
+                                    </button>
+                                </div>
                                 <div class="w-full rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600" style="height: 260px;">
                                     <img src="{{ $currentCoverUrl }}" alt="{{ __('Current cover') }}" class="w-full h-full object-cover">
                                 </div>

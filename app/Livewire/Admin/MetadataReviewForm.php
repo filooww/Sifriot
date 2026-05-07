@@ -430,7 +430,7 @@ class MetadataReviewForm extends Component
             $imagePath = $coverExtractor->extractFirstPage($filePath, $tempImagePath);
 
             if (!$imagePath || !file_exists($imagePath)) {
-                throw new \Exception('Failed to extract cover image from PDF');
+                throw new \Exception('Failed to extract cover image from PDF. Please install Imagick PHP extension or ImageMagick to enable PDF cover generation.');
             }
 
             // Store the image
@@ -527,6 +527,57 @@ class MetadataReviewForm extends Component
         }
 
         return null;
+    }
+
+    /**
+     * Delete the current cover image.
+     */
+    public function deleteCoverImage(): void
+    {
+        if (!$this->fileMetadata) {
+            $this->dispatch('notify', message: 'No file metadata available', type: 'error');
+            return;
+        }
+
+        try {
+            $publication = Publication::with('files')->find($this->fileMetadata->publication_id);
+            if (!$publication) {
+                throw new \Exception('Publication not found');
+            }
+
+            // Find and delete cover files
+            $coverFiles = $publication->files()
+                ->where('file_type', 'cover')
+                ->get();
+
+            if ($coverFiles->isEmpty()) {
+                $this->dispatch('notify', message: 'No cover image found', type: 'info');
+                return;
+            }
+
+            foreach ($coverFiles as $coverFile) {
+                // Delete the file from storage
+                if ($coverFile->file_path && Storage::disk('public')->exists($coverFile->file_path)) {
+                    Storage::disk('public')->delete($coverFile->file_path);
+                }
+
+                // Delete the database record
+                $coverFile->delete();
+            }
+
+            Log::info('Cover image deleted successfully', [
+                'publication_id' => $publication->id_publication,
+                'files_deleted' => $coverFiles->count(),
+            ]);
+
+            $this->dispatch('notify', message: __('Cover image deleted successfully'), type: 'success');
+        } catch (\Exception $e) {
+            Log::error('Failed to delete cover image', [
+                'file_metadata_id' => $this->fileMetadata->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            $this->dispatch('notify', message: 'Failed to delete cover: ' . $e->getMessage(), type: 'error');
+        }
     }
 
     /**

@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php:*)"
+      "Bash(php:*)",
+      "Bash(where php *)",
+      "Bash(where convert *)",
+      "Bash(ffmpeg -version)",
+      "Bash(cmd.exe *)",
+      "Bash(curl -L -o ImageMagick-installer.exe \"https://download.imagemagick.org/ImageMagick/download/windows/ImageMagick-7.1.1-38-Q16-HDRI-x64-dll.exe\")",
+      "Bash(/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe *)",
+      "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" -m)",
+      "Bash(convert *)",
+      "Bash(C:\\\\Program Files\\\\ImageMagick-7.1.2-Q16-HDRI\\\\magick.exe *)",
+      "Bash(ls *)",
+      "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" test_pdf_cover_service.php)"
     ]
   }
 }
