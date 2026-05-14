@@ -54,4 +54,32 @@ document.addEventListener('livewire:init', () => {
             }
         }
     });
+
+    // Notification system
+    Alpine.store('notifications', {
+        items: [],
+
+        add(message, type = 'info') {
+            const id = Date.now();
+            this.items.push({ id, message, type });
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                this.remove(id);
+            }, 5000);
+        },
+
+        remove(id) {
+            this.items = this.items.filter(item => item.id !== id);
+        },
+
+        clear() {
+            this.items = [];
+        }
+    });
+
+    // Listen for Livewire notify events
+    Livewire.on('notify', (event) => {
+        Alpine.store('notifications').add(event.message, event.type || 'info');
+    });
 });

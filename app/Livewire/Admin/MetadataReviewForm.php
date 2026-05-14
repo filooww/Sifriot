@@ -16,6 +16,7 @@ use App\Models\Publisher;
 use App\Services\MetadataExtractors\DocumentTextExtractor;
 use App\Services\MetadataExtractors\GeminiMetadataExtractorService;
 use App\Services\PdfCoverExtractorService;
+use App\Services\UniversalCoverExtractorService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -91,6 +92,8 @@ class MetadataReviewForm extends Component
 
     public bool $showPdfCoverButton = false;
 
+    public bool $showUniversalCoverButton = false;
+
     public bool $isGeneratingCover = false;
 
     /**
@@ -165,10 +168,10 @@ class MetadataReviewForm extends Component
                 Log::info('Cover upload: created new cover record', ['file_name' => $newFile->file_name ?? 'unknown']);
 
                 // Show success notification
-                $this->dispatch('notify', message: 'Cover image saved successfully!', type: 'success')->to('admin.metadata-review-dashboard');
+                $this->dispatch('notify', message: __('Cover image saved successfully!'), type: 'success');
             } catch (\Exception $e) {
                 Log::error('Failed to auto-save cover image', ['error' => $e->getMessage()]);
-                $this->dispatch('notify', message: 'Failed to save cover image: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+                $this->dispatch('notify', message: __('Failed to save cover image: :error', ['error' => $e->getMessage()]), type: 'error');
             }
         }
     }
@@ -372,6 +375,71 @@ class MetadataReviewForm extends Component
             ->exists();
 
         $this->showPdfCoverButton = !$hasCover;
+
+        // Also check for universal cover eligibility
+        $this->checkUniversalCoverEligibility();
+    }
+
+    /**
+     * Check if universal cover button should be shown for non-PDF formats.
+     */
+    private function checkUniversalCoverEligibility(): void
+    {
+        if (!$this->fileMetadata) {
+            Log::debug('Universal cover check: No file metadata');
+            $this->showUniversalCoverButton = false;
+            return;
+        }
+
+        // Get file extension
+        $extension = strtolower(pathinfo($this->fileMetadata->file_name, PATHINFO_EXTENSION));
+        Log::debug('Universal cover check', [
+            'file_id' => $this->fileMetadata->id,
+            'file_name' => $this->fileMetadata->file_name,
+            'extension' => $extension,
+        ]);
+
+        // Check if file format is supported (but not PDF, which has its own button)
+        $universalExtractor = new UniversalCoverExtractorService();
+        $isSupported = $universalExtractor->isSupported($this->fileMetadata->file_name);
+
+        if ($extension === 'pdf') {
+            Log::debug('Universal cover check: File is PDF, skipping', ['file_id' => $this->fileMetadata->id]);
+            $this->showUniversalCoverButton = false;
+            return;
+        }
+
+        if (!$isSupported) {
+            Log::debug('Universal cover check: Format not supported', [
+                'file_id' => $this->fileMetadata->id,
+                'extension' => $extension,
+            ]);
+            $this->showUniversalCoverButton = false;
+            return;
+        }
+
+        // Check if cover already exists
+        $publication = Publication::with('files')->find($this->fileMetadata->publication_id);
+        if (!$publication) {
+            Log::warning('Universal cover check: Publication not found', [
+                'file_id' => $this->fileMetadata->id,
+                'publication_id' => $this->fileMetadata->publication_id,
+            ]);
+            $this->showUniversalCoverButton = false;
+            return;
+        }
+
+        $hasCover = $publication->files()
+            ->where('file_type', 'cover')
+            ->exists();
+
+        Log::debug('Universal cover check result', [
+            'file_id' => $this->fileMetadata->id,
+            'has_cover' => $hasCover,
+            'show_button' => !$hasCover,
+        ]);
+
+        $this->showUniversalCoverButton = !$hasCover;
     }
 
     /**
@@ -380,7 +448,7 @@ class MetadataReviewForm extends Component
     public function generatePdfCover(): void
     {
         if (!$this->fileMetadata || !$this->showPdfCoverButton) {
-            $this->dispatch('notify', message: 'Cannot generate cover for this file', type: 'error');
+            $this->dispatch('notify', message: __('Cannot generate cover for this file'), type: 'error');
             return;
         }
 
@@ -486,9 +554,146 @@ class MetadataReviewForm extends Component
             ]);
 
             $this->showPdfCoverButton = false;
-            $this->dispatch('notify', message: 'Cover image generated successfully from PDF!', type: 'success');
+            $this->dispatch('notify', message: __('Cover image generated successfully from PDF!'), type: 'success');
         } catch (\Exception $e) {
             Log::error('Failed to generate PDF cover', [
+                'file_metadata_id' => $this->fileMetadata->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            $this->dispatch('notify', message: __('Failed to generate cover: :error', ['error' => $e->getMessage()]), type: 'error');
+        } finally {
+            $this->isGeneratingCover = false;
+        }
+    }
+
+    /**
+     * Generate cover image for various formats (EPUB, DJVU, FB2, DOC, etc.).
+     */
+    public function generateUniversalCover(): void
+    {
+        if (!$this->fileMetadata || !$this->showUniversalCoverButton) {
+            $this->dispatch('notify', message: 'Cannot generate cover for this file', type: 'error');
+            return;
+        }
+
+        $this->isGeneratingCover = true;
+
+        try {
+            // Get publication and file path
+            $publication = Publication::find($this->fileMetadata->publication_id);
+            if (!$publication) {
+                throw new \Exception('Publication not found');
+            }
+
+            // Get file path from file_registration_logs
+            $fileLog = DB::table('file_registration_logs')
+                ->where('publication_id', $publication->id_publication)
+                ->where('file_path', 'like', '%' . addcslashes($this->fileMetadata->file_name, '%_') . '%')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if (!$fileLog || !$fileLog->file_path) {
+                throw new \Exception('File path not found');
+            }
+
+            // Build absolute file path
+            $fullPath = $fileLog->file_path;
+            if (preg_match('/^(\/|[A-Za-z]:)/', $fullPath)) {
+                $filePath = $fullPath;
+            } else {
+                $filePath = storage_path('app/content/' . $fullPath);
+                if (!file_exists($filePath)) {
+                    $filePath = storage_path('app/' . $fullPath);
+                }
+            }
+
+            if (!file_exists($filePath)) {
+                throw new \Exception('File not found: ' . $filePath);
+            }
+
+            // Prepare metadata for dynamic covers
+            $metadata = [
+                'title' => $this->title ?: pathinfo($this->fileMetadata->file_name, PATHINFO_FILENAME),
+                'author' => !empty($this->authors) ? implode(', ', array_column($this->authors, 'value')) : '',
+                'genre' => !empty($this->genres) ? implode(', ', array_column($this->genres, 'value')) : '',
+            ];
+
+            // Extract or generate cover using universal service
+            $universalExtractor = new UniversalCoverExtractorService();
+            $imagePath = $universalExtractor->extractOrGenerateCover(
+                $filePath,
+                $this->fileMetadata->file_name,
+                $metadata
+            );
+
+            if (!$imagePath || !file_exists($imagePath)) {
+                throw new \Exception('Failed to generate cover image. The file format may not be supported or extraction tools are not available.');
+            }
+
+            // Store the image
+            $imageContent = file_get_contents($imagePath);
+            $extension = pathinfo($imagePath, PATHINFO_EXTENSION);
+            $uniqueName = uniqid() . '_' . time() . '.' . $extension;
+            $storedPath = Storage::disk('public')->put('covers/' . $uniqueName, $imageContent);
+
+            // Clean up temp file
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+
+            // Delete existing cover images
+            $existingCovers = File::withTrashed()
+                ->where('id_publication', $publication->id_publication)
+                ->where('file_type', 'cover')
+                ->get();
+
+            foreach ($existingCovers as $existingCover) {
+                if ($existingCover->file_path && Storage::disk('public')->exists($existingCover->file_path)) {
+                    Storage::disk('public')->delete($existingCover->file_path);
+                }
+                File::withTrashed()
+                    ->where('id_publication', $existingCover->id_publication)
+                    ->where('file_name', $existingCover->file_name)
+                    ->forceDelete();
+            }
+
+            // Get next ord_num
+            $nextOrdNum = File::where('id_publication', $publication->id_publication)
+                ->max('ord_num') + 1;
+
+            // Determine file source based on whether we extracted or generated
+            $fileExtension = strtolower(pathinfo($this->fileMetadata->file_name, PATHINFO_EXTENSION));
+            $fileSource = in_array($fileExtension, ['epub', 'djvu', 'fb2'])
+                ? $fileExtension . '_auto_extracted'
+                : 'dynamically_generated';
+
+            // Create File record for cover image
+            $coverFilename = $fileExtension . '_cover_' . uniqid() . '.' . $extension;
+            File::create([
+                'id_publication' => $publication->id_publication,
+                'ord_num' => $nextOrdNum,
+                'file_name' => $coverFilename,
+                'file_name_low' => mb_strtolower($coverFilename),
+                'file_size' => (string) strlen($imageContent),
+                'file_size_bytes' => strlen($imageContent),
+                'mime_type' => 'image/' . $extension,
+                'file_type' => 'cover',
+                'file_path' => 'covers/' . $uniqueName,
+                'file_source' => $fileSource,
+            ]);
+
+            Log::info('Universal cover generated successfully', [
+                'publication_id' => $publication->id_publication,
+                'file_name' => $this->fileMetadata->file_name,
+                'file_type' => $fileExtension,
+                'cover_source' => $fileSource,
+                'cover_path' => 'covers/' . $uniqueName,
+            ]);
+
+            $this->showUniversalCoverButton = false;
+            $this->dispatch('notify', message: __('Cover image generated successfully!'), type: 'success');
+        } catch (\Exception $e) {
+            Log::error('Failed to generate universal cover', [
                 'file_metadata_id' => $this->fileMetadata->id ?? null,
                 'error' => $e->getMessage(),
             ]);
@@ -535,7 +740,7 @@ class MetadataReviewForm extends Component
     public function deleteCoverImage(): void
     {
         if (!$this->fileMetadata) {
-            $this->dispatch('notify', message: 'No file metadata available', type: 'error');
+            $this->dispatch('notify', message: __('No file metadata available'), type: 'error');
             return;
         }
 
@@ -551,7 +756,7 @@ class MetadataReviewForm extends Component
                 ->get();
 
             if ($coverFiles->isEmpty()) {
-                $this->dispatch('notify', message: 'No cover image found', type: 'info');
+                $this->dispatch('notify', message: __('No cover image found'), type: 'info');
                 return;
             }
 
@@ -576,7 +781,7 @@ class MetadataReviewForm extends Component
                 'file_metadata_id' => $this->fileMetadata->id ?? null,
                 'error' => $e->getMessage(),
             ]);
-            $this->dispatch('notify', message: 'Failed to delete cover: ' . $e->getMessage(), type: 'error');
+            $this->dispatch('notify', message: __('Failed to delete cover: :error', ['error' => $e->getMessage()]), type: 'error');
         }
     }
 
@@ -890,13 +1095,13 @@ class MetadataReviewForm extends Component
     public function confirmExtraction(): void
     {
         // Debug: dispatch notification to confirm method was called
-        $this->dispatch('notify', message: 'Processing confirmation...', type: 'info')->to('admin.metadata-review-dashboard');
+        $this->dispatch('notify', message: __('Processing confirmation...'), type: 'info');
 
         try {
             $this->validate();
         } catch (\Illuminate\Validation\ValidationException $e) {
             $errors = collect($e->errors())->flatten()->join(', ');
-            $this->dispatch('notify', message: 'Validation failed: ' . $errors, type: 'error')->to('admin.metadata-review-dashboard');
+            $this->dispatch('notify', message: __('Validation failed: :error', ['error' => $errors]), type: 'error');
             return;
         }
 
@@ -1044,7 +1249,7 @@ class MetadataReviewForm extends Component
                 'file_metadata_id' => $this->fileMetadata->id ?? null,
             ]);
             \Log::channel('folder_scan')->error('Metadata confirmation failed: ' . $e->getMessage());
-            $this->dispatch('notify', message: 'Failed to confirm metadata: ' . $e->getMessage(), type: 'error')->to('admin.metadata-review-dashboard');
+            $this->dispatch('notify', message: __('Failed to confirm metadata: :error', ['error' => $e->getMessage()]), type: 'error');
         }
     }
 
@@ -1068,10 +1273,10 @@ class MetadataReviewForm extends Component
             $this->useManual = true;
             $this->resetForm();
 
-            $this->dispatch('notify', message: 'Extraction rejected. Enter metadata manually.', type: 'info');
+            $this->dispatch('notify', message: __('Extraction rejected. Enter metadata manually.'), type: 'info');
         } catch (\Exception $e) {
             Log::error('Failed to reject metadata extraction', ['error' => $e->getMessage()]);
-            $this->dispatch('notify', message: 'Failed to reject extraction: ' . $e->getMessage(), type: 'error');
+            $this->dispatch('notify', message: __('Failed to reject extraction: :error', ['error' => $e->getMessage()]), type: 'error');
         }
     }
 
@@ -1195,7 +1400,7 @@ class MetadataReviewForm extends Component
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to update metadata', ['error' => $e->getMessage()]);
-            $this->dispatch('notify', message: 'Failed to update metadata: ' . $e->getMessage(), type: 'error');
+            $this->dispatch('notify', message: __('Failed to update metadata: :error', ['error' => $e->getMessage()]), type: 'error');
         }
     }
 
@@ -1336,7 +1541,7 @@ class MetadataReviewForm extends Component
                 'error' => $e->getMessage(),
                 'file_metadata_id' => $this->fileMetadata->id ?? null,
             ]);
-            $this->dispatch('notify', message: 'Failed to save metadata: ' . $e->getMessage(), type: 'error');
+            $this->dispatch('notify', message: __('Failed to save metadata: :error', ['error' => $e->getMessage()]), type: 'error');
         }
     }
 

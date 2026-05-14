@@ -83,10 +83,7 @@ class PublicCatalog extends Component
     {
         // Public catalog only shows active, non-deleted publications
         $query = Publication::query()
-            ->when($this->isGuest || (Auth::check() && Auth::user()->role !== 'admin'), function ($query) {
-                // Guests and non-admin users can only see published publications
-                $query->where('status', 'published');
-            })
+            ->where('status', 'published')
             ->when($this->search, function ($query) {
                 $searchTerm = trim($this->search);
                 if (! empty($searchTerm)) {

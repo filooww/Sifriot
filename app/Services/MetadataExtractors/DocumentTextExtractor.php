@@ -124,8 +124,14 @@ class DocumentTextExtractor
             $pdf = $parser->parseFile($filePath);
 
             $pageCount = count($pdf->getPages());
-            $text = $pdf->getText();
-            $textLength = strlen(trim($text));
+            $pages = $pdf->getPages();
+
+            // Detect image-based PDFs first
+            $totalText = '';
+            foreach ($pages as $page) {
+                $totalText .= $page->getText() . "\n";
+            }
+            $textLength = strlen(trim($totalText));
 
             // Detect image-based PDFs: if text per page is below threshold
             if ($pageCount > 0 && $textLength / $pageCount < self::MIN_CHARS_PER_PAGE) {
@@ -142,7 +148,43 @@ class DocumentTextExtractor
                 );
             }
 
-            return $text;
+            // For better metadata extraction, prioritize first few pages and last pages
+            // where publication info is typically found
+            $metadataRichText = '';
+
+            // Extract from first 3 pages (title, publisher, issue info usually here)
+            $firstPages = min(3, count($pages));
+            for ($i = 0; $i < $firstPages; $i++) {
+                $metadataRichText .= $pages[$i]->getText() . "\n";
+            }
+
+            // Extract from last 2 pages (publisher info, ISSN, etc. usually here)
+            $lastPages = min(2, count($pages));
+            $startFromLast = max(0, count($pages) - $lastPages);
+            for ($i = $startFromLast; $i < count($pages); $i++) {
+                // Avoid duplicates if document is very short
+                if ($i >= $firstPages) {
+                    $metadataRichText .= $pages[$i]->getText() . "\n";
+                }
+            }
+
+            // If we got good metadata-rich text, use it; otherwise use all text
+            if (strlen(trim($metadataRichText)) > 200) {
+                $this->log('info', 'PDF extraction: Using metadata-rich pages', [
+                    'file' => basename($filePath),
+                    'first_pages' => $firstPages,
+                    'last_pages' => $lastPages,
+                    'chars_extracted' => strlen(trim($metadataRichText)),
+                ]);
+                return $metadataRichText;
+            }
+
+            $this->log('info', 'PDF extraction: Using all text', [
+                'file' => basename($filePath),
+                'total_chars' => strlen(trim($totalText)),
+            ]);
+
+            return $totalText;
         } catch (\RuntimeException $e) {
             // Re-throw our custom exceptions
             throw $e;
@@ -292,8 +334,26 @@ class DocumentTextExtractor
             // Sort to get chapters in order (usually named chapter1.xhtml, etc.)
             sort($contentFiles);
 
-            // Extract text from each content file
+            // Prioritize metadata-rich files (title, copyright, toc)
+            $metadataFiles = [];
+            $regularFiles = [];
+
             foreach ($contentFiles as $contentFile) {
+                $lowerName = strtolower($contentFile);
+
+                // Files likely to contain metadata
+                if (preg_match('/(title|copyright|toc|cover|imprint|publisher|publish)/i', $lowerName)) {
+                    $metadataFiles[] = $contentFile;
+                } else {
+                    $regularFiles[] = $contentFile;
+                }
+            }
+
+            // Process metadata files first, then regular files
+            $allFiles = array_merge($metadataFiles, array_slice($regularFiles, 0, 5)); // Limit regular files
+
+            // Extract text from prioritized files
+            foreach ($allFiles as $contentFile) {
                 $content = $zip->getFromName($contentFile);
                 if ($content) {
                     // Strip HTML tags and decode entities
@@ -303,6 +363,12 @@ class DocumentTextExtractor
                     $text .= $content."\n";
                 }
             }
+
+            $this->log('info', 'EPUB extraction completed', [
+                'metadata_files' => count($metadataFiles),
+                'regular_files_processed' => min(5, count($regularFiles)),
+                'total_chars' => strlen($text),
+            ]);
         } catch (\Exception $e) {
             $this->log('debug', 'EPUB text extraction failed', ['error' => $e->getMessage()]);
         } finally {
@@ -320,27 +386,235 @@ class DocumentTextExtractor
         try {
             $content = file_get_contents($filePath);
             if (! $content) {
+                $this->log('debug', 'FB2 file is empty or could not be read');
                 return '';
             }
 
+            // FB2 files often use Windows-1251 encoding
+            // First check if there's an XML declaration with encoding
+            if (preg_match('/encoding=["\']?([^"\']+)["\']?/i', $content, $matches)) {
+                $declaredEncoding = strtoupper($matches[1]);
+                if ($declaredEncoding !== 'UTF-8' && $declaredEncoding !== 'UTF8') {
+                    // Convert to UTF-8
+                    $content = mb_convert_encoding($content, 'UTF-8', $declaredEncoding);
+                    // Update XML declaration to UTF-8
+                    $content = preg_replace('/encoding=["\']?[^"\']+["\']?/i', 'encoding="UTF-8"', $content);
+                }
+            } else {
+                // No encoding declaration, try to detect
+                $encoding = mb_detect_encoding($content, ['UTF-8', 'Windows-1251', 'CP1251', 'ISO-8859-1'], true);
+                if ($encoding && $encoding !== 'UTF-8') {
+                    $content = mb_convert_encoding($content, 'UTF-8', $encoding);
+                }
+            }
+
+            // Additional normalization
             $content = $this->normalizeEncoding($content);
-            $xml = new \SimpleXMLElement($content);
+
+            // Suppress XML warnings for malformed documents
+            libxml_use_internal_errors(true);
+            $xml = simplexml_load_string($content, 'SimpleXMLElement', LIBXML_NOCDATA);
+            $errors = libxml_get_errors();
+            libxml_clear_errors();
+
+            if ($xml === false || !empty($errors)) {
+                $this->log('debug', 'FB2 XML parsing failed', [
+                    'file' => basename($filePath),
+                    'errors' => array_map(function($e) { return trim($e->message); }, $errors),
+                ]);
+
+                // Try alternative approach - strip problematic characters and retry
+                $content = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $content);
+                $xml = simplexml_load_string($content, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS);
+            }
+
+            if ($xml === false) {
+                $this->log('debug', 'FB2 XML parsing completely failed', ['file' => basename($filePath)]);
+                return '';
+            }
 
             $text = '';
 
-            // Find body element and extract text from sections
-            foreach ($xml->children() as $element) {
-                if ($element->getName() === 'body') {
-                    $text .= $this->extractFb2TextRecursive($element);
+            // Get all namespaces from the XML
+            $namespaces = $xml->getNamespaces(true);
+
+            // Find the fictionbook namespace
+            $fbNamespace = '';
+            $fbNamespacePrefix = '';
+
+            foreach ($namespaces as $prefix => $namespace) {
+                if (strpos($namespace, 'gribuser.ru/xml/fictionbook') !== false) {
+                    $fbNamespace = $namespace;
+                    // Use 'fb' as the prefix for XPath if none exists
+                    $fbNamespacePrefix = $prefix ?: 'fb';
+                    if ($prefix === '') {
+                        // Register the default namespace with 'fb' prefix
+                        $xml->registerXPathNamespace('fb', $namespace);
+                    } else {
+                        // Register existing prefix
+                        $xml->registerXPathNamespace($prefix, $namespace);
+                    }
+                    break;
                 }
+            }
+
+            // Extract metadata from title-info section (publisher, year, etc.)
+            if ($fbNamespace) {
+                $titleInfo = $xml->xpath('//fb:description/fb:title-info');
+                if ($titleInfo && !empty($titleInfo)) {
+                    $metadataText = $this->extractFb2MetadataText($titleInfo[0], $fbNamespace);
+                    $text .= $metadataText . "\n";
+                }
+            }
+
+            // Try to find body element using XPath with the registered prefix
+            if ($fbNamespace) {
+                $bodyElements = $xml->xpath('//fb:body');
+                if ($bodyElements && ! empty($bodyElements)) {
+                    foreach ($bodyElements as $body) {
+                        $text .= $this->extractFb2TextRecursive($body);
+                    }
+                }
+            }
+
+            // If not found via XPath, try direct children access
+            if (empty($text)) {
+                // Try with the found namespace
+                if ($fbNamespace) {
+                    $children = $xml->children($fbNamespace, true);
+                    foreach ($children as $child) {
+                        if ($child->getName() === 'body') {
+                            $text .= $this->extractFb2TextRecursive($child);
+                            break;
+                        }
+                    }
+                }
+
+                // Try without namespace (non-namespaced FB2)
+                if (empty($text)) {
+                    foreach ($xml->children() as $child) {
+                        if ($child->getName() === 'body') {
+                            $text .= $this->extractFb2TextRecursive($child);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (empty($text)) {
+                $this->log('debug', 'FB2 extraction returned no text', [
+                    'file' => basename($filePath),
+                    'namespaces' => array_values($namespaces),
+                ]);
             }
 
             return $text;
         } catch (\Exception $e) {
-            $this->log('debug', 'FB2 text extraction failed', ['error' => $e->getMessage()]);
+            $this->log('debug', 'FB2 text extraction failed', [
+                'error' => $e->getMessage(),
+                'file' => basename($filePath),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return '';
         }
+    }
+
+    /**
+     * Extract metadata text from FB2 title-info section.
+     */
+    private function extractFb2MetadataText(\SimpleXMLElement $titleInfo, string $fbNamespace): string
+    {
+        $metadataText = '';
+
+        try {
+            // Extract book title
+            $bookTitle = $titleInfo->xpath('fb:book-title');
+            if ($bookTitle && !empty($bookTitle)) {
+                $metadataText .= "Title: " . trim((string)$bookTitle[0]) . "\n";
+            }
+
+            // Extract authors
+            $authors = $titleInfo->xpath('fb:author');
+            if ($authors && !empty($authors)) {
+                $authorNames = [];
+                foreach ($authors as $author) {
+                    $firstName = $author->xpath('fb:first-name');
+                    $lastName = $author->xpath('fb:last-name');
+                    $middleName = $author->xpath('fb:middle-name');
+
+                    $nameParts = [];
+                    if ($firstName && !empty($firstName)) {
+                        $nameParts[] = trim((string)$firstName[0]);
+                    }
+                    if ($middleName && !empty($middleName)) {
+                        $nameParts[] = trim((string)$middleName[0]);
+                    }
+                    if ($lastName && !empty($lastName)) {
+                        $nameParts[] = trim((string)$lastName[0]);
+                    }
+
+                    if (!empty($nameParts)) {
+                        $authorNames[] = implode(' ', $nameParts);
+                    }
+                }
+                if (!empty($authorNames)) {
+                    $metadataText .= "Authors: " . implode(', ', $authorNames) . "\n";
+                }
+            }
+
+            // Extract genre
+            $genres = $titleInfo->xpath('fb:genre');
+            if ($genres && !empty($genres)) {
+                $genreTexts = [];
+                foreach ($genres as $genre) {
+                    $genreTexts[] = trim((string)$genre);
+                }
+                if (!empty($genreTexts)) {
+                    $metadataText .= "Genres: " . implode(', ', $genreTexts) . "\n";
+                }
+            }
+
+            // Extract year
+            $years = $titleInfo->xpath('fb:date');
+            if ($years && !empty($years)) {
+                foreach ($years as $year) {
+                    $yearValue = trim((string)$year);
+                    if (preg_match('/\d{4}/', $yearValue, $matches)) {
+                        $metadataText .= "Year: " . $matches[0] . "\n";
+                        break;
+                    }
+                }
+            }
+
+            // Extract publisher info from publish-info section
+            $description = $titleInfo->xpath('//fb:description');
+            if ($description && !empty($description)) {
+                $publishInfo = $description[0]->xpath('fb:publish-info');
+                if ($publishInfo && !empty($publishInfo)) {
+                    $publisher = $publishInfo[0]->xpath('fb:publisher');
+                    if ($publisher && !empty($publisher)) {
+                        $metadataText .= "Publisher: " . trim((string)$publisher[0]) . "\n";
+                    }
+
+                    $year = $publishInfo[0]->xpath('fb:year');
+                    if ($year && !empty($year)) {
+                        $metadataText .= "Publish Year: " . trim((string)$year[0]) . "\n";
+                    }
+
+                    $isbn = $publishInfo[0]->xpath('fb:isbn');
+                    if ($isbn && !empty($isbn)) {
+                        $metadataText .= "ISBN: " . trim((string)$isbn[0]) . "\n";
+                    }
+                }
+            }
+
+        } catch (\Exception $e) {
+            // If metadata extraction fails, continue with body text extraction
+            $this->log('debug', 'FB2 metadata extraction failed', ['error' => $e->getMessage()]);
+        }
+
+        return $metadataText;
     }
 
     /**
@@ -350,12 +624,54 @@ class DocumentTextExtractor
     {
         $text = '';
 
+        // Get the namespace of the current element
+        $elementNs = $element->getNamespaces(true);
+        $currentNamespace = '';
+
+        // Find the fictionbook namespace
+        foreach ($elementNs as $prefix => $namespace) {
+            if (strpos($namespace, 'gribuser.ru/xml/fictionbook') !== false) {
+                $currentNamespace = $namespace;
+                break;
+            }
+        }
+
+        // Get children - try with namespace first, then without
+        $children = [];
+
+        if ($currentNamespace) {
+            // Get children in the same namespace as the parent
+            $namespacedChildren = $element->children($currentNamespace, true);
+            foreach ($namespacedChildren as $child) {
+                $children[] = $child;
+            }
+        }
+
+        // Also get non-namespaced children (for mixed content or non-namespaced FB2)
         foreach ($element->children() as $child) {
+            // Check if this child was already processed
+            $alreadyProcessed = false;
+            foreach ($children as $existing) {
+                if ($existing === $child) {
+                    $alreadyProcessed = true;
+                    break;
+                }
+            }
+            if (! $alreadyProcessed) {
+                $children[] = $child;
+            }
+        }
+
+        // Process children
+        foreach ($children as $child) {
             $name = $child->getName();
 
+            // Text elements - extract text directly
             if (in_array($name, ['p', 'v', 'subtitle', 'text-author'])) {
                 $text .= trim((string) $child)."\n";
-            } elseif (in_array($name, ['section', 'stanza', 'poem', 'cite', 'epigraph'])) {
+            }
+            // Container elements to recurse into
+            elseif (in_array($name, ['section', 'stanza', 'poem', 'cite', 'epigraph', 'body', 'title'])) {
                 $text .= $this->extractFb2TextRecursive($child);
             }
         }

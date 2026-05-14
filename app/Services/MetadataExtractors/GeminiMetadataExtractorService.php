@@ -69,8 +69,19 @@ class GeminiMetadataExtractorService
 
             $this->log('info', 'Gemini extraction successful', [
                 'has_title' => (bool) $metadata->getTitle(),
+                'title' => $metadata->getTitle(),
                 'author_count' => count($metadata->getAuthors()),
+                'authors' => $metadata->getAuthors(),
                 'has_year' => (bool) $metadata->getPublicationYear(),
+                'year' => $metadata->getPublicationYear(),
+                'has_publisher' => (bool) $metadata->getPublisher(),
+                'publisher' => $metadata->getPublisher(),
+                'has_description' => (bool) $metadata->getDescription(),
+                'description_length' => strlen($metadata->getDescription() ?? ''),
+                'content_type' => $metadata->getContentType(),
+                'genre_count' => count($metadata->getGenres()),
+                'theme_count' => count($metadata->getThemes()),
+                'section' => $metadata->getSection(),
             ]);
 
             return $metadata;
@@ -106,23 +117,45 @@ class GeminiMetadataExtractorService
         }
 
         return <<<PROMPT
-Extract bibliographic metadata from this document. If title/author not explicit, INFER from content.
+Extract comprehensive bibliographic metadata from this document. If title/author not explicit, INFER from content.
 Prioritize returning values in **Russian** where applicable (content_type, themes, section, genres).
+
+**IMPORTANT:**
+- For BOOKS: Extract book title, author(s), publisher, publication year
+- For MAGAZINES/JOURNALS: Extract magazine/journal name as title, editor or no author, publisher (issuing organization), full issue date
+- For ARTICLES: Extract article title, author(s), source publication, publication date
 
 Return JSON matching this schema:
 {
-  "title": "string (required)",
-  "authors": ["strings"],
-  "publication_year": int|null,
-  "publisher": "string|null",
+  "title": "string (required - book title, magazine name, or article title)",
+  "authors": ["strings (authors for books/articles, editors for magazines, empty array if none found)"],
+  "publication_year": int|null (year of publication - REQUIRED if found in document)",
+  "publisher": "string|null (publisher name for books, issuing organization for magazines/journals - REQUIRED if found)",
   "content_type": "string (must be one of: Книги, Журналы, Статьи, Другое)",
-  "genres": ["strings"],
-  "themes": ["strings (abstract content themes/topics)"],
-  "section": "string (best match from list below)",
-  "description": "string (2-3 sentence summary)"
+  "genres": ["strings (literary genres for books, subject areas for magazines/journals)"],
+  "themes": ["strings (abstract content themes, topics, subjects covered in detail)"],
+  "section": "string (best match from list below based on content/topic)",
+  "description": "string (comprehensive 3-5 sentence description covering: what the document is about, main topics covered, target audience, and key features - REQUIRED)"
 }
 
-Valid Sections (pick one best fit):
+**Extraction Guidelines:**
+- **Title**: Use the main title shown prominently. For magazines, use the magazine name.
+- **Authors**: Extract individual author names for books and articles. For magazines, extract editors if available, otherwise use empty array.
+- **Publication Year**: Extract the specific year from publication information, copyright page, or issue date. This is REQUIRED if present.
+- **Publisher**: Extract the publishing company name for books, or the issuing organization/publisher for magazines and journals. This is REQUIRED if present.
+- **Content Type**: Choose based on document format:
+  - "Книги" for books, textbooks, monographs
+  - "Журналы" for magazines, journals, periodicals
+  - "Статьи" for individual articles, papers
+  - "Другое" for other document types
+- **Description**: Write a detailed 3-5 sentence description covering:
+  1. What the document is (book/magazine/article about what subject)
+  2. Main topics, themes, or subject matter covered
+  3. Target audience or field of study
+  4. Notable features, approach, or perspective
+  5. Any distinctive characteristics or special focus
+
+Valid Sections (pick one best fit based on content/topic):
 {$sectionsList}
 
 Document content:
@@ -319,10 +352,28 @@ PROMPT;
             // Set description
             if (! empty($data['description'])) {
                 $metadata->setDescription($data['description']);
+            } else {
+                $this->log('warning', 'No description extracted from AI response', [
+                    'title' => $data['title'] ?? 'unknown',
+                ]);
+            }
+
+            // Validate critical fields
+            if (empty($data['title'])) {
+                $this->log('warning', 'No title extracted - this is a critical field');
+            }
+
+            if (empty($data['publication_year'])) {
+                $this->log('warning', 'No publication year extracted - this field is required if present in document');
+            }
+
+            if (empty($data['publisher'])) {
+                $this->log('warning', 'No publisher/issuer extracted - this field is required if present in document');
             }
 
             $this->log('debug', 'Parsed Gemini response', [
                 'fields' => array_keys($data),
+                'data' => $data,
             ]);
 
         } catch (\JsonException $e) {

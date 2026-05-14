@@ -392,5 +392,22 @@
     "Add Theme": "Добавить тему",
     "Remove": "Удалить",
     "Genre": "Жанр",
-    "Author name": "Имя автора"
+    "Author name": "Имя автора",
+    "Cover image saved successfully!": "Обложка успешно сохранена!",
+    "Failed to save cover image: :error": "Не удалось сохранить обложку: :error",
+    "Validation failed: :error": "Ошибка валидации: :error",
+    "Failed to confirm metadata: :error": "Не удалось подтвердить метаданные: :error",
+    "Cover image generated successfully from PDF!": "Обложка успешно создана из PDF!",
+    "Failed to generate cover: :error": "Не удалось создать обложку: :error",
+    "Failed to update metadata: :error": "Не удалось обновить метаданные: :error",
+    "Failed to save metadata: :error": "Не удалось сохранить метаданные: :error",
+    "Processing confirmation...": "Обработка подтверждения...",
+    "Extraction rejected. Enter metadata manually.": "Извлечение отклонено. Введите метаданные вручную.",
+    "Failed to reject extraction: :error": "Не удалось отклонить извлечение: :error",
+    "Metadata confirmed and saved successfully!": "Метаданные подтверждены и успешно сохранены!",
+    "Metadata updated successfully": "Метаданные успешно обновлены",
+    "Metadata saved successfully!": "Метаданные успешно сохранены!",
+    "No file metadata available": "Метаданные файла недоступны",
+    "No cover image found": "Обложка не найдена",
+    "Cannot generate cover for this file": "Невозможно создать обложку для этого файла"
 }

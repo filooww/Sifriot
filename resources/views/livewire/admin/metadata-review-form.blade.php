@@ -629,6 +629,39 @@
                             </div>
                         @endif
 
+                        @if ($showUniversalCoverButton)
+                            <div class="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
+                                <p class="text-xs font-medium text-purple-900 dark:text-purple-200">
+                                    {{ __('Generate Cover Automatically') }}
+                                </p>
+                                <p class="text-xs text-purple-700 dark:text-purple-300 mt-1">
+                                    {{ __('Extract cover or generate placeholder for this file format') }}
+                                </p>
+                                <button
+                                    type="button"
+                                    wire:click="generateUniversalCover"
+                                    wire:loading.attr="disabled"
+                                    wire:target="generateUniversalCover"
+                                    class="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-xs font-medium rounded-lg transition"
+                                >
+                                    <div wire:loading.remove wire:target="generateUniversalCover" class="flex items-center gap-1">
+                                        <span>✨</span>
+                                        <span>{{ __('Generate Cover') }}</span>
+                                    </div>
+                                    <div wire:loading wire:target="generateUniversalCover" class="flex items-center gap-1">
+                                        <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>{{ __('Generating...') }}</span>
+                                    </div>
+                                </button>
+                                <p class="text-xs text-purple-600 dark:text-purple-400 mt-2">
+                                    {{ __('Supports EPUB, DJVU, FB2, DOC, DOCX, TXT formats') }}
+                                </p>
+                            </div>
+                        @endif
+
                         <input
                             type="file"
                             id="coverImage"

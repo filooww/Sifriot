@@ -38,8 +38,8 @@ return [
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-1.5-flash'),
-        'max_chars' => (int) env('GEMINI_MAX_CHARS', 5000),
-        'timeout' => (int) env('GEMINI_TIMEOUT', 30),
+        'max_chars' => (int) env('GEMINI_MAX_CHARS', 15000), // Increased from 5000 to 15000 for better metadata extraction
+        'timeout' => (int) env('GEMINI_TIMEOUT', 60), // Increased timeout for longer text processing
         'max_retries' => 3,
     ],
 
