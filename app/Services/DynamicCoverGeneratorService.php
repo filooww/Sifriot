@@ -1,6 +1,4 @@
-
 <?php
-
 declare(strict_types=1);
 
 namespace App\Services;
@@ -30,99 +28,199 @@ class DynamicCoverGeneratorService
             $width = 600;
             $height = 800;
 
-            // Create gradient background based on genre
-            $backgroundColor = $this->getGenreColor($genre);
+            // Create gradient background based on file type (prioritize over genre)
+            $backgroundColor = $this->getFileTypeColor($format, $genre);
 
             $image = imagecreatetruecolor($width, $height);
 
-            // Create gradient background
+            // Create gradient background with better quality
             for ($y = 0; $y < $height; $y++) {
                 $ratio = $y / $height;
                 $color = $this->interpolateColor($backgroundColor['start'], $backgroundColor['end'], $ratio);
                 imageline($image, 0, $y, $width, $y, $color);
             }
 
-            // Add text elements
+            // Add subtle texture overlay (reduced to minimize scratches)
+            $this->addTextureOverlay($image, $width, $height);
+
+            // Add text elements with improved typography
             $textColor = imagecolorallocate($image, 255, 255, 255);
-            $shadowColor = imagecolorallocate($image, 0, 0, 0);
+            $shadowColor = imagecolorallocatealpha($image, 0, 0, 0, 80);
+            $accentColor = imagecolorallocatealpha($image, 255, 255, 255, 50);
 
-            // Add title
-            $fontSize = $this->calculateFontSize($title, $width - 80, 40);
-            $titleY = $height * 0.3;
+            // Add decorative border
+            $borderThickness = 8;
+            $borderColor = imagecolorallocatealpha($image, 255, 255, 255, 30);
+            imagerectangle($image, $borderThickness, $borderThickness, $width - $borderThickness, $height - $borderThickness, $borderColor);
 
-            // Draw text shadow
-            $wrappedTitle = wordwrap($title, 25, "\n", true);
+            // Get font path and check if TTF is available
+            $fontPath = $this->getFontPath();
+            $useTtf = !empty($fontPath) && file_exists($fontPath);
+
+            // Add title with improved typography
+            $fontSize = $this->calculateFontSize($title, $width - 100, 42);
+            $titleY = (int)($height * 0.28);
+
+            // Draw text shadow with better blur effect
+            $wrappedTitle = wordwrap($title, 22, "\n", true);
             $lines = explode("\n", $wrappedTitle);
 
             foreach ($lines as $index => $line) {
-                $lineY = $titleY + ($index * 60);
+                $lineY = $titleY + ($index * 65);
 
-                // Shadow
-                imagettftext(
-                    $image,
-                    $fontSize,
-                    0,
-                    $width / 2 + 3,
-                    $lineY + 3,
-                    $shadowColor,
-                    $this->getFontPath(),
-                    $line
-                );
+                if ($useTtf) {
+                    // Multiple shadow layers for better blur effect
+                    for ($blur = 4; $blur >= 1; $blur--) {
+                        $this->drawCenteredTtfText(
+                            $image,
+                            $line,
+                            (int)($width / 2) + $blur,
+                            $lineY + $blur,
+                            $fontSize,
+                            $shadowColor,
+                            $fontPath
+                        );
+                    }
 
-                // Main text
-                imagettftext(
+                    // Main text (centered)
+                    $this->drawCenteredTtfText(
+                        $image,
+                        $line,
+                        (int)($width / 2),
+                        $lineY,
+                        $fontSize,
+                        $textColor,
+                        $fontPath
+                    );
+                } else {
+                    // Fallback to built-in font functions
+                    $this->drawBuiltInText($image, $line, (int)($width / 2), $lineY, $textColor, $shadowColor, $fontSize);
+                }
+            }
+
+            // Add decorative line under title
+            if (count($lines) > 0) {
+                $lineY = $titleY + (count($lines) * 65) + 15;
+                $lineLength = min(300, strlen($lines[0]) * 8);
+                imageline(
                     $image,
-                    $fontSize,
-                    0,
-                    $width / 2,
+                    ($width - $lineLength) / 2,
                     $lineY,
-                    $textColor,
-                    $this->getFontPath(),
-                    $line
+                    ($width + $lineLength) / 2,
+                    $lineY,
+                    $accentColor
                 );
             }
 
-            // Add author
+            // Add author with improved styling
             if (!empty($author)) {
-                $authorY = $titleY + (count($lines) * 60) + 30;
-                imagettftext(
+                $authorY = $titleY + (count($lines) * 65) + 50; // Increased spacing from 40 to 50
+                $authorText = "by " . $author;
+
+                // Make author text more prominent with larger size
+                $authorSize = 28; // Increased from 26
+
+                // Add subtle accent line above author
+                $authorLineY = $authorY - 15;
+                $authorLineColor = imagecolorallocatealpha($image, 255, 255, 255, 40);
+                $authorLineLength = min(200, strlen($authorText) * 10);
+                imageline(
                     $image,
-                    24,
-                    0,
-                    $width / 2 + 2,
-                    $authorY + 2,
-                    $shadowColor,
-                    $this->getFontPath(),
-                    "by " . $author
+                    ($width - $authorLineLength) / 2,
+                    $authorLineY,
+                    ($width + $authorLineLength) / 2,
+                    $authorLineY,
+                    $authorLineColor
                 );
-                imagettftext(
-                    $image,
-                    24,
-                    0,
-                    $width / 2,
-                    $authorY,
-                    $textColor,
-                    $this->getFontPath(),
-                    "by " . $author
-                );
+
+                if ($useTtf) {
+                    // Author shadow with more prominence
+                    for ($blur = 3; $blur >= 1; $blur--) {
+                        $this->drawCenteredTtfText(
+                            $image,
+                            $authorText,
+                            (int)($width / 2) + $blur,
+                            $authorY + $blur,
+                            $authorSize,
+                            $shadowColor,
+                            $fontPath
+                        );
+                    }
+
+                    // Main author text (centered) with slight opacity for elegant look
+                    $authorTextColor = imagecolorallocatealpha($image, 255, 255, 255, 30); // Slightly transparent (0-127 scale)
+                    $this->drawCenteredTtfText(
+                        $image,
+                        $authorText,
+                        (int)($width / 2),
+                        $authorY,
+                        $authorSize,
+                        $authorTextColor,
+                        $fontPath
+                    );
+                } else {
+                    // Fallback to built-in font
+                    $this->drawBuiltInText($image, $authorText, (int)($width / 2), $authorY, $textColor, $shadowColor, $authorSize);
+                }
             }
 
-            // Add format badge
-            $badgeY = $height - 100;
-            imagettftext(
-                $image,
-                20,
-                0,
-                $width / 2,
-                $badgeY,
-                $textColor,
-                $this->getFontPath(),
-                strtoupper($format)
-            );
+            // Add format badge with better styling
+            $badgeY = $height - 80;
+            $badgeText = strtoupper($format);
+            $badgeSize = 22;
+
+            if ($useTtf) {
+                // Badge shadow
+                for ($blur = 2; $blur >= 1; $blur--) {
+                    $this->drawCenteredTtfText(
+                        $image,
+                        $badgeText,
+                        (int)($width / 2) + $blur,
+                        $badgeY + $blur,
+                        $badgeSize,
+                        $shadowColor,
+                        $fontPath
+                    );
+                }
+
+                // Main badge text (centered)
+                $this->drawCenteredTtfText(
+                    $image,
+                    $badgeText,
+                    (int)($width / 2),
+                    $badgeY,
+                    $badgeSize,
+                    $textColor,
+                    $fontPath
+                );
+            } else {
+                // Fallback to built-in font
+                $this->drawBuiltInText($image, $badgeText, (int)($width / 2), $badgeY, $textColor, $shadowColor, $badgeSize);
+            }
+
+            // Add small corner decorations
+            $cornerSize = 30;
+            $cornerColor = imagecolorallocatealpha($image, 255, 255, 255, 20);
+
+            // Top-left corner
+            imageline($image, 0, 0, $cornerSize, 0, $cornerColor);
+            imageline($image, 0, 0, 0, $cornerSize, $cornerColor);
+
+            // Top-right corner
+            imageline($image, $width - $cornerSize, 0, $width, 0, $cornerColor);
+            imageline($image, $width, 0, $width, $cornerSize, $cornerColor);
+
+            // Bottom-left corner
+            imageline($image, 0, $height - $cornerSize, 0, $height, $cornerColor);
+            imageline($image, 0, $height, $cornerSize, $height, $cornerColor);
+
+            // Bottom-right corner
+            imageline($image, $width - $cornerSize, $height, $width, $height, $cornerColor);
+            imageline($image, $width, $height - $cornerSize, $width, $height, $cornerColor);
 
             // Save image
             $tempPath = storage_path('app/temp/' . uniqid('cover_', true) . '.png');
-            imagepng($image, $tempPath, 90);
+            imagepng($image, $tempPath, 6); // PNG compression level 0-9 (6 = good balance)
             imagedestroy($image);
 
             Log::info('Dynamic cover generated', [
@@ -171,6 +269,60 @@ class DynamicCoverGeneratorService
     }
 
     /**
+     * Get color scheme based on file type with genre fallback.
+     */
+    private function getFileTypeColor(string $format, string $genre = ''): array
+    {
+        $formatLower = strtolower($format);
+
+        $fileTypeColors = [
+            'pdf' => ['start' => [30, 58, 138], 'end' => [30, 64, 175]], // Deep blue
+            'epub' => ['start' => [107, 33, 168], 'end' => [124, 58, 237]], // Purple
+            'mobi' => ['start' => [107, 33, 168], 'end' => [124, 58, 237]], // Purple (same as EPUB)
+            'azw' => ['start' => [107, 33, 168], 'end' => [124, 58, 237]], // Purple (same as EPUB)
+            'docx' => ['start' => [234, 88, 12], 'end' => [249, 115, 22]], // Orange
+            'doc' => ['start' => [234, 88, 12], 'end' => [249, 115, 22]], // Orange
+            'txt' => ['start' => [75, 85, 99], 'end' => [107, 114, 128]], // Gray
+            'djvu' => ['start' => [6, 182, 212], 'end' => [8, 145, 178]], // Cyan
+            'fb2' => ['start' => [34, 197, 94], 'end' => [22, 163, 74]], // Green
+            'rtf' => ['start' => [234, 88, 12], 'end' => [249, 115, 22]], // Orange (same as DOC)
+            'odt' => ['start' => [37, 99, 235], 'end' => [59, 130, 246]], // Blue
+        ];
+
+        // Return file-type color if found
+        if (isset($fileTypeColors[$formatLower])) {
+            return $fileTypeColors[$formatLower];
+        }
+
+        // Fallback to genre-based colors
+        if (!empty($genre)) {
+            return $this->getGenreColor($genre);
+        }
+
+        // Default gradient
+        return ['start' => [15, 118, 110], 'end' => [20, 184, 166]]; // Teal
+    }
+
+    /**
+     * Add subtle texture overlay to image (minimal to avoid scratches).
+     */
+    private function addTextureOverlay($image, int $width, int $height): void
+    {
+        // Very subtle noise - reduced significantly
+        $textureColor = imagecolorallocatealpha($image, 255, 255, 255, 5);
+
+        // Add minimal noise texture (reduced from 500 to 50 pixels)
+        for ($i = 0; $i < 50; $i++) {
+            $x = rand(0, $width);
+            $y = rand(0, $height);
+            imagesetpixel($image, $x, $y, $textureColor);
+        }
+
+        // Remove the horizontal lines that were causing scratches
+        // They were creating visible "scratch" marks across the cover
+    }
+
+    /**
      * Interpolate between two colors.
      */
     private function interpolateColor(array $color1, array $color2, float $ratio): int
@@ -195,15 +347,26 @@ class DynamicCoverGeneratorService
         $size = $maxSize;
         $fontPath = $this->getFontPath();
 
+        // Check if TTF is available
+        if (empty($fontPath) || !file_exists($fontPath)) {
+            // For built-in fonts, just return a reasonable size
+            return min(5, $maxSize); // Built-in fonts only go 1-5
+        }
+
         // Try progressively smaller sizes until it fits
         while ($size > 12) {
             $lines = explode("\n", wordwrap($text, 25, "\n", true));
             $maxLineWidth = 0;
 
             foreach ($lines as $line) {
-                $dimensions = imagettfbbox($size, 0, $fontPath, $line);
-                $lineWidth = abs($dimensions[2] - $dimensions[0]);
-                $maxLineWidth = max($maxLineWidth, $lineWidth);
+                $dimensions = @imagettfbbox($size, 0, $fontPath, $line);
+                if ($dimensions !== false) {
+                    $lineWidth = abs($dimensions[2] - $dimensions[0]);
+                    $maxLineWidth = max($maxLineWidth, $lineWidth);
+                } else {
+                    // Font calculation failed, use fallback size
+                    return 20;
+                }
             }
 
             if ($maxLineWidth <= $maxWidth) {
@@ -217,26 +380,117 @@ class DynamicCoverGeneratorService
     }
 
     /**
-     * Get path to a TTF font file.
+     * Get path to a TTF font file with multiple fallback options and validation.
      */
     private function getFontPath(): string
     {
-        // Try common font locations
-        $fonts = [
-            __DIR__ . '/../../resources/fonts/OpenSans-Regular.ttf',
-            'C:\\Windows\\Fonts\\arial.ttf',
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-            '/System/Library/Fonts/Helvetica.ttc',
+        // Try system fonts first (most reliable)
+        $systemFonts = [
+            'C:\\Windows\\Fonts\\arial.ttf', // Arial - Windows most reliable
+            'C:\\Windows\\Fonts\\arialbd.ttf', // Arial Bold - Windows
+            'C:\\Windows\\Fonts\\segoeui.ttf', // Segoe UI - Windows
+            'C:\\Windows\\Fonts\\calibri.ttf', // Calibri - Windows
+            'C:\\Windows\\Fonts\\tahoma.ttf', // Tahoma - Windows
+            'C:\\Windows\\Fonts\\verdana.ttf', // Verdana - Windows
+            '/System/Library/Fonts/Helvetica.ttc', // Helvetica - macOS
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', // DejaVu Sans - Linux
+            '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf', // Liberation Sans - Linux
         ];
 
-        foreach ($fonts as $font) {
-            if (file_exists($font)) {
-                return $font;
+        // Try custom fonts if they exist
+        $customFonts = [
+            __DIR__ . '/../../resources/fonts/OpenSans-Regular.ttf',
+            __DIR__ . '/../../resources/fonts/Roboto-Regular.ttf',
+            __DIR__ . '/../../resources/fonts/Montserrat-Regular.ttf',
+            __DIR__ . '/../../resources/fonts/inter.ttf',
+            __DIR__ . '/../../resources/fonts/poppins.ttf',
+        ];
+
+        $allFonts = array_merge($systemFonts, $customFonts);
+
+        foreach ($allFonts as $font) {
+            if (file_exists($font) && is_readable($font)) {
+                // Test if the font is actually valid by trying to get bounding box
+                $testBox = @imagettfbbox(10, 0, $font, 'Test');
+                if ($testBox !== false) {
+                    Log::debug('Font loaded successfully', ['font' => $font]);
+                    return $font;
+                } else {
+                    Log::debug('Font file exists but failed to load', ['font' => $font]);
+                }
             }
         }
 
-        // Fallback - this will fail but provides a clear error
-        return 'arial.ttf';
+        // Last resort - try to find any working TTF font in system directories
+        $fontDirectories = [
+            'C:\\Windows\\Fonts\\',
+            '/System/Library/Fonts/',
+            '/usr/share/fonts/truetype/',
+            '/usr/share/fonts/',
+        ];
+
+        foreach ($fontDirectories as $dir) {
+            if (is_dir($dir) && is_readable($dir)) {
+                $files = scandir($dir);
+                foreach ($files as $file) {
+                    if (str_ends_with(strtolower($file), '.ttf')) {
+                        $fullPath = $dir . $file;
+                        if (file_exists($fullPath) && is_readable($fullPath)) {
+                            $testBox = @imagettfbbox(10, 0, $fullPath, 'Test');
+                            if ($testBox !== false) {
+                                Log::info('Found working fallback font', ['font' => $fullPath]);
+                                return $fullPath;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Absolute fallback - use built-in font functions
+        Log::error('No suitable TTF font found for cover generation');
+        return ''; // Empty string will trigger fallback to built-in fonts
+    }
+
+    /**
+     * Draw centered TTF text with proper positioning.
+     */
+    private function drawCenteredTtfText(
+        $image,
+        string $text,
+        int $centerX,
+        int $y,
+        int $size,
+        int $color,
+        string $fontPath,
+        int $angle = 0
+    ): void {
+        // Get text bounding box to calculate proper centering
+        $bbox = imagettfbbox($size, $angle, $fontPath, $text);
+        $textWidth = abs($bbox[2] - $bbox[0]);
+
+        // Calculate x position to center the text and cast to int
+        $x = (int)($centerX - ($textWidth / 2));
+
+        imagettftext($image, $size, $angle, $x, $y, $color, $fontPath, $text);
+    }
+
+    /**
+     * Draw text using built-in GD functions when TTF fonts are not available.
+     */
+    private function drawBuiltInText($image, string $text, int $x, int $y, int $color, ?int $shadowColor = null, int $fontSize = 20): void
+    {
+        // Calculate text width for centering
+        $textWidth = imagefontwidth($fontSize) * strlen($text);
+        $textX = $x - ($textWidth / 2);
+
+        // Draw shadow if provided
+        if ($shadowColor !== null) {
+            imagestring($image, $fontSize, $textX + 2, $y + 2, $text, $shadowColor);
+        }
+
+        // Draw main text
+        imagestring($image, $fontSize, $textX, $y, $text, $color);
     }
 
     /**
@@ -267,28 +521,34 @@ class DynamicCoverGeneratorService
             $iconColor = imagecolorallocate($image, 255, 255, 255);
 
             // Draw simple book icon using GD shapes
-            $iconX = $width / 2 - 60;
-            $iconY = $height / 2 - 100;
+            $iconX = (int)($width / 2) - 60;
+            $iconY = (int)($height / 2) - 100;
 
             // Draw book shape
             imagefilledrectangle($image, $iconX, $iconY, $iconX + 120, $iconY + 160, $iconColor);
 
             // Add format text
             $textColor = imagecolorallocate($image, 255, 255, 255);
-            imagettftext(
-                $image,
-                24,
-                0,
-                $width / 2,
-                $iconY + 200,
-                $textColor,
-                $this->getFontPath(),
-                strtoupper($format)
-            );
+            $fontPath = $this->getFontPath();
+
+            if (!empty($fontPath) && file_exists($fontPath)) {
+                $this->drawCenteredTtfText(
+                    $image,
+                    strtoupper($format),
+                    (int)($width / 2),
+                    $iconY + 200,
+                    24,
+                    $textColor,
+                    $fontPath
+                );
+            } else {
+                // Fallback to built-in text
+                $this->drawBuiltInText($image, strtoupper($format), (int)($width / 2), $iconY + 200, $textColor, null, 24);
+            }
 
             // Save image
             $tempPath = storage_path('app/temp/' . uniqid('icon_cover_', true) . '.png');
-            imagepng($image, $tempPath, 90);
+            imagepng($image, $tempPath, 6); // PNG compression level 0-9 (6 = good balance)
             imagedestroy($image);
 
             return $tempPath;

@@ -187,7 +187,7 @@ class MetadataReviewForm extends Component
         'genres.*.value' => 'string|max:255',
         'themes' => 'array',
         'themes.*.value' => 'string|max:255',
-        'contentTypeId' => 'nullable|integer|exists:content_types,id',
+        'contentTypeId' => 'nullable|integer|exists:content_types,id_content_type',
         'description' => 'nullable|string|max:1000',
         'coverImage' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
     ];
@@ -262,11 +262,32 @@ class MetadataReviewForm extends Component
                 }
             }
 
+            // Load description from extracted data for all processed items
+            $description = $this->fileMetadata->getDescription();
+            if ($description) {
+                $this->description = $description;
+            }
+
+            // Load content type from extracted data for all processed items
+            $contentType = $this->fileMetadata->getContentType();
+            if ($contentType) {
+                $this->contentTypeId = $this->resolveContentTypeId($contentType);
+            }
+
+            // Load section from extracted data for all processed items
+            $section = $this->fileMetadata->getSection();
+            if ($section) {
+                $sectionId = $this->resolveSectionId($section);
+                if ($sectionId) {
+                    $this->selectedSections = [$sectionId];
+                }
+            }
+
             $this->useExtracted = true;
         }
 
-        // Load description from publication if confirmed
-        if ($this->fileMetadata->status === 'confirmed') {
+        // Load description from publication if confirmed (use as fallback)
+        if ($this->fileMetadata->status === 'confirmed' && empty($this->description)) {
             // Use with('files') to eager-load files relationship including cover images
             $publication = Publication::with('files')->find($this->fileMetadata->publication_id);
             if ($publication) {
@@ -972,7 +993,7 @@ class MetadataReviewForm extends Component
             ->first();
 
         if ($type)
-            return $type->id;
+            return $type->id_content_type;
 
         // 3. Simple mapping for known variations
         $map = [
@@ -991,7 +1012,7 @@ class MetadataReviewForm extends Component
             $slug = $map[$aiValueLower];
             $type = DB::table('content_types')->where('slug', $slug)->first();
             if ($type)
-                return $type->id;
+                return $type->id_content_type;
         }
 
         return null;

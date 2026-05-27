@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Events\MetadataExtracted;
+use App\Models\File;
 use App\Models\FileMetadata;
 use App\Services\MetadataExtractors\MetadataExtractorFactory;
+use App\Services\UniversalCoverExtractorService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ExtractMetadataFromFile implements ShouldQueue
 {
@@ -114,7 +117,12 @@ class ExtractMetadataFromFile implements ShouldQueue
                 'error_message' => $extractedMetadata->isEmpty() ? 'No metadata extracted' : null,
             ]);
 
-            // Step 7: Fire event
+            // Step 7: Extract or generate cover if metadata extraction was successful
+            if ($fileMetadata->status === 'processed' && !$extractedMetadata->isEmpty()) {
+                $this->processCoverExtraction($extractedMetadata->toArray());
+            }
+
+            // Step 8: Fire event
             MetadataExtracted::dispatch($fileMetadata);
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
@@ -223,5 +231,102 @@ class ExtractMetadataFromFile implements ShouldQueue
             }
         });
         return $data;
+    }
+
+    /**
+     * Process cover extraction and generation.
+     */
+    private function processCoverExtraction(array $metadata): void
+    {
+        try {
+            $fileName = basename($this->filePath);
+
+            Log::channel('folder_scan')->info('Starting cover extraction', [
+                'publication_id' => $this->publicationId,
+                'file_path' => $this->filePath,
+                'file_name' => $fileName,
+            ]);
+
+            $coverExtractor = app(UniversalCoverExtractorService::class);
+            $coverPath = $coverExtractor->extractOrGenerateCover(
+                $this->filePath,
+                $fileName,
+                $metadata
+            );
+
+            if ($coverPath) {
+                $this->saveCoverFile($coverPath, $fileName, $metadata);
+
+                Log::channel('folder_scan')->info('Cover extraction completed successfully', [
+                    'publication_id' => $this->publicationId,
+                    'file_name' => $fileName,
+                    'cover_path' => $coverPath,
+                ]);
+            } else {
+                Log::channel('folder_scan')->warning('Cover extraction failed', [
+                    'publication_id' => $this->publicationId,
+                    'file_name' => $fileName,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::channel('folder_scan')->error('Cover extraction error', [
+                'publication_id' => $this->publicationId,
+                'file_path' => $this->filePath,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the job if cover extraction fails
+        }
+    }
+
+    /**
+     * Save cover file to storage and create File record.
+     */
+    private function saveCoverFile(string $coverPath, string $originalFileName, array $metadata): void
+    {
+        try {
+            // Generate unique filename for cover
+            $extension = pathinfo($coverPath, PATHINFO_EXTENSION);
+            $uniqueName = uniqid('cover_', true) . '_' . pathinfo($originalFileName, PATHINFO_FILENAME) . '.' . $extension;
+
+            // Store cover in public disk
+            $storagePath = 'covers/' . $uniqueName;
+            Storage::disk('public')->put($storagePath, file_get_contents($coverPath));
+
+            // Clean up temp file
+            if (file_exists($coverPath)) {
+                unlink($coverPath);
+            }
+
+            // Delete existing cover for this publication
+            File::where('id_publication', $this->publicationId)
+                ->where('file_type', 'cover')
+                ->delete();
+
+            // Create new File record for cover
+            File::create([
+                'id_publication' => $this->publicationId,
+                'file_name' => $uniqueName,
+                'file_name_low' => mb_strtolower($uniqueName),
+                'file_description' => 'Auto-generated cover from ' . $originalFileName,
+                'file_source' => 'auto_generated',
+                'mime_type' => 'image/' . $extension,
+                'file_size_bytes' => Storage::disk('public')->size($storagePath),
+                'file_type' => 'cover',
+                'file_path' => $storagePath,
+                'ord_num' => 0,
+            ]);
+
+            Log::channel('folder_scan')->info('Cover file saved successfully', [
+                'publication_id' => $this->publicationId,
+                'storage_path' => $storagePath,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::channel('folder_scan')->error('Failed to save cover file', [
+                'publication_id' => $this->publicationId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 }

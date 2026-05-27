@@ -61,7 +61,7 @@ class FolderScanService
             : Storage::disk('library')->files($folderPath);
 
         // Apply file format filters
-        $fileFormatFilters = $options['file_format_filters'] ?? ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2', 'djvu'];
+        $fileFormatFilters = $options['file_format_filters'] ?? ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2', 'djvu', 'rtf'];
         $filteredFiles = array_filter($files, function ($file) use ($fileFormatFilters) {
             $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 

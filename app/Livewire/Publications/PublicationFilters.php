@@ -17,6 +17,8 @@ class PublicationFilters extends Component
 {
     public bool $hideAdminFilters = false;
 
+    public bool $isModal = false;
+
     public array $selectedContentTypes = [];
 
     public array $selectedAuthors = [];
@@ -417,6 +419,12 @@ class PublicationFilters extends Component
             'formatFilter' => $this->formatFilter,
             'dateFilter' => $this->dateFilter,
         ]);
+    }
+
+    #[On('clearAllFilters')]
+    public function clearAllExternal(): void
+    {
+        $this->clearAllFilters();
     }
 
     public function render()

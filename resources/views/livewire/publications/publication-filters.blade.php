@@ -13,9 +13,15 @@
         format: false,
         extractionDate: false,
         realGenre: false
-    }
-}" class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 sticky top-4">
+    },
+    genreSearch: '',
+    realGenreSearch: '',
+    authorSearch: '',
+    sectionSearch: '',
+    publisherSearch: ''
+}}" @class="$isModal ? '' : 'bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700'">
 
+    @if(!$isModal)
     {{-- Filter Header --}}
     <div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-4 py-3 rounded-t-lg">
         <div class="flex items-center justify-between">
@@ -35,8 +41,9 @@
             </button>
         </div>
     </div>
+    @endif
 
-    <div class="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+    <div @class="$isModal ? 'space-y-4' : 'p-4 max-h-[calc(100vh-200px)] overflow-y-auto'">
         {{-- Applied Filters Tags --}}
         @if(count($this->appliedFilters) > 0)
         <div class="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
@@ -226,18 +233,27 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.genre" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
-                @foreach($this->themes as $theme)
-                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
-                    <input
-                        type="checkbox"
-                        wire:model.live="selectedGenres"
-                        value="{{ $theme['id_theme'] }}"
-                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                    >
-                    <span class="text-sm">{{ $theme['theme'] }}</span>
-                </label>
-                @endforeach
+            <div x-show="openSections.genre" x-transition class="mt-2">
+                <input
+                    type="text"
+                    x-model="genreSearch"
+                    placeholder="{{ __('Search themes...') }}"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 mb-3"
+                >
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                    @foreach($this->themes as $theme)
+                    <label x-show="!genreSearch || '{{ $theme['theme'] }}'.toLowerCase().includes(genreSearch.toLowerCase())"
+                           class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer text-sm">
+                        <input
+                            type="checkbox"
+                            wire:model.live="selectedGenres"
+                            value="{{ $theme['id_theme'] }}"
+                            class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2 flex-shrink-0"
+                        >
+                        <span class="truncate">{{ $theme['theme'] }}</span>
+                    </label>
+                    @endforeach
+                </div>
             </div>
         </div>
 
@@ -265,18 +281,27 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.realGenre" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
-                @foreach($this->genres as $genreItem)
-                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
-                    <input
-                        type="checkbox"
-                        wire:model.live="selectedRealGenres"
-                        value="{{ $genreItem['id'] }}"
-                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                    >
-                    <span class="text-sm">{{ $genreItem['name'] }}</span>
-                </label>
-                @endforeach
+            <div x-show="openSections.realGenre" x-transition class="mt-2">
+                <input
+                    type="text"
+                    x-model="realGenreSearch"
+                    placeholder="{{ __('Search genres...') }}"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 mb-3"
+                >
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                    @foreach($this->genres as $genreItem)
+                    <label x-show="!realGenreSearch || '{{ $genreItem['name'] }}'.toLowerCase().includes(realGenreSearch.toLowerCase())"
+                           class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer text-sm">
+                        <input
+                            type="checkbox"
+                            wire:model.live="selectedRealGenres"
+                            value="{{ $genreItem['id'] }}"
+                            class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2 flex-shrink-0"
+                        >
+                        <span class="truncate">{{ $genreItem['name'] }}</span>
+                    </label>
+                    @endforeach
+                </div>
             </div>
         </div>
 
@@ -304,23 +329,32 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.section" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
-                @foreach($this->sections as $section)
-                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
-                    <input
-                        type="checkbox"
-                        wire:model.live="selectedSections"
-                        value="{{ $section['id'] }}"
-                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                    >
-                    <span class="text-sm">
-                        @if($section['parent_name'])
-                            <span class="text-gray-400">{{ $section['parent_name'] }} / </span>
-                        @endif
-                        {{ $section['name'] }}
-                    </span>
-                </label>
-                @endforeach
+            <div x-show="openSections.section" x-transition class="mt-2">
+                <input
+                    type="text"
+                    x-model="sectionSearch"
+                    placeholder="{{ __('Search sections...') }}"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 mb-3"
+                >
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                    @foreach($this->sections as $section)
+                    <label x-show="!sectionSearch || ('{{ $section['name'] }}'.toLowerCase().includes(sectionSearch.toLowerCase()) || '{{ $section['parent_name'] ?? '' }}'.toLowerCase().includes(sectionSearch.toLowerCase()))"
+                           class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer text-sm">
+                        <input
+                            type="checkbox"
+                            wire:model.live="selectedSections"
+                            value="{{ $section['id'] }}"
+                            class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2 flex-shrink-0"
+                        >
+                        <span class="truncate">
+                            @if($section['parent_name'])
+                                <span class="text-gray-400">{{ $section['parent_name'] }} / </span>
+                            @endif
+                            {{ $section['name'] }}
+                        </span>
+                    </label>
+                    @endforeach
+                </div>
             </div>
         </div>
 
@@ -348,18 +382,27 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.publisher" x-transition class="mt-2 space-y-1 max-h-48 overflow-y-auto">
-                @foreach($this->publishers as $publisher)
-                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
-                    <input
-                        type="checkbox"
-                        wire:model.live="selectedPublishers"
-                        value="{{ $publisher['id'] }}"
-                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                    >
-                    <span class="text-sm">{{ $publisher['name'] }}</span>
-                </label>
-                @endforeach
+            <div x-show="openSections.publisher" x-transition class="mt-2">
+                <input
+                    type="text"
+                    x-model="publisherSearch"
+                    placeholder="{{ __('Search publishers...') }}"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 mb-3"
+                >
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                    @foreach($this->publishers as $publisher)
+                    <label x-show="!publisherSearch || '{{ $publisher['name'] }}'.toLowerCase().includes(publisherSearch.toLowerCase())"
+                           class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer text-sm">
+                        <input
+                            type="checkbox"
+                            wire:model.live="selectedPublishers"
+                            value="{{ $publisher['id'] }}"
+                            class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2 flex-shrink-0"
+                        >
+                        <span class="truncate">{{ $publisher['name'] }}</span>
+                    </label>
+                    @endforeach
+                </div>
             </div>
         </div>
 
@@ -660,6 +703,60 @@
                         class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
                     >
                     <span class="text-sm">DJVU</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="rtf"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">RTF</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="mobi"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">MOBI</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="azw"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">AZW</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="azw3"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">AZW3</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="lit"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">LIT</span>
+                </label>
+                <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer">
+                    <input
+                        type="radio"
+                        wire:model.live="formatFilter"
+                        value="html"
+                        class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    >
+                    <span class="text-sm">HTML</span>
                 </label>
             </div>
         </div>

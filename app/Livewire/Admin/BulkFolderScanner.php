@@ -15,7 +15,7 @@ class BulkFolderScanner extends Component
 {
     public string $folderPath = '';
 
-    public array $fileFormatFilters = ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2', 'djvu'];
+    public array $fileFormatFilters = ['pdf', 'epub', 'txt', 'rtf', 'doc', 'docx', 'fb2', 'djvu'];
 
     public ?FolderScanJob $currentScanJob = null;
 

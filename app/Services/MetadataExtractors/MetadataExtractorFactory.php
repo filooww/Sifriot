@@ -10,6 +10,7 @@ use App\Services\MetadataExtractors\Extractors\DOCXMetadataExtractor;
 use App\Services\MetadataExtractors\Extractors\EPUBMetadataExtractor;
 use App\Services\MetadataExtractors\Extractors\FB2MetadataExtractor;
 use App\Services\MetadataExtractors\Extractors\PDFMetadataExtractor;
+use App\Services\MetadataExtractors\Extractors\RTFMetadataExtractor;
 use App\Services\MetadataExtractors\Extractors\TXTMetadataExtractor;
 use Illuminate\Support\Facades\Log;
 
@@ -46,6 +47,7 @@ class MetadataExtractorFactory
             'application/pdf' => new PDFMetadataExtractor,
             'application/epub+zip', 'application/epub' => new EPUBMetadataExtractor,
             'text/plain' => new TXTMetadataExtractor,
+            'application/rtf', 'text/rtf' => new RTFMetadataExtractor,
             'application/msword' => new DOCMetadataExtractor,
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => new DOCXMetadataExtractor,
             'application/x-fictionbook', 'text/xml' => self::detectFB2OrXml($filePath),
@@ -63,6 +65,7 @@ class MetadataExtractorFactory
             'pdf' => 'application/pdf',
             'epub' => 'application/epub+zip',
             'txt' => 'text/plain',
+            'rtf' => 'application/rtf',
             'doc' => 'application/msword',
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'fb2' => 'application/x-fictionbook',
@@ -102,6 +105,8 @@ class MetadataExtractorFactory
             'application/epub+zip',
             'application/epub',
             'text/plain',
+            'application/rtf',
+            'text/rtf',
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/x-fictionbook',
@@ -117,7 +122,7 @@ class MetadataExtractorFactory
      */
     public static function supportedExtensions(): array
     {
-        return ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2', 'xml', 'djvu'];
+        return ['pdf', 'epub', 'txt', 'rtf', 'doc', 'docx', 'fb2', 'xml', 'djvu'];
     }
 
     /**

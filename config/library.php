@@ -39,8 +39,10 @@ return [
             'text/xml',  // FB2
             'application/x-fictionbook',  // FB2
             'image/vnd.djvu',
+            'application/rtf',
+            'text/rtf',
         ],
-        'allowed_extensions' => ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2', 'djvu', 'xml'],
+        'allowed_extensions' => ['pdf', 'epub', 'txt', 'doc', 'docx', 'fb2', 'djvu', 'xml', 'rtf'],
     ],
 
     /*

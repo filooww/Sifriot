@@ -4,16 +4,23 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
+use App\Jobs\ExtractCoverForFile;
 use App\Jobs\ExtractMetadataFromFile;
+use App\Models\Author;
 use App\Models\File;
 use App\Models\FileMetadata;
 use App\Models\FileRegistrationLog;
+use App\Models\Genre;
 use App\Models\Publication;
+use App\Models\Publisher;
+use App\Models\Section;
+use App\Models\Theme;
 use App\Services\MetadataExtractors\DocumentTextExtractor;
 use App\Services\MetadataExtractors\GeminiMetadataExtractorService;
 use App\Services\FileMetadataService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
@@ -506,7 +513,7 @@ class MetadataReviewDashboard extends Component
     }
 
     /**
-     * Confirm all selected metadata items
+     * Confirm all selected metadata items and populate publication fields
      */
     public function confirmAllSelected(): void
     {
@@ -517,17 +524,221 @@ class MetadataReviewDashboard extends Component
 
         }
 
-        FileMetadata::whereIn('id', $this->selectedItems)
-            ->update([
+        $success = 0;
+        $failed = 0;
+
+        foreach ($this->selectedItems as $id) {
+            try {
+                $metadata = FileMetadata::find($id);
+                if (!$metadata || !$metadata->publication_id) {
+                    $failed++;
+                    continue;
+                }
+
+                // Process and populate publication fields
+                $this->processMetadataConfirmation($metadata);
+                $success++;
+            } catch (\Exception $e) {
+                Log::error('Failed to confirm metadata in batch', [
+                    'id' => $id,
+                    'error' => $e->getMessage(),
+                ]);
+                $failed++;
+            }
+        }
+
+        $this->selectedItems = [];
+        $this->selectAll = false;
+        $this->resetPage();
+
+        $message = "{$success} items confirmed";
+        if ($failed > 0) {
+            $message .= " ({$failed} failed)";
+        }
+        $this->dispatch('notify', message: $message, type: $failed > 0 ? 'warning' : 'success');
+    }
+
+    /**
+     * Process metadata confirmation for a single item
+     * Populates publication fields with extracted metadata
+     */
+    private function processMetadataConfirmation(FileMetadata $metadata): void
+    {
+        DB::beginTransaction();
+        try {
+            $publication = $metadata->publication;
+            if (!$publication) {
+                throw new \Exception('Publication not found');
+            }
+
+            $extractedData = $metadata->extracted_data ?? [];
+
+            // Process authors
+            if (!empty($extractedData['authors'])) {
+                foreach ($extractedData['authors'] as $authorName) {
+                    $trimmedName = trim($authorName);
+                    if (empty($trimmedName)) continue;
+
+                    $author = \App\Models\Author::firstOrCreate(
+                        ['author' => $trimmedName, 'author_low' => mb_strtolower($trimmedName)]
+                    );
+                    $publication->authors()->syncWithoutDetaching([$author->id_author]);
+                }
+            }
+
+            // Process genres
+            if (!empty($extractedData['genres'])) {
+                foreach ($extractedData['genres'] as $genreName) {
+                    $trimmedGenre = trim($genreName);
+                    if (empty($trimmedGenre)) continue;
+
+                    $genre = \App\Models\Genre::firstOrCreate(
+                        ['slug' => \Illuminate\Support\Str::slug($trimmedGenre), 'name_en' => $trimmedGenre]
+                    );
+                    $publication->genres()->syncWithoutDetaching([$genre->id]);
+                }
+            }
+
+            // Process themes
+            if (!empty($extractedData['themes'])) {
+                foreach ($extractedData['themes'] as $themeName) {
+                    $trimmedTheme = trim($themeName);
+                    if (empty($trimmedTheme)) continue;
+
+                    $theme = \App\Models\Theme::firstOrCreate(
+                        ['theme' => $trimmedTheme],
+                        ['theme_low' => mb_strtolower($trimmedTheme)]
+                    );
+                    $publication->themes()->syncWithoutDetaching([$theme->id_theme]);
+                }
+            }
+
+            // Process publisher
+            if (!empty($extractedData['publisher'])) {
+                $trimmedPublisher = trim($extractedData['publisher']);
+                if (!empty($trimmedPublisher)) {
+                    $publisher = \App\Models\Publisher::firstOrCreate(
+                        ['slug' => mb_strtolower($trimmedPublisher)],
+                        ['name_en' => $trimmedPublisher]
+                    );
+                    $publication->publishers()->syncWithoutDetaching([$publisher->id]);
+                }
+            }
+
+            // Process sections
+            if (!empty($extractedData['section'])) {
+                $section = $this->resolveSectionId($extractedData['section']);
+                if ($section) {
+                    $publication->sections()->sync([$section]);
+                }
+            }
+
+            // Process content type
+            $contentTypeId = null;
+            if (!empty($extractedData['content_type'])) {
+                $contentTypeId = $this->resolveContentTypeId($extractedData['content_type']);
+            } elseif (!empty($extractedData['content_type_id'])) {
+                $contentTypeId = $extractedData['content_type_id'];
+            }
+
+            // Update publication with extracted metadata
+            $publication->update([
+                'title' => $extractedData['title'] ?? $publication->title,
+                'title_low' => mb_strtolower($extractedData['title'] ?? $publication->title),
+                'issue_year' => !empty($extractedData['publication_year']) ? (string) $extractedData['publication_year'] : $publication->issue_year,
+                'content_type_id' => $contentTypeId ?? $publication->content_type_id,
+                'description' => $extractedData['description'] ?? $publication->description,
+                'status' => 'pending',
+            ]);
+
+            // Note: Custom fields are not automatically populated in batch operations
+            // as they require manual review per content type requirements
+
+            // Update FileMetadata to confirmed state
+            $metadata->update([
                 'status' => 'confirmed',
                 'confirmed_at' => now(),
             ]);
 
-        $count = count($this->selectedItems);
-        $this->selectedItems = [];
-        $this->selectAll = false;
-        $this->resetPage();
-        $this->dispatch('notify', message: "{$count} items confirmed", type: 'success');
+            DB::commit();
+
+            Log::info('Batch metadata confirmation processed', [
+                'file_metadata_id' => $metadata->id,
+                'publication_id' => $publication->id_publication,
+                'title' => $publication->title,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Resolve Section ID from AI value with fuzzy matching.
+     */
+    private function resolveSectionId(string $aiValue): ?int
+    {
+        if (is_numeric($aiValue)) {
+            return (int) $aiValue;
+        }
+
+        $aiValueLower = mb_strtolower(trim($aiValue));
+
+        // Exact match
+        $section = \App\Models\Section::where(\Illuminate\Support\Facades\DB::raw('LOWER(name_ru)'), $aiValueLower)
+            ->orWhere(\Illuminate\Support\Facades\DB::raw('LOWER(name_en)'), $aiValueLower)
+            ->orWhere('slug', \Illuminate\Support\Str::slug($aiValue))
+            ->first();
+
+        if ($section) return $section->id;
+
+        // Fuzzy match
+        $section = \App\Models\Section::where(\Illuminate\Support\Facades\DB::raw('LOWER(name_ru)'), 'like', "%{$aiValueLower}%")
+            ->orWhere(\Illuminate\Support\Facades\DB::raw('LOWER(name_en)'), 'like', "%{$aiValueLower}%")
+            ->first();
+
+        return $section?->id;
+    }
+
+    /**
+     * Resolve ContentType ID from AI value
+     */
+    private function resolveContentTypeId(string $aiValue): ?int
+    {
+        if (is_numeric($aiValue)) {
+            return (int) $aiValue;
+        }
+
+        $aiValueLower = mb_strtolower(trim($aiValue));
+
+        $type = \Illuminate\Support\Facades\DB::table('content_types')
+            ->where(\Illuminate\Support\Facades\DB::raw('LOWER(name_ru)'), $aiValueLower)
+            ->orWhere(\Illuminate\Support\Facades\DB::raw('LOWER(name_en)'), $aiValueLower)
+            ->orWhere('slug', \Illuminate\Support\Str::slug($aiValue))
+            ->first();
+
+        if ($type) return $type->id_content_type;
+
+        // Simple mapping
+        $map = [
+            'книга' => 'books',
+            'книги' => 'books',
+            'book' => 'books',
+            'журнал' => 'magazines',
+            'журналы' => 'magazines',
+            'magazine' => 'magazines',
+            'статья' => 'articles',
+            'статьи' => 'articles',
+            'article' => 'articles',
+        ];
+
+        if (isset($map[$aiValueLower])) {
+            $slug = $map[$aiValueLower];
+            $type = \Illuminate\Support\Facades\DB::table('content_types')->where('slug', $slug)->first();
+            if ($type) return $type->id_content_type;
+        }
+
+        return null;
     }
 
     /**
@@ -598,7 +809,11 @@ class MetadataReviewDashboard extends Component
 
             // Update status and queue for extraction
             $metadata->update(['status' => 'pending']);
-            ExtractMetadataFromFile::dispatch($metadata->publication_id, $fileLog->file_path, 1);
+            ExtractMetadataFromFile::dispatch(
+                $metadata->publication_id,
+                $fileLog->file_path,
+                $metadata->publication->content_type_id ?? 1
+            );
             $count++;
         }
 
@@ -798,6 +1013,10 @@ class MetadataReviewDashboard extends Component
                     $extractedData['section'] = $extractedMetadata->getSection();
                 }
 
+                if ($extractedMetadata->getDescription()) {
+                    $extractedData['description'] = $extractedMetadata->getDescription();
+                }
+
                 $extractedData['gemini_model'] = config('services.gemini.model', 'gemini-1.5-flash');
 
                 // Update metadata
@@ -869,7 +1088,11 @@ class MetadataReviewDashboard extends Component
 
         // All validations passed - proceed with re-extraction
         $metadata->update(['status' => 'pending']);
-        ExtractMetadataFromFile::dispatch($metadata->publication_id, $fileLog->file_path, 1);
+        ExtractMetadataFromFile::dispatch(
+            $metadata->publication_id,
+            $fileLog->file_path,
+            $metadata->publication->content_type_id ?? 1
+        );
         $this->dispatch('notify', message: 'Re-extraction queued', type: 'success');
     }
 
@@ -896,6 +1119,69 @@ class MetadataReviewDashboard extends Component
             $metadata->delete();
             $this->dispatch('notify', message: 'Publication deleted', type: 'success');
         }
+    }
+
+    /**
+     * Generate covers for all selected files
+     */
+    public function generateCoversForSelected(): void
+    {
+        if (empty($this->selectedItems)) {
+            $this->dispatch('notify', message: 'No items selected', type: 'warning');
+            return;
+        }
+
+        $count = 0;
+        $failed = 0;
+
+        foreach ($this->selectedItems as $id) {
+            $metadata = FileMetadata::find($id);
+            if (!$metadata || !$metadata->publication_id) {
+                $failed++;
+                continue;
+            }
+
+            $publicationId = $metadata->publication_id;
+
+            // Get the file path from file_registration_logs
+            $fileLog = DB::table('file_registration_logs')
+                ->where('publication_id', $publicationId)
+                ->where('file_path', 'like', '%' . addcslashes($metadata->file_name, '%_') . '%')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if (!$fileLog || !$fileLog->file_path) {
+                Log::warning('File path not found for cover generation', [
+                    'id' => $id,
+                    'publication_id' => $publicationId,
+                    'file_name' => $metadata->file_name,
+                ]);
+                $failed++;
+                continue;
+            }
+
+            // Extract metadata for cover generation
+            $metadataArray = $metadata->extracted_data ?? [];
+
+            // Queue cover extraction job
+            ExtractCoverForFile::dispatch(
+                $publicationId,
+                $fileLog->file_path,
+                $metadata->file_name,
+                $metadataArray
+            );
+            $count++;
+        }
+
+        $this->selectedItems = [];
+        $this->selectAll = false;
+        $this->resetPage();
+
+        $message = "{$count} items queued for cover generation";
+        if ($failed > 0) {
+            $message .= " ({$failed} items failed)";
+        }
+        $this->dispatch('notify', message: $message, type: $failed > 0 ? 'warning' : 'success');
     }
 
     /**
@@ -992,6 +1278,48 @@ class MetadataReviewDashboard extends Component
         } catch (\Exception $e) {
             Log::error('Bulk status update failed', ['error' => $e->getMessage()]);
             $this->dispatch('notify', message: 'Bulk update failed', type: 'error');
+        }
+    }
+
+    /**
+     * Publish all selected items
+     */
+    public function publishAllSelected(): void
+    {
+        if (empty($this->selectedItems)) {
+            $this->dispatch('notify', message: 'No items selected', type: 'warning');
+            return;
+        }
+
+        try {
+            // Get publication IDs from selected metadata
+            $publicationIds = FileMetadata::whereIn('id', $this->selectedItems)
+                ->whereNotNull('publication_id')
+                ->pluck('publication_id')
+                ->toArray();
+
+            if (empty($publicationIds)) {
+                $this->dispatch('notify', message: 'No valid publications found', type: 'warning');
+                return;
+            }
+
+            // Update publication statuses
+            $count = Publication::whereIn('id_publication', $publicationIds)
+                ->update(['status' => 'published']);
+
+            Log::channel('folder_scan')->info("Bulk publish action", [
+                'admin_id' => auth()->id(),
+                'count' => $count,
+                'publication_ids' => $publicationIds,
+            ]);
+
+            $this->selectedItems = [];
+            $this->selectAll = false;
+            $this->resetPage();
+            $this->dispatch('notify', message: "{$count} publications published", type: 'success');
+        } catch (\Exception $e) {
+            Log::error('Bulk publish failed', ['error' => $e->getMessage()]);
+            $this->dispatch('notify', message: 'Failed to publish publications', type: 'error');
         }
     }
 

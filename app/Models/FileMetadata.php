@@ -120,6 +120,33 @@ class FileMetadata extends Model
     }
 
     /**
+     * Get description from extracted data.
+     */
+    public function getDescription(): ?string
+    {
+        $data = $this->extracted_data['description'] ?? null;
+        return is_array($data) ? ($data['value'] ?? null) : $data;
+    }
+
+    /**
+     * Get content type from extracted data.
+     */
+    public function getContentType(): ?string
+    {
+        $data = $this->extracted_data['content_type'] ?? null;
+        return is_array($data) ? ($data['value'] ?? null) : $data;
+    }
+
+    /**
+     * Get section from extracted data.
+     */
+    public function getSection(): ?string
+    {
+        $data = $this->extracted_data['section'] ?? null;
+        return is_array($data) ? ($data['value'] ?? null) : $data;
+    }
+
+    /**
      * Get fields above confidence threshold.
      *
      * @param  float  $threshold  Minimum confidence (0.0-1.0)

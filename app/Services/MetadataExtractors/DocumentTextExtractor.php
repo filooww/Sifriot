@@ -12,7 +12,7 @@ class DocumentTextExtractor
     /**
      * Supported file extensions.
      */
-    private const SUPPORTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'epub', 'fb2', 'txt', 'djvu'];
+    private const SUPPORTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'epub', 'fb2', 'txt', 'djvu', 'rtf'];
 
     /**
      * Minimum characters per page threshold for PDF text detection.
@@ -54,6 +54,7 @@ class DocumentTextExtractor
                 'epub' => $this->extractFromEpub($filePath),
                 'fb2' => $this->extractFromFb2($filePath),
                 'txt' => $this->extractFromTxt($filePath),
+                'rtf' => $this->extractFromRtf($filePath),
                 // Best-effort: we don't have a reliable pure-PHP DjVu OCR/text extractor.
                 // For AI extraction we still try to provide useful context via the filename.
                 'djvu' => $this->extractFromDjvu($filePath),
@@ -690,6 +691,48 @@ class DocumentTextExtractor
         }
 
         return $this->normalizeEncoding($content);
+    }
+
+    /**
+     * Extract text from RTF file.
+     */
+    private function extractFromRtf(string $filePath): string
+    {
+        $content = file_get_contents($filePath);
+        if ($content === false) {
+            return '';
+        }
+
+        // Remove RTF formatting codes and extract plain text
+        $text = $this->stripRtfFormatting($content);
+
+        return $this->normalizeEncoding($text);
+    }
+
+    /**
+     * Strip RTF formatting codes and extract plain text.
+     */
+    private function stripRtfFormatting(string $rtf): string
+    {
+        // Remove RTF header
+        $rtf = preg_replace('/\{\\\\rtf1[^\{]*/', '', $rtf);
+
+        // Remove all control words (backslash sequences)
+        $rtf = preg_replace('/\\\\[a-z0-9]+(\-?[0-9]+)?[ ]?/i', ' ', $rtf);
+
+        // Remove hex characters
+        $rtf = preg_replace('/\\\\\'[0-9a-fA-F]{2}/', ' ', $rtf);
+
+        // Remove remaining special characters
+        $rtf = preg_replace('/[{}\\\\]/', ' ', $rtf);
+
+        // Remove Unicode escapes (\uN?)
+        $rtf = preg_replace('/\\\\u(\d+)(\?.?)/', ' ', $rtf);
+
+        // Normalize whitespace
+        $rtf = preg_replace('/\s+/', ' ', $rtf);
+
+        return trim($rtf);
     }
 
     /**

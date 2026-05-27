@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
+use App\Jobs\ExtractCoverForFile;
 use App\Jobs\ExtractMetadataFromFile;
 use App\Models\FileMetadata;
 use Livewire\Attributes\On;
@@ -269,6 +270,62 @@ class MetadataReviewQueue extends Component
     }
 
     /**
+     * Generate covers for all selected files.
+     */
+    public function generateCoversForSelected(): void
+    {
+        if (empty($this->selectedItems)) {
+            $this->dispatch('notify', message: 'No items selected', type: 'warning');
+            return;
+        }
+
+        $count = 0;
+        $failed = 0;
+
+        foreach ($this->selectedItems as $id) {
+            $metadata = FileMetadata::find($id);
+            if (!$metadata || !$metadata->publication_id) {
+                $failed++;
+                continue;
+            }
+
+            // Get file path from files table
+            $file = \App\Models\File::where('id_publication', $metadata->publication_id)
+                ->where('file_name', $metadata->file_name)
+                ->first();
+
+            if (!$file) {
+                $failed++;
+                continue;
+            }
+
+            $filePath = $file->file_source.'/'.$file->file_name;
+            $fullPath = \Storage::disk('library')->path($filePath);
+
+            // Extract metadata for cover generation
+            $metadataArray = $metadata->extracted_data ?? [];
+
+            // Queue cover extraction job
+            ExtractCoverForFile::dispatch(
+                $metadata->publication_id,
+                $fullPath,
+                $metadata->file_name,
+                $metadataArray
+            );
+            $count++;
+        }
+
+        $this->selectedItems = [];
+        $this->selectAll = false;
+
+        $message = "{$count} items queued for cover generation";
+        if ($failed > 0) {
+            $message .= " ({$failed} items failed)";
+        }
+        $this->dispatch('notify', message: $message, type: $failed > 0 ? 'warning' : 'success');
+    }
+
+    /**
      * Re-extract a single metadata record.
      */
     public function reExtractSingle(int $id): void
@@ -287,7 +344,7 @@ class MetadataReviewQueue extends Component
                 ExtractMetadataFromFile::dispatch(
                     $metadata->publication_id,
                     $fullPath,
-                    $file->publication->content_type_id ?? 1,
+                    $metadata->publication->content_type_id ?? 1,
                     $file->mime_type ?? 'application/octet-stream'
                 );
 

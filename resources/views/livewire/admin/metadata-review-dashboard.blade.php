@@ -132,7 +132,7 @@
     <div class="flex flex-1 overflow-hidden">
         <!-- Sidebar Filters -->
         <aside
-            class="bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-all duration-300 {{ $sidebarCollapsed ? 'w-12' : 'w-64' }}">
+            class="bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-all duration-300 {{ $sidebarCollapsed ? 'w-12' : 'w-80' }}">
             <!-- Collapse Toggle Button -->
             <div class="p-2 border-b border-gray-200 dark:border-gray-700">
                 <button wire:click="$toggle('sidebarCollapsed')"
@@ -187,7 +187,7 @@
 
                     <!-- Publication & Metadata Filters Component -->
                     <div class="pb-4">
-                        @livewire('publications.publication-filters', ['hideAdminFilters' => true])
+                        @livewire('publications.publication-filters', ['hideAdminFilters' => false])
                     </div>
                 </div>
             @endif
@@ -203,6 +203,10 @@
                         {{ count($selectedItems) }} item{{ count($selectedItems) !== 1 ? 's' : '' }} selected
                     </span>
                     <div class="flex gap-2 flex-wrap">
+                        <button type="button" wire:click="publishAllSelected"
+                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+                            🌐 {{ __('Publish All') }}
+                        </button>
                         <button type="button" wire:click="confirmAllSelected"
                             class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
                             ✅ {{ __('Confirm All') }}
@@ -266,6 +270,10 @@
                         <button type="button" wire:click="reExtractSelected"
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
                             🔄 {{ __('Re-extract') }}
+                        </button>
+                        <button type="button" wire:click="generateCoversForSelected"
+                            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">
+                            🖼️ {{ __('Generate Covers') }}
                         </button>
                         <div x-data="{
                             showTooltip: false,

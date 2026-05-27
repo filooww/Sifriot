@@ -13,7 +13,13 @@
       "Bash(C:\\\\Program Files\\\\ImageMagick-7.1.2-Q16-HDRI\\\\magick.exe *)",
       "Bash(ls *)",
       "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" test_pdf_cover_service.php)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(composer *)",
+      "Bash(grep -E \"\\\\.\\(ttf|ttc\\)$\")",
+      "Bash('C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.exe' artisan tinker '--execute= *)",
+      "Bash('C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.exe' -r ' *)",
+      "Bash(\"C:/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" artisan *)",
+      "Bash('C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.exe' artisan tinker '--execute= *c)"
     ]
   }
 }
