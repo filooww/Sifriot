@@ -153,42 +153,32 @@
             </div>
 
             @if(!$sidebarCollapsed)
-                <div class="p-4 space-y-4">
-                    <!-- Divider -->
-
+                <div class="p-3 space-y-3 overflow-y-auto max-h-[calc(100vh-120px)]">
                     <!-- Table Sort Controls -->
-                    <div class="space-y-3 mb-4">
+                    <div class="space-y-2 pb-3 border-b border-gray-200 dark:border-gray-700">
                         <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ __('Table Sort') }}</h4>
 
-                        <!-- Sort -->
-                        <div>
-                            <label for="sortBy" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                {{ __('Sort By') }}
-                            </label>
-                            <select id="sortBy" wire:model.live="sortBy"
-                                class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white">
-                                <option value="created_at">{{ __('Date') }}</option>
-                                <option value="file_name">{{ __('Filename') }}</option>
-                                <option value="status">{{ __('Status') }}</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label for="sortDir" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                {{ __('Direction') }}
-                            </label>
-                            <select id="sortDir" wire:model.live="sortDirection"
-                                class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white">
-                                <option value="desc">{{ __('Descending') }}</option>
-                                <option value="asc">{{ __('Ascending') }}</option>
-                            </select>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <select id="sortBy" wire:model.live="sortBy"
+                                    class="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white">
+                                    <option value="created_at">{{ __('Date') }}</option>
+                                    <option value="file_name">{{ __('Filename') }}</option>
+                                    <option value="status">{{ __('Status') }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <select id="sortDir" wire:model.live="sortDirection"
+                                    class="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white">
+                                    <option value="desc">{{ __('Desc') }}</option>
+                                    <option value="asc">{{ __('Asc') }}</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Publication & Metadata Filters Component -->
-                    <div class="pb-4">
-                        @livewire('publications.publication-filters', ['hideAdminFilters' => false])
-                    </div>
+                    <!-- Filters Component -->
+                    @livewire('publications.publication-filters', ['hideAdminFilters' => false])
                 </div>
             @endif
         </aside>

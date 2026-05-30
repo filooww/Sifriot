@@ -19,7 +19,8 @@
       "Bash('C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.exe' artisan tinker '--execute= *)",
       "Bash('C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.exe' -r ' *)",
       "Bash(\"C:/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" artisan *)",
-      "Bash('C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.exe' artisan tinker '--execute= *c)"
+      "Bash('C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.exe' artisan tinker '--execute= *c)",
+      "Bash(awk '/<div[^>]/ {open++; print NR\": open=\"open} /<\\\\/div>/ {close++; print NR\": close=\"close}' \"c:\\\\laragon\\\\www\\\\Sifriot\\\\resources\\\\views\\\\livewire\\\\publications\\\\publication-preview.blade.php\")"
     ]
   }
 }
