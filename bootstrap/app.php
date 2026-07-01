@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
         ]);
+
+        // Exclude FB2 converter from CSRF verification (for iframe loading)
+        $middleware->validateCsrfTokens(except: [
+            'files/convert-fb2/*',
+        ]);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserRole::class,
         ]);

@@ -49,8 +49,13 @@ class DocumentViewer extends Component
                         ->first();
                 }
             } else {
-                // No specific file requested: use first by order
+                // No specific file requested: use first content file (exclude covers)
                 $file = File::where('id_publication', $publicationId)
+                    ->where(function ($query) {
+                        $query->whereNull('file_type')
+                            ->orWhere('file_type', '')
+                            ->orWhere('file_type', '!=', 'cover');
+                    })
                     ->orderBy('ord_num')
                     ->first();
             }
@@ -97,12 +102,19 @@ class DocumentViewer extends Component
     private function determineViewerType(): void
     {
         if (! $this->fileName) {
+            \Log::warning('DocumentViewer: No filename provided for viewer type determination');
             $this->viewerType = 'none';
 
             return;
         }
 
         $extension = strtolower(pathinfo($this->fileName, PATHINFO_EXTENSION));
+
+        \Log::info('DocumentViewer: Determining viewer type', [
+            'filename' => $this->fileName,
+            'extension' => $extension,
+            'publication_id' => $this->publicationId,
+        ]);
 
         $this->viewerType = match ($extension) {
             'pdf' => 'pdf',
@@ -113,6 +125,11 @@ class DocumentViewer extends Component
             'djvu' => 'djvu',
             default => 'none',
         };
+
+        \Log::info('DocumentViewer: Viewer type determined', [
+            'viewer_type' => $this->viewerType,
+            'extension' => $extension,
+        ]);
     }
 
     private function generateFileUrl(): void

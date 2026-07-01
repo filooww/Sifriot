@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide Alpine.js elements until initialized */
+[x-cloak] {
+    display: none !important;
+}
+
 @layer base {
     /* Cozy Light Mode Palette */
     :root {

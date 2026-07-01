@@ -21,9 +21,23 @@ class FileViewController extends Controller
      */
     public function convertFb2(int $publication, string $filename): Response|JsonResponse
     {
+        Log::info('FB2 conversion START', [
+            'publication' => $publication,
+            'filename_encoded' => $filename,
+            'user_authenticated' => Auth::check(),
+            'user_id' => Auth::id(),
+        ]);
+
         // Check authentication
         if (!Auth::check()) {
-            abort(401, 'Unauthorized');
+            Log::warning('FB2 conversion - UNAUTHORIZED', [
+                'publication' => $publication,
+                'filename' => $filename,
+            ]);
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => 'You must be logged in to view FB2 files',
+            ], 401);
         }
 
         // Decode URL-safe base64-encoded filename
@@ -45,6 +59,13 @@ class FileViewController extends Controller
 
         // Try to find the file (with case-insensitive fallback)
         $file = $this->findFileByPublicationAndName($publication, $decodedFilename);
+
+        Log::info('FB2 file lookup result', [
+            'publication' => $publication,
+            'decoded_filename' => $decodedFilename,
+            'file_found' => $file !== null,
+            'file_id' => $file?->id,
+        ]);
 
         $disk = null;
         $storagePath = null;
@@ -85,16 +106,36 @@ class FileViewController extends Controller
                 }
             }
         } else {
-            // Fallback: resolve the physical file path via file_registration_logs (same logic as AI extractor)
+            // Fallback 1: resolve the physical file path via file_registration_logs
             $absolutePath = $this->resolveFilePathFromLogs($publication, $decodedFilename);
 
-            if (!$absolutePath) {
-                return response()->json([
-                    'error' => 'File not found in database',
-                ], 404);
-            }
+            if ($absolutePath && is_file($absolutePath)) {
+                $storagePath = $absolutePath;
+            } else {
+                // Fallback 2: search for the file in library disk by filename
+                $disk = 'library';
+                $allFiles = Storage::disk($disk)->allFiles();
+                $storagePath = null;
 
-            $storagePath = $absolutePath;
+                foreach ($allFiles as $filePath) {
+                    if (basename($filePath) === $decodedFilename) {
+                        $storagePath = $filePath;
+                        break;
+                    }
+                }
+
+                if ($storagePath === null) {
+                    // File not found anywhere
+                    Log::error('FB2 file not found in database, logs, or library storage', [
+                        'publication_id' => $publication,
+                        'decoded_filename' => $decodedFilename,
+                    ]);
+                    return response()->json([
+                        'error' => 'File not found in database or storage',
+                        'message' => 'The FB2 file is not registered in the system. Please run a bulk scan to register files.',
+                    ], 404);
+                }
+            }
         }
 
         if ($disk !== null) {
@@ -120,18 +161,59 @@ class FileViewController extends Controller
 
         try {
             // Read and parse FB2 XML
+            Log::info('FB2: Reading file content', [
+                'disk' => $disk,
+                'storage_path' => $storagePath,
+            ]);
+
             $xmlContent = $disk === null
                 ? file_get_contents($storagePath)
                 : Storage::disk($disk)->get($storagePath);
 
+            Log::info('FB2: File content read', [
+                'content_length' => strlen($xmlContent),
+                'is_empty' => empty($xmlContent),
+            ]);
+
+            if (empty($xmlContent)) {
+                Log::error('FB2: File is empty');
+                throw new \Exception('FB2 file is empty or could not be read');
+            }
+
+            // Normalize encoding - ensure UTF-8
+            Log::info('FB2: Detecting encoding');
+
+            $encoding = mb_detect_encoding($xmlContent, ['UTF-8', 'Windows-1251', 'CP1251', 'ISO-8859-5'], true);
+            Log::info('FB2: Detected encoding', ['encoding' => $encoding ?: 'unknown']);
+
+            if ($encoding && $encoding !== 'UTF-8') {
+                Log::info('FB2: Converting encoding', ['from' => $encoding, 'to' => 'UTF-8']);
+                $xmlContent = mb_convert_encoding($xmlContent, 'UTF-8', $encoding);
+            }
+
+            // Ensure XML declaration is UTF-8
+            $xmlContent = preg_replace('/<\?xml[^>]*\?>/i', '<?xml version="1.0" encoding="UTF-8"?>', $xmlContent, 1);
+
             // Load XML with namespace support
             libxml_use_internal_errors(true);
+            libxml_clear_errors(); // Clear any previous errors
+
+            Log::info('FB2: Loading XML with simplexml_load_string');
+
             $xml = simplexml_load_string($xmlContent);
+
             if ($xml === false) {
                 $errors = libxml_get_errors();
                 libxml_clear_errors();
-                throw new \Exception('Failed to parse FB2 XML: ' . ($errors[0]->message ?? 'Unknown error'));
+                $errorMessages = array_map(fn($e) => trim($e->message), $errors);
+                Log::error('FB2: Failed to parse XML', [
+                    'errors' => array_slice($errorMessages, 0, 5),
+                    'content_preview' => substr($xmlContent, 0, 500),
+                ]);
+                throw new \Exception('Failed to parse FB2 XML: ' . implode('; ', array_slice($errorMessages, 0, 3)));
             }
+
+            Log::info('FB2: XML parsed successfully');
 
             // Get the namespaces from the document
             $namespaces = $xml->getNamespaces(true);
@@ -210,21 +292,32 @@ class FileViewController extends Controller
 
             $html .= '</body></html>';
 
+            Log::info('FB2: Conversion SUCCESS', [
+                'publication' => $publication,
+                'html_length' => strlen($html),
+            ]);
+
             // Return as HTML
             return response($html)
                 ->header('Content-Type', 'text/html; charset=UTF-8')
-                ->header('Cache-Control', 'public, max-age=3600');
+                ->header('Cache-Control', 'public, max-age=3600')
+                ->header('X-FB2-Conversion', 'success');
 
         } catch (\Exception $e) {
-            Log::error('FB2 conversion failed', [
+            Log::error('FB2 conversion FAILED', [
                 'publication_id' => $publication,
                 'filename' => $decodedFilename,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'error' => 'Failed to convert FB2 file',
                 'message' => $e->getMessage(),
+                'debug_info' => [
+                    'publication' => $publication,
+                    'filename' => $decodedFilename,
+                ],
             ], 500);
         }
     }

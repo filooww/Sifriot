@@ -162,7 +162,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.author" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.author" x-collapse x-cloak class="border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2">
                     <input
                         type="text"
@@ -216,7 +216,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.date" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.date" x-collapse x-cloak class="border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2 grid grid-cols-2 gap-2">
                     <div>
                         <input
@@ -312,7 +312,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.realGenre" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.realGenre" x-collapse x-cloak class="border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2">
                     <input
                         type="text"
@@ -363,7 +363,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.section" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.section" x-collapse x-cloak class=border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2">
                     <input
                         type="text"
@@ -419,7 +419,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.publisher" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.publisher" x-collapse x-cloak class=border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2">
                     <input
                         type="text"
@@ -470,7 +470,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.textSize" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.textSize" x-collapse x-cloak class=border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2" x-data="{
                     min: @entangle('textSizeRange.0'),
                     max: @entangle('textSizeRange.1')
@@ -530,7 +530,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.alphabetical" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.alphabetical" x-collapse x-cloak class=border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2 space-y-0.5">
                     <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer transition-colors">
                         <input
@@ -591,7 +591,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.extractionStatus" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.extractionStatus" x-collapse x-cloak class=border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2 space-y-0.5">
                     <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer transition-colors">
                         <input type="radio" wire:model.live="statusFilter" value="all" class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
@@ -646,7 +646,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.format" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.format" x-collapse x-cloak class=border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2 grid grid-cols-2 gap-1">
                     @foreach(['all' => 'All', 'pdf' => 'PDF', 'epub' => 'EPUB', 'txt' => 'TXT', 'doc' => 'DOC', 'docx' => 'DOCX', 'fb2' => 'FB2', 'djvu' => 'DJVU', 'rtf' => 'RTF', 'mobi' => 'MOBI', 'azw' => 'AZW', 'azw3' => 'AZW3', 'lit' => 'LIT', 'html' => 'HTML'] as $value => $label)
                     <label class="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer transition-colors">
@@ -683,7 +683,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.extractionDate" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.extractionDate" x-collapse x-cloak class=border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2 space-y-0.5">
                     <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer transition-colors">
                         <input type="radio" wire:model.live="dateFilter" value="all" class="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
@@ -730,7 +730,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <div x-show="openSections.status" x-collapse class="border-t border-gray-200 dark:border-gray-700">
+            <div x-show="openSections.status" x-collapse x-cloak class=border-t border-gray-200 dark:border-gray-700">
                 <div class="p-2 space-y-0.5">
                     <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1.5 px-2 rounded cursor-pointer transition-colors">
                         <input type="checkbox" wire:model.live="publicationStatus" value="published" class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">

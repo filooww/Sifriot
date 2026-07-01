@@ -1,10 +1,9 @@
-<div>
-    <div
-        x-data="{
-            isFullscreen: false,
-            showHeader: true,
-            showInfo: false,
-            headerTimeout: null,
+<div
+    x-data="{
+        isFullscreen: false,
+        showHeader: true,
+        showInfo: false,
+        headerTimeout: null,
             init() {
                 this.resetHeaderTimer();
 
@@ -388,4 +387,3 @@
             </span>
         </div>
     </div>
-</div>

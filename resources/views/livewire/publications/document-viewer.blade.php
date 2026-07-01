@@ -101,26 +101,60 @@
 
                     @case('fb2')
                         <!-- FB2 Viewer using server-side XML-to-HTML conversion -->
-                        <div class="h-full w-full">
-                            <iframe
-                                id="fb2-viewer-{{ $publicationId }}"
-                                src="{{ route('files.convert-fb2', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}"
-                                class="w-full h-full border-0"
-                                sandbox="allow-same-origin"
-                            ></iframe>
-                            <script>
-                                (function() {
-                                    const iframe = document.getElementById('fb2-viewer-{{ $publicationId }}');
-                                    iframe.onerror = function() {
-                                        iframe.style.display = 'none';
-                                        const errorDiv = document.createElement('div');
-                                        errorDiv.className = 'flex items-center justify-center h-full bg-gray-100 dark:bg-gray-950';
-                                        errorDiv.innerHTML = '<div class="text-center"><p class="font-semibold text-red-500">{{ __("Error loading FB2 file") }}</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">{{ __("Download file instead") }}</a></p></div>';
-                                        iframe.parentNode.insertBefore(errorDiv, iframe);
-                                    };
-                                })();
-                            </script>
+                        <div class="h-full w-full overflow-auto bg-white dark:bg-gray-900" id="fb2-container-{{ $publicationId }}">
+                            <div id="fb2-loading-{{ $publicationId }}" class="flex items-center justify-center min-h-full bg-gray-100 dark:bg-gray-950">
+                                <div class="text-center">
+                                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                                    <p class="text-gray-600 dark:text-gray-400">{{ __('Loading FB2 file...') }}</p>
+                                </div>
+                            </div>
                         </div>
+                        <script>
+                            (function() {
+                                const container = document.getElementById('fb2-container-{{ $publicationId }}');
+                                const loadingDiv = document.getElementById('fb2-loading-{{ $publicationId }}');
+
+                                const fb2Url = '{{ route('files.convert-fb2', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}';
+
+                                console.log('Loading FB2 from:', fb2Url);
+
+                                fetch(fb2Url, {
+                                    credentials: 'same-origin',
+                                    headers: {
+                                        'Accept': 'text/html',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                                    }
+                                    return response.text();
+                                })
+                                .then(html => {
+                                    console.log('FB2 loaded, length:', html.length);
+
+                                    if (html && html.length > 0) {
+                                        container.innerHTML = html;
+
+                                        // Execute any scripts in the loaded HTML
+                                        const scripts = container.querySelectorAll('script');
+                                        scripts.forEach(oldScript => {
+                                            const newScript = document.createElement('script');
+                                            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                                            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                                        });
+                                    } else {
+                                        throw new Error('Empty response');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('FB2 load error:', error);
+                                    container.innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-950"><div class="text-center p-8"><div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center"><svg class="w-8 h-8 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div><p class="font-semibold text-red-500 dark:text-red-400">{{ __("Error loading FB2 file") }}</p><p class="text-sm mt-2 text-gray-500 dark:text-gray-400">' + error.message + '</p><p class="text-sm mt-4"><a href="{{ route('files.download', ['publication' => $publicationId, 'filename' => $this->encodeFileName($fileName)]) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 inline-flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>{{ __("Download file instead") }}</a></p></div></div>';
+                                });
+                            })();
+                        </script>
                     @break
 
                     @case('document')
